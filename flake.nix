@@ -18,6 +18,7 @@
           nodejs
           cargo
           rustc
+          rust-analyzer
         ];
       };
     });
