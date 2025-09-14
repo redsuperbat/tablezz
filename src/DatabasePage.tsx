@@ -45,8 +45,8 @@ function TableContent({ tableName }: { tableName: string }) {
 				<tbody>
 					{content.data?.map((row) => (
 						<tr key={JSON.stringify(row)}>
-							{structure.data?.map((s) => (
-								<td key={row[s.column_name]}>
+							{structure.data?.map((s, i) => (
+								<td key={row[s.column_name] + i}>
 									<div className="truncate max-w-40">{row[s.column_name]}</div>
 								</td>
 							))}

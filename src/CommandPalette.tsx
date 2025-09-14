@@ -35,9 +35,7 @@ export function CommandPalette() {
 	useRegisterKeybind({
 		name: "CommandPaletteShow",
 		onTrigger: () => setOpen((o) => !o),
-		defaultTrigger: (e) => {
-			return e.metaKey && e.key === "k";
-		},
+		defaultTrigger: "Meta + k",
 	});
 
 	useRegisterKeybind({
@@ -48,7 +46,7 @@ export function CommandPalette() {
 
 	useRegisterKeybind({
 		name: "CommandPaletteSelectPrev",
-		defaultTrigger: (e) => e.ctrlKey && e.key === "k",
+		defaultTrigger: "Control + k",
 		onTrigger() {
 			if (selectedIndex === 0) {
 				return false;
@@ -59,7 +57,7 @@ export function CommandPalette() {
 
 	useRegisterKeybind({
 		name: "CommandPaletteSelectNext",
-		defaultTrigger: (e) => e.ctrlKey && e.key === "j",
+		defaultTrigger: "Control + j",
 		onTrigger() {
 			if (selectedIndex === filteredTables.length - 1) {
 				return false;
@@ -71,7 +69,7 @@ export function CommandPalette() {
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogContent
-				className="min-h-96 flex flex-col justify-start"
+				className="h-96 flex flex-col justify-start overflow-y-auto"
 				showCloseButton={false}
 			>
 				<DialogHeader>
@@ -84,7 +82,10 @@ export function CommandPalette() {
 				<div>
 					{filteredTables.map((t, i) => (
 						<div
-							className={cn(i === selectedIndex && "font-bold")}
+							className={cn(
+								i === selectedIndex && "bg-gray-100",
+								"p-1 rounded",
+							)}
 							key={t.table_name}
 						>
 							{t.table_name}
