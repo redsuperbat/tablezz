@@ -52,7 +52,7 @@ type PostgresDataType =
 	| "ARRAY"
 	| "USER-DEFINED";
 
-type ColumnDefault = "now()";
+type ColumnDefault = "now()" | null;
 
 export function useTableStructure(tableName: string) {
 	const { schemaName } = useSchemaContext();
