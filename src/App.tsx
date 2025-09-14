@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Button } from "./components/ui/button";
 import { DatabasePage } from "./DatabasePage";
 import { databaseCredentials } from "./databaseCredentials";
 import { SchemaProvider } from "./SchemaProvider";
@@ -18,7 +19,7 @@ export function App() {
 					}}
 				>
 					<input type="text" onChange={(e) => setUrl(e.target.value)} />
-					<button type="submit">Submit</button>
+					<Button type="submit">Submit</Button>
 				</form>
 			</div>
 		);
