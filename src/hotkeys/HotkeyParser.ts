@@ -79,8 +79,7 @@ export class HotkeyParser {
 	}
 
 	#parseModifier(): ModifierNode {
-		const { kind, range } = this.#assertNext("meta", "alt", "ctrl", "shift");
-		return { kind, range };
+		return this.#assertNext("meta", "alt", "ctrl", "shift");
 	}
 
 	#parseCombination(left: KeyExpression): CombinationNode {
