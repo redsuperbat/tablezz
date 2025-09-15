@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useHotkeyChecker } from "./hotkeys/useHotkeyRegister";
+import { useHotkeyChecker } from "./hotkeys/useHotkeyChecker";
 
 const keybinds: {
 	[key: string]: Keybind;
