@@ -6,13 +6,36 @@ export interface KeyNode {
 	range: Range;
 }
 
-export interface CombinationNode {
-	kind: "combination";
-	keys: KeyNode[];
+export interface MetaNode {
+	kind: "meta";
 	range: Range;
 }
 
-export type Node = KeyNode | CombinationNode;
+export interface ShiftNode {
+	kind: "shift";
+	range: Range;
+}
+
+export interface AltNode {
+	kind: "alt";
+	range: Range;
+}
+
+export interface CtrlNode {
+	kind: "ctrl";
+	range: Range;
+}
+
+export interface CombinationNode {
+	kind: "combination";
+	left: KeyExpression;
+	right: KeyExpression;
+	range: Range;
+}
+
+export type ModifierNode = MetaNode | ShiftNode | AltNode | CtrlNode;
+
+export type KeyExpression = KeyNode | CombinationNode | ModifierNode;
 
 export class HotkeyParser {
 	#tokens: Token[];
@@ -27,18 +50,24 @@ export class HotkeyParser {
 		return this.#tokens[this.#pos];
 	}
 
-	#assertPeek(...expected: TokenKind[]): Token {
+	#assertPeek<T extends TokenKind>(
+		...expected: T[]
+	): Omit<Token, "kind"> & { kind: T } {
 		const token = this.#peek();
 		if (!token) {
 			throw new Error("Unexpected end of input");
 		}
-		if (!expected.includes(token.kind)) {
+		if (!expected.includes(token.kind as T)) {
 			throw new Error(`Expected ${expected}, got ${token.kind}`);
 		}
-		return token;
+		return token as Omit<Token, "kind"> & { kind: T };
 	}
 
-	#assertNext(...expected: TokenKind[]): Token {
+	#isAtEnd(): boolean {
+		return this.#peek() === undefined;
+	}
+
+	#assertNext<T extends TokenKind>(...expected: T[]) {
 		const token = this.#assertPeek(...expected);
 		this.#pos++;
 		return token;
@@ -49,25 +78,47 @@ export class HotkeyParser {
 		return { key: token.lexeme, kind: "key", range: token.range };
 	}
 
-	#parseCombination(): CombinationNode {
-		const key = this.#parseKey();
-		const keys = [key];
+	#parseModifier(): ModifierNode {
+		const { kind, range } = this.#assertNext("meta", "alt", "ctrl", "shift");
+		return { kind, range };
+	}
 
-		while (this.#peek()?.kind === "plus") {
-			this.#assertNext("plus");
-			keys.push(this.#parseKey());
-		}
-
-		const end = keys.at(-1)?.range.end ?? key.range.end;
-
+	#parseCombination(left: KeyExpression): CombinationNode {
+		this.#assertNext("plus");
+		const right = this.parseKeyExpression();
 		return {
-			keys,
+			left,
+			right,
 			kind: "combination",
-			range: { start: key.range.start, end },
+			range: { start: left.range.start, end: right.range.end },
 		};
 	}
 
-	public parse(): Node {
-		return this.#parseCombination();
+	#parseLeafNode() {
+		const next = this.#assertPeek("meta", "alt", "ctrl", "shift", "key");
+
+		switch (next.kind) {
+			case "key":
+				return this.#parseKey();
+			case "ctrl":
+			case "meta":
+			case "alt":
+			case "shift":
+				return this.#parseModifier();
+		}
+	}
+
+	public parseKeyExpression(): KeyExpression {
+		const leafExpression = this.#parseLeafNode();
+
+		if (this.#isAtEnd()) {
+			return leafExpression;
+		}
+
+		const next = this.#assertPeek("plus");
+		switch (next.kind) {
+			case "plus":
+				return this.#parseCombination(leafExpression);
+		}
 	}
 }

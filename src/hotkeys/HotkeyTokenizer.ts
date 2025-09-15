@@ -1,4 +1,4 @@
-export type TokenKind = "key" | "plus";
+export type TokenKind = "key" | "plus" | "ctrl" | "meta" | "alt" | "shift";
 
 export type Range = {
 	start: Position;
@@ -79,8 +79,30 @@ export class HotkeyTokenizer {
 				while (this.#keyRegex.test(this.#peek()) && !this.#isAtEnd()) {
 					lexeme += this.#next();
 				}
+
+				let kind: TokenKind = "key";
+
+				switch (lexeme) {
+					case "Meta": {
+						kind = "meta";
+						break;
+					}
+					case "Alt": {
+						kind = "alt";
+						break;
+					}
+					case "Shift": {
+						kind = "shift";
+						break;
+					}
+					case "Control": {
+						kind = "ctrl";
+						break;
+					}
+				}
+
 				tokens.push({
-					kind: "key",
+					kind,
 					lexeme,
 					range: { start, end: this.#pos() },
 				});

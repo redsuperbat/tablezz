@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useHotkeyRegister } from "./hotkeys/useHotkeyRegister";
+import { useHotkeyChecker } from "./hotkeys/useHotkeyRegister";
 
 const keybinds: {
 	[key: string]: Keybind;
@@ -110,12 +110,16 @@ interface Keybind {
 }
 
 export function useRegisterKeybind(bind: Keybind) {
-	const registerHotkey = useHotkeyRegister();
+	const check = useHotkeyChecker(bind.defaultTrigger);
 	keybinds[bind.name] = bind;
 
 	useEffect(() => {
-		const register = registerHotkey(bind.defaultTrigger, bind.onTrigger);
+		function checkAndExecute(e: KeyboardEvent) {
+			if (!check(e)) return;
+			bind.onTrigger(e);
+		}
 
-		return () => register.unsubscribe();
-	}, [bind.name]);
+		window.addEventListener("keyup", checkAndExecute);
+		return () => window.removeEventListener("keyup", checkAndExecute);
+	}, [bind.name, bind.onTrigger, check]);
 }
