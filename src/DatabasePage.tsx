@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTableContext } from "./TableProvider";
 import { useDatabaseSchema } from "./useDatabaseSchema";
 import { useTableContent } from "./useTableContent";
 import { useTableStructure } from "./useTableStructure";
@@ -59,15 +60,15 @@ function TableContent({ tableName }: { tableName: string }) {
 }
 
 export function DatabasePage() {
-	const [selectedTable, setSelectedTable] = useState<string>();
+	const { tableName, setTableName } = useTableContext();
 
 	return (
 		<main
 			className="grid gap-3 h-screen w-screen p-5"
 			style={{ gridTemplateColumns: "auto 1fr" }}
 		>
-			<Schema onSelectTable={setSelectedTable} />
-			{selectedTable && <TableContent tableName={selectedTable} />}
+			<Schema onSelectTable={setTableName} />
+			{tableName && <TableContent tableName={tableName} />}
 		</main>
 	);
 }

@@ -1,12 +1,20 @@
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import Fuse from "fuse.js";
 import { useEffect, useMemo, useState } from "react";
-import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "./components/ui/input";
 import { cn } from "./lib/utils";
+import { useTableContext } from "./TableProvider";
 import { useDatabaseSchema } from "./useDatabaseSchema";
 import { useRegisterKeybind } from "./useRegisterKeybind";
 
 export function CommandPalette() {
+	const { setTableName } = useTableContext();
 	const [open, setOpen] = useState(false);
 	const databaseSchema = useDatabaseSchema();
 	const [searchTerm, setSearchTerm] = useState<string>();
@@ -40,7 +48,11 @@ export function CommandPalette() {
 
 	useRegisterKeybind({
 		name: "CommandPaletteSelect",
-		onTrigger() {},
+		onTrigger() {
+			setTableName(filteredTables[selectedIndex].table_name);
+			setOpen(false);
+			setSearchTerm(undefined);
+		},
 		defaultTrigger: "Enter",
 	});
 
@@ -73,6 +85,9 @@ export function CommandPalette() {
 				showCloseButton={false}
 			>
 				<DialogHeader>
+					<VisuallyHidden>
+						<DialogTitle>Combobox</DialogTitle>
+					</VisuallyHidden>
 					<Input
 						autoFocus
 						value={searchTerm}

@@ -3,6 +3,7 @@ import { DatabaseConnectionCredentials } from "./DatabaseConnectinCredentials";
 import { DatabasePage } from "./DatabasePage";
 import { databaseCredentials } from "./databaseCredentials";
 import { SchemaProvider } from "./SchemaProvider";
+import { TableProvider } from "./TableProvider";
 
 export function App() {
 	if (!databaseCredentials.get()) {
@@ -11,8 +12,10 @@ export function App() {
 
 	return (
 		<SchemaProvider schemaName="public">
-			<CommandPalette />
-			<DatabasePage />
+			<TableProvider>
+				<CommandPalette />
+				<DatabasePage />
+			</TableProvider>
 		</SchemaProvider>
 	);
 }
