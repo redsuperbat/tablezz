@@ -9,12 +9,20 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "./components/ui/input";
 import { cn } from "./lib/utils";
+import { useRouter } from "./Router";
 import { useTableContext } from "./TableProvider";
 import { useDatabaseSchema } from "./useDatabaseSchema";
 import { useRegisterKeybind } from "./useRegisterKeybind";
 
+interface CommandPaletteItem {
+	kind: string;
+	onSelect(): void;
+	searchTerm: string;
+}
+
 export function CommandPalette() {
 	const { setTableName } = useTableContext();
+	const { routes, navigateTo } = useRouter();
 	const [open, setOpen] = useState(false);
 	const databaseSchema = useDatabaseSchema();
 	const [searchTerm, setSearchTerm] = useState<string>();
@@ -24,17 +32,36 @@ export function CommandPalette() {
 		return databaseSchema.data ?? [];
 	}, [databaseSchema]);
 
+	const items = useMemo((): CommandPaletteItem[] => {
+		return [
+			...tables.map((t) => ({
+				kind: "table",
+				searchTerm: t.table_name,
+				onSelect() {
+					setTableName(t.table_name);
+				},
+			})),
+			...routes.map((r) => ({
+				kind: "route",
+				searchTerm: r,
+				onSelect() {
+					navigateTo(r);
+				},
+			})),
+		];
+	}, []);
+
 	const filteredTables = useMemo(() => {
-		const fuse = new Fuse(tables, {
-			keys: ["table_name"],
+		const fuse = new Fuse(items, {
+			keys: ["searchTerm"],
 		});
 
 		if (!searchTerm) {
-			return tables;
+			return items;
 		}
 
 		return fuse.search(searchTerm).map((r) => r.item);
-	}, [tables, searchTerm]);
+	}, [items, searchTerm]);
 
 	useEffect(() => {
 		setSelectedIndex(0);
@@ -49,7 +76,7 @@ export function CommandPalette() {
 	useRegisterKeybind({
 		name: "CommandPaletteSelect",
 		onTrigger() {
-			setTableName(filteredTables[selectedIndex].table_name);
+			filteredTables[selectedIndex].onSelect?.();
 			setOpen(false);
 			setSearchTerm(undefined);
 		},
@@ -86,9 +113,10 @@ export function CommandPalette() {
 			>
 				<DialogHeader>
 					<VisuallyHidden>
-						<DialogTitle>Combobox</DialogTitle>
+						<DialogTitle>Command palette</DialogTitle>
 					</VisuallyHidden>
 					<Input
+						placeholder="Type something..."
 						autoFocus
 						value={searchTerm}
 						onChange={(e) => setSearchTerm(e.target.value)}
@@ -101,9 +129,9 @@ export function CommandPalette() {
 								i === selectedIndex && "bg-gray-100",
 								"p-1 rounded",
 							)}
-							key={t.table_name}
+							key={t.searchTerm}
 						>
-							{t.table_name}
+							{t.searchTerm}
 						</div>
 					))}
 				</div>

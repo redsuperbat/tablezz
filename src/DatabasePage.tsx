@@ -19,7 +19,6 @@ function Schema({
 
 	return (
 		<div className="flex flex-col gap-2 items-start">
-			<h2 className="font-bold">Tables</h2>
 			{databaseSchema.data?.map((table) => (
 				<button
 					key={table.table_name}
