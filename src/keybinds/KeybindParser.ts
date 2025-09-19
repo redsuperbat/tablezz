@@ -1,4 +1,4 @@
-import type { Range, Token, TokenKind } from "./HotkeyTokenizer";
+import type { Range, Token, TokenKind } from "./KeybindTokenizer";
 
 export interface KeyNode {
 	kind: "key";
@@ -47,7 +47,7 @@ export type ModifierNode =
 
 export type KeyExpression = KeyNode | CombinationNode | ModifierNode;
 
-export class HotkeyParser {
+export class KeybindParser {
 	#tokens: Token[];
 	#pos: number;
 

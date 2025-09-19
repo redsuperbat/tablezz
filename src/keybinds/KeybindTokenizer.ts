@@ -23,7 +23,7 @@ export type Token = {
 	lexeme: string;
 };
 
-export class HotkeyTokenizer {
+export class KeybindTokenizer {
 	#text: string;
 	#index = 0;
 	#col = 1;

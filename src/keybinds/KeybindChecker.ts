@@ -1,12 +1,11 @@
-import type { KeybindExpression } from "@/useRegisterKeybind";
-import type { HotkeyLeaderTracker } from "./HotkeyLeaderTracker";
-import type { CombinationNode, KeyExpression, KeyNode } from "./HotkeyParser";
+import type { KeybindLeaderTracker } from "./KeybindLeaderTracker";
+import type { CombinationNode, KeyExpression, KeyNode } from "./KeybindParser";
 
-export class HotkeyChecker {
+export class KeybindChecker {
 	#event: KeyboardEvent;
-	#leaderTracker: HotkeyLeaderTracker;
+	#leaderTracker: KeybindLeaderTracker;
 
-	constructor(event: KeyboardEvent, leaderTracker: HotkeyLeaderTracker) {
+	constructor(event: KeyboardEvent, leaderTracker: KeybindLeaderTracker) {
 		this.#event = event;
 		this.#leaderTracker = leaderTracker;
 	}

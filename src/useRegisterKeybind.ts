@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useHotkeyChecker } from "./hotkeys/useHotkeyChecker";
+import { useKeybindChecker } from "./keybinds/useKeybindChecker";
 
 const keybinds: {
 	[key: string]: Keybind;
@@ -111,7 +111,7 @@ interface Keybind {
 }
 
 export function useRegisterKeybind(bind: Keybind) {
-	const check = useHotkeyChecker(bind.defaultTrigger);
+	const check = useKeybindChecker(bind.defaultTrigger);
 	keybinds[bind.name] = bind;
 
 	useEffect(() => {

@@ -1,10 +1,12 @@
-export class HotkeyLeaderTracker {
+import type { KeybindExpression } from "@/useRegisterKeybind";
+
+export class KeybindLeaderTracker {
 	#isLeaderActive?: ReturnType<typeof setTimeout>;
 	#expired = false;
 	readonly #expirationTime: number;
 	readonly #leaderKey: string;
 
-	constructor(expirationTime: number, leaderKey: string) {
+	constructor(expirationTime: number, leaderKey: KeybindExpression) {
 		this.#expirationTime = expirationTime;
 		this.#leaderKey = leaderKey;
 	}
