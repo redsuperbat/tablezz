@@ -70,7 +70,7 @@ export function CommandPalette() {
 	useRegisterKeybind({
 		name: "CommandPaletteShow",
 		onTrigger: () => setOpen((o) => !o),
-		defaultTrigger: "Leader + Space",
+		keybindExpression: "Leader + Space",
 	});
 
 	useRegisterKeybind({
@@ -80,12 +80,12 @@ export function CommandPalette() {
 			setOpen(false);
 			setSearchTerm(undefined);
 		},
-		defaultTrigger: "Enter",
+		keybindExpression: "Enter",
 	});
 
 	useRegisterKeybind({
 		name: "CommandPaletteSelectPrev",
-		defaultTrigger: "Control + k",
+		keybindExpression: "Control + k",
 		onTrigger() {
 			if (selectedIndex === 0) {
 				return false;
@@ -96,7 +96,7 @@ export function CommandPalette() {
 
 	useRegisterKeybind({
 		name: "CommandPaletteSelectNext",
-		defaultTrigger: "Control + j",
+		keybindExpression: "Control + j",
 		onTrigger() {
 			if (selectedIndex === filteredTables.length - 1) {
 				return false;

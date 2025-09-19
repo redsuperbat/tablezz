@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useConfig } from "./config/ConfigurationProvider";
 import { useKeybindChecker } from "./keybinds/useKeybindChecker";
 
 const keybinds: {
@@ -106,12 +107,17 @@ export type KeybindExpression =
 
 interface Keybind {
 	name: string;
-	defaultTrigger: KeybindExpression;
+	keybindExpression: KeybindExpression;
 	onTrigger(e: KeyboardEvent): void;
 }
 
 export function useRegisterKeybind(bind: Keybind) {
-	const check = useKeybindChecker(bind.defaultTrigger);
+	const config = useConfig();
+
+	const check = useKeybindChecker(
+		config.get("keybindings")[bind.name] ?? bind.keybindExpression,
+	);
+
 	keybinds[bind.name] = bind;
 
 	useEffect(() => {
