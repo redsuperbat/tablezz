@@ -70,7 +70,7 @@ export function CommandPalette() {
 	useRegisterKeybind({
 		name: "CommandPaletteShow",
 		onTrigger: () => setOpen((o) => !o),
-		defaultTrigger: "Meta + k",
+		defaultTrigger: "Leader + Space",
 	});
 
 	useRegisterKeybind({

@@ -1,4 +1,11 @@
-export type TokenKind = "key" | "plus" | "ctrl" | "meta" | "alt" | "shift";
+export type TokenKind =
+	| "key"
+	| "plus"
+	| "ctrl"
+	| "meta"
+	| "alt"
+	| "shift"
+	| "leader";
 
 export type Range = {
 	start: Position;
@@ -83,6 +90,10 @@ export class HotkeyTokenizer {
 				let kind: TokenKind = "key";
 
 				switch (lexeme) {
+					case "Leader": {
+						kind = "leader";
+						break;
+					}
 					case "Meta": {
 						kind = "meta";
 						break;

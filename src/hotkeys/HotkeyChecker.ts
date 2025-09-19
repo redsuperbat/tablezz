@@ -1,10 +1,14 @@
+import type { KeybindExpression } from "@/useRegisterKeybind";
+import type { HotkeyLeaderTracker } from "./HotkeyLeaderTracker";
 import type { CombinationNode, KeyExpression, KeyNode } from "./HotkeyParser";
 
 export class HotkeyChecker {
 	#event: KeyboardEvent;
+	#leaderTracker: HotkeyLeaderTracker;
 
-	constructor(event: KeyboardEvent) {
+	constructor(event: KeyboardEvent, leaderTracker: HotkeyLeaderTracker) {
 		this.#event = event;
+		this.#leaderTracker = leaderTracker;
 	}
 
 	check(node: KeyExpression): boolean {
@@ -27,7 +31,21 @@ export class HotkeyChecker {
 				return this.#event.altKey && this.check(n.right);
 			case "ctrl":
 				return this.#event.ctrlKey && this.check(n.right);
+			case "leader": {
+				if (this.#leaderTracker.isTracking) {
+					return this.#leaderTracker.withLeaderScope(() => this.check(n.right));
+				}
+
+				if (this.#leaderTracker.isLeader(this.#event)) {
+					this.#leaderTracker.track();
+					// Ignore the leader key first press
+					return false;
+				}
+
+				return this.check(n.right);
+			}
 		}
+
 		return false;
 	}
 

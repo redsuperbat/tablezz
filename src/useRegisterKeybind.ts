@@ -96,6 +96,7 @@ export type KeybindExpression =
 
 			// Miscellaneous
 			| "Escape"
+			| "Space"
 			| "PrintScreen"
 			| "Pause"
 			| "ContextMenu"

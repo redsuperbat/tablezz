@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { createReactContext } from "./createReactContext";
 import { DatabasePage } from "./DatabasePage";
-import { SettingsPage } from "./SettingsPage";
 
 export const [RouteProvider, , useRouter] = createReactContext(() => {
 	const routes = useMemo(() => ["database", "settings"], []);
@@ -17,7 +16,5 @@ export function Router() {
 	switch (route) {
 		case "database":
 			return <DatabasePage />;
-		case "settings":
-			return <SettingsPage />;
 	}
 }

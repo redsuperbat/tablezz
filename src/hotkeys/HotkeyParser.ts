@@ -6,6 +6,11 @@ export interface KeyNode {
 	range: Range;
 }
 
+export interface LeaderNode {
+	kind: "leader";
+	range: Range;
+}
+
 export interface MetaNode {
 	kind: "meta";
 	range: Range;
@@ -33,7 +38,12 @@ export interface CombinationNode {
 	range: Range;
 }
 
-export type ModifierNode = MetaNode | ShiftNode | AltNode | CtrlNode;
+export type ModifierNode =
+	| MetaNode
+	| ShiftNode
+	| AltNode
+	| CtrlNode
+	| LeaderNode;
 
 export type KeyExpression = KeyNode | CombinationNode | ModifierNode;
 
@@ -94,17 +104,31 @@ export class HotkeyParser {
 	}
 
 	#parseLeafNode() {
-		const next = this.#assertPeek("meta", "alt", "ctrl", "shift", "key");
+		const next = this.#assertPeek(
+			"meta",
+			"alt",
+			"ctrl",
+			"shift",
+			"key",
+			"leader",
+		);
 
 		switch (next.kind) {
 			case "key":
 				return this.#parseKey();
+			case "leader":
+				return this.#parseLeader();
 			case "ctrl":
 			case "meta":
 			case "alt":
 			case "shift":
 				return this.#parseModifier();
 		}
+	}
+
+	#parseLeader(): LeaderNode {
+		const { kind, range } = this.#assertNext("leader");
+		return { kind, range };
 	}
 
 	public parseKeyExpression(): KeyExpression {
