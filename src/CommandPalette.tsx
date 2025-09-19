@@ -49,7 +49,7 @@ export function CommandPalette() {
 				},
 			})),
 		];
-	}, []);
+	}, [tables, routes]);
 
 	const filteredTables = useMemo(() => {
 		const fuse = new Fuse(items, {
