@@ -1,10 +1,7 @@
 import { useEffect } from "react";
-import { useConfig } from "./config/ConfigurationProvider";
-import { useKeybindChecker } from "./keybinds/useKeybindChecker";
-
-const keybinds: {
-	[key: string]: Keybind;
-} = {};
+import { useConfig } from "@/config/ConfigurationProvider";
+import { useKeybindChecker } from "@/keybinds/useKeybindChecker";
+import { useKeybindContext } from "./KeybindProvider";
 
 export type KeybindExpression =
 	// Whitespace & Editing
@@ -105,7 +102,7 @@ export type KeybindExpression =
 	  )
 	| (string & {});
 
-interface Keybind {
+export interface Keybind {
 	name: string;
 	keybindExpression: KeybindExpression;
 	onTrigger(e: KeyboardEvent): void;
@@ -113,10 +110,14 @@ interface Keybind {
 
 export function useRegisterKeybind(bind: Keybind) {
 	const config = useConfig();
+	const keybindContext = useKeybindContext();
+
 	bind.keybindExpression =
 		config.get("keybindings")[bind.name] ?? bind.keybindExpression;
+
 	const check = useKeybindChecker(bind.keybindExpression);
-	keybinds[bind.name] = bind;
+
+	keybindContext.register(bind);
 
 	useEffect(() => {
 		function checkAndExecute(e: KeyboardEvent) {

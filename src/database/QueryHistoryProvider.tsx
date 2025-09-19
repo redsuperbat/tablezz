@@ -20,9 +20,12 @@ export function QueryHistory() {
 	const history = useQueryHistory();
 
 	return (
-		<div>
+		<div className="overflow-auto">
 			{history.entries.map((e) => (
-				<div key={e.createdAt.toISOString()}>{e.query}</div>
+				<div key={e.createdAt.toISOString()} className="flex gap-1">
+					<span>{e.createdAt.toLocaleTimeString()}</span>
+					<span>{e.query}</span>
+				</div>
 			))}
 		</div>
 	);

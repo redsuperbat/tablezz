@@ -28,7 +28,7 @@ export class KeybindTokenizer {
 	#index = 0;
 	#col = 1;
 	#line = 1;
-	readonly #keyRegex = /^[A-Za-z0-9]+/;
+	readonly #keyRegex = /^[A-Za-z0-9?]+/;
 
 	constructor(text: string) {
 		this.#text = text;

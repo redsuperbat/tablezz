@@ -49,6 +49,6 @@ export class KeybindChecker {
 	}
 
 	#checkKey(n: KeyNode): boolean {
-		return n.key === this.#event.key;
+		return n.key === this.#event.key || n.key === this.#event.code;
 	}
 }

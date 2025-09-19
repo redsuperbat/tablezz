@@ -8,11 +8,11 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "./components/ui/input";
+import { useRegisterKeybind } from "./keybinds/useRegisterKeybind";
 import { cn } from "./lib/utils";
 import { useRouter } from "./Router";
 import { useTableContext } from "./TableProvider";
 import { useDatabaseSchema } from "./useDatabaseSchema";
-import { useRegisterKeybind } from "./useRegisterKeybind";
 
 interface CommandPaletteItem {
 	kind: string;
