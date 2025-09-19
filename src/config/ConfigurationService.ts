@@ -2,6 +2,7 @@ import { BaseDirectory, readFile } from "@tauri-apps/plugin-fs";
 import { z } from "zod";
 
 const configuration = z.object({
+	databaseUrl: z.string().optional(),
 	leaderKey: z.string().default("Space"),
 	leaderKeyTimeoutMs: z.number().default(1000),
 	keybindings: z.record(z.string(), z.string()).default({}),
@@ -10,7 +11,7 @@ const configuration = z.object({
 export type Configuration = z.infer<typeof configuration>;
 
 export class ConfigurationService {
-	static readonly filename = ".config/tablezz.json";
+	static readonly filename = "tablezz/config.json";
 	#config: Configuration;
 
 	constructor(config: Configuration) {
@@ -26,8 +27,6 @@ export class ConfigurationService {
 			});
 
 			const json = JSON.parse(new TextDecoder().decode(configFile));
-			console.log(configFile);
-			console.log(json);
 
 			return new ConfigurationService(configuration.parse(json));
 		} catch (error) {

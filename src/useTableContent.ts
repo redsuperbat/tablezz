@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useDatabase } from "./useDatabase";
+import { useDatabase } from "./database/useDatabase";
 
 export function useTableContent(tableName: string) {
 	const database = useDatabase();

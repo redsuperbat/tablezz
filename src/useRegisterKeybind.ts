@@ -113,11 +113,9 @@ interface Keybind {
 
 export function useRegisterKeybind(bind: Keybind) {
 	const config = useConfig();
-
-	const check = useKeybindChecker(
-		config.get("keybindings")[bind.name] ?? bind.keybindExpression,
-	);
-
+	bind.keybindExpression =
+		config.get("keybindings")[bind.name] ?? bind.keybindExpression;
+	const check = useKeybindChecker(bind.keybindExpression);
 	keybinds[bind.name] = bind;
 
 	useEffect(() => {

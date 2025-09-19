@@ -1,3 +1,9 @@
+import {
+	ResizableHandle,
+	ResizablePanel,
+	ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import { QueryHistory } from "./database/QueryHistoryProvider";
 import { cn } from "./lib/utils";
 import { useTableContext } from "./TableProvider";
 import { useDatabaseSchema } from "./useDatabaseSchema";
@@ -40,7 +46,7 @@ function TableContent({ tableName }: { tableName: string }) {
 	const structure = useTableStructure(tableName);
 
 	return (
-		<div className="overflow-scroll font-normal text-start">
+		<div className="overflow-scroll h-full font-normal text-start">
 			<table className="border-spacing-x-4 table-auto border-collapse border border-gray-300 w-full text-sm">
 				<thead>
 					<tr>
@@ -79,12 +85,30 @@ export function DatabasePage() {
 	const { tableName, setTableName } = useTableContext();
 
 	return (
-		<main
-			className="grid gap-3 h-screen w-screen p-5"
-			style={{ gridTemplateColumns: "auto 1fr" }}
+		<ResizablePanelGroup
+			direction="horizontal"
+			style={{
+				width: "100vw",
+				height: "100vh",
+			}}
 		>
-			<Schema tableName={tableName} onSelectTable={setTableName} />
-			{tableName && <TableContent tableName={tableName} />}
-		</main>
+			<ResizablePanel defaultSize={20}>
+				<div className="grid items-center">
+					<Schema tableName={tableName} onSelectTable={setTableName} />
+				</div>
+			</ResizablePanel>
+			<ResizableHandle />
+			<ResizablePanel defaultSize={80}>
+				<ResizablePanelGroup direction="vertical">
+					<ResizablePanel defaultSize={75}>
+						{tableName && <TableContent tableName={tableName} />}
+					</ResizablePanel>
+					<ResizableHandle />
+					<ResizablePanel defaultSize={25}>
+						<QueryHistory />
+					</ResizablePanel>
+				</ResizablePanelGroup>
+			</ResizablePanel>
+		</ResizablePanelGroup>
 	);
 }

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { useDatabase } from "./database/useDatabase";
 import { useSchemaContext } from "./SchemaProvider";
-import { useDatabase } from "./useDatabase";
 
 export function useDatabaseSchema() {
 	const { schemaName } = useSchemaContext();
