@@ -21,12 +21,17 @@ export function QueryHistory() {
 
 	return (
 		<div className="overflow-auto">
-			{history.entries.map((e) => (
-				<div key={e.createdAt.toISOString()} className="flex gap-1">
-					<span>{e.createdAt.toLocaleTimeString()}</span>
-					<span>{e.query}</span>
-				</div>
+			{history.entries.map((e, index) => (
+				<QueryHistoryEntry key={index} entry={e} />
 			))}
+		</div>
+	);
+}
+function QueryHistoryEntry({ entry }: { entry: QueryEntry }) {
+	return (
+		<div className="flex gap-1">
+			<span>{entry.createdAt.toLocaleTimeString()}</span>
+			<span>{entry.query}</span>
 		</div>
 	);
 }

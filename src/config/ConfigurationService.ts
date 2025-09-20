@@ -1,5 +1,6 @@
 import { BaseDirectory, readFile } from "@tauri-apps/plugin-fs";
 import { z } from "zod";
+import { tryCatch } from "@/lib/utils";
 
 const configuration = z.object({
 	databaseUrl: z.string().optional(),
@@ -10,6 +11,32 @@ const configuration = z.object({
 
 export type Configuration = z.infer<typeof configuration>;
 
+export class FileNotFoundError extends Error {
+	constructor(message?: string) {
+		super(message);
+		this.name = "FileNotFoundError";
+	}
+}
+
+export class InvalidJsonError extends Error {
+	constructor(message?: string) {
+		super(message);
+		this.name = "InvalidJsonError";
+	}
+}
+
+export class InvalidConfigError extends Error {
+	constructor(message?: string) {
+		super(message);
+		this.name = "InvalidConfigError";
+	}
+}
+
+export type ConfigurationInitError =
+	| FileNotFoundError
+	| InvalidJsonError
+	| InvalidConfigError;
+
 export class ConfigurationService {
 	static readonly filename = "tablezz/config.json";
 	#config: Configuration;
@@ -18,22 +45,39 @@ export class ConfigurationService {
 		this.#config = config;
 	}
 
-	static async init(
-		onError: (error: string) => void,
-	): Promise<ConfigurationService> {
-		try {
-			const configFile = await readFile(ConfigurationService.filename, {
+	static async init(): Promise<ConfigurationService> {
+		const [error, configFile] = await tryCatch(
+			readFile(ConfigurationService.filename, {
 				baseDir: BaseDirectory.Home,
-			});
+			}),
+		);
 
-			const json = JSON.parse(new TextDecoder().decode(configFile));
-
-			return new ConfigurationService(configuration.parse(json));
-		} catch (error) {
+		if (error) {
 			console.error(error);
-			onError(String(error));
-			return new ConfigurationService(configuration.parse({}));
+			throw new FileNotFoundError();
 		}
+
+		const [jsonError, json] = tryCatch(() =>
+			JSON.parse(new TextDecoder().decode(configFile)),
+		);
+
+		if (jsonError) {
+			console.error(jsonError);
+			throw new InvalidJsonError();
+		}
+
+		const parsed = configuration.safeParse(json);
+		if (parsed.error) {
+			throw new InvalidConfigError(
+				`Invalid configuration error: ${z.prettifyError(parsed.error)}`,
+			);
+		}
+
+		return new ConfigurationService(parsed.data);
+	}
+
+	static default() {
+		return new ConfigurationService(configuration.parse({}));
 	}
 
 	get<T extends keyof Configuration>(path: T) {

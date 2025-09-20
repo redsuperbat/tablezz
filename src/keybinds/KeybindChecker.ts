@@ -37,11 +37,10 @@ export class KeybindChecker {
 
 				if (this.#leaderTracker.isLeader(this.#event)) {
 					this.#leaderTracker.track();
-					// Ignore the leader key first press
 					return false;
 				}
 
-				return this.check(n.right);
+				return false;
 			}
 		}
 

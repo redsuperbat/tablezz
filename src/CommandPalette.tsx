@@ -110,11 +110,10 @@ export function CommandPalette() {
 			<DialogContent
 				className="h-96 flex flex-col justify-start overflow-y-auto"
 				showCloseButton={false}
+				aria-describedby="Command pallette"
 			>
 				<DialogHeader>
-					<VisuallyHidden>
-						<DialogTitle>Command palette</DialogTitle>
-					</VisuallyHidden>
+					<DialogTitle className="sr-only">Command palette</DialogTitle>
 					<Input
 						placeholder="Type something..."
 						autoFocus

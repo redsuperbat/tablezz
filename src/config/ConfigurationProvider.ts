@@ -1,19 +1,28 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { BaseDirectory, watch } from "@tauri-apps/plugin-fs";
+import { useEffect } from "react";
 import { createReactContext } from "@/createReactContext";
 import { ConfigurationService } from "./ConfigurationService";
 
 export const [ConfigurationProvider, , useConfig] = createReactContext(() => {
-	const { data } = useSuspenseQuery({
-		queryFn: () =>
-			ConfigurationService.init((message) =>
-				toast.error(
-					`Loading config failed, falling back to default configuration: ${message}`,
-				),
-			),
+	const query = useSuspenseQuery({
+		queryFn: () => ConfigurationService.init(),
 		queryKey: [],
 		refetchOnWindowFocus: false,
+		retry: false,
 	});
 
-	return data;
+	useEffect(() => {
+		watch(
+			ConfigurationService.filename,
+			() => {
+				return query.refetch();
+			},
+			{
+				baseDir: BaseDirectory.Home,
+			},
+		);
+	}, []);
+
+	return query.data;
 });
