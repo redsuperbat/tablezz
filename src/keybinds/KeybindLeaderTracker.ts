@@ -1,3 +1,4 @@
+import type { KeyEvent } from "./KeybindChecker";
 import type { KeybindExpression } from "./useRegisterKeybind";
 
 export class KeybindLeaderTracker {
@@ -25,7 +26,7 @@ export class KeybindLeaderTracker {
 		return this.#isLeaderActive != null;
 	}
 
-	isLeader(e: KeyboardEvent) {
+	isLeader(e: KeyEvent) {
 		// check code here as well for more configuration options
 		return e.code === this.#leaderKey || this.#leaderKey === e.key;
 	}

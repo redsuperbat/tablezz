@@ -6,11 +6,21 @@ import type {
 	OrNode,
 } from "./KeybindParser";
 
+export interface KeyEvent {
+	metaKey: boolean;
+	shiftKey: boolean;
+	altKey: boolean;
+	ctrlKey: boolean;
+
+	key: string;
+	code: string;
+}
+
 export class KeybindChecker {
-	#event: KeyboardEvent;
+	#event: KeyEvent;
 	#leaderTracker: KeybindLeaderTracker;
 
-	constructor(event: KeyboardEvent, leaderTracker: KeybindLeaderTracker) {
+	constructor(event: KeyEvent, leaderTracker: KeybindLeaderTracker) {
 		this.#event = event;
 		this.#leaderTracker = leaderTracker;
 	}
