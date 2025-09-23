@@ -5,24 +5,24 @@ import { createReactContext } from "@/createReactContext";
 import { ConfigurationService } from "./ConfigurationService";
 
 export const [ConfigurationProvider, , useConfig] = createReactContext(() => {
-	const query = useSuspenseQuery({
-		queryFn: () => ConfigurationService.init(),
-		queryKey: [],
-		refetchOnWindowFocus: false,
-		retry: false,
-	});
+  const query = useSuspenseQuery({
+    queryFn: () => ConfigurationService.init(),
+    queryKey: [],
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
 
-	useEffect(() => {
-		watch(
-			ConfigurationService.filename,
-			() => {
-				return query.refetch();
-			},
-			{
-				baseDir: BaseDirectory.Home,
-			},
-		);
-	}, []);
+  useEffect(() => {
+    watch(
+      ConfigurationService.filename,
+      () => {
+        return query.refetch();
+      },
+      {
+        baseDir: BaseDirectory.Home,
+      },
+    );
+  }, []);
 
-	return query.data;
+  return query.data;
 });

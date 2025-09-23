@@ -2,14 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { useDatabase } from "./database/useDatabase";
 
 export function useTableContent(tableName: string) {
-	const database = useDatabase();
+  const database = useDatabase();
 
-	return useQuery({
-		queryFn: () =>
-			database.select<object[]>(`
+  return useQuery({
+    queryFn: () =>
+      database.select<object[]>(`
 SELECT * FROM ${tableName};
 `),
 
-		queryKey: ["table-content", tableName],
-	});
+    queryKey: ["table-content", tableName],
+  });
 }

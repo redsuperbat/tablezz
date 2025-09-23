@@ -2,7 +2,7 @@ import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-	return twMerge(clsx(inputs));
+  return twMerge(clsx(inputs));
 }
 
 type ErrorResult<T> = [Error, null] | [null, T];
@@ -10,22 +10,22 @@ type ErrorResult<T> = [Error, null] | [null, T];
 export function tryCatch<T>(fn: () => T): ErrorResult<T>;
 export function tryCatch<T>(fn: Promise<T>): Promise<ErrorResult<T>>;
 export function tryCatch<T>(
-	fn: (() => T) | Promise<T>,
+  fn: (() => T) | Promise<T>,
 ): ErrorResult<T> | Promise<ErrorResult<T>> {
-	if (fn instanceof Promise) {
-		return fn
-			.then((value): ErrorResult<T> => [null, value])
-			.catch(
-				(error): ErrorResult<T> => [
-					error instanceof Error ? error : new Error(String(error)),
-					null,
-				],
-			);
-	}
+  if (fn instanceof Promise) {
+    return fn
+      .then((value): ErrorResult<T> => [null, value])
+      .catch(
+        (error): ErrorResult<T> => [
+          error instanceof Error ? error : new Error(String(error)),
+          null,
+        ],
+      );
+  }
 
-	try {
-		return [null, fn()];
-	} catch (error) {
-		return [error instanceof Error ? error : new Error(String(error)), null];
-	}
+  try {
+    return [null, fn()];
+  } catch (error) {
+    return [error instanceof Error ? error : new Error(String(error)), null];
+  }
 }

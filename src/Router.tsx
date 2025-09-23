@@ -3,18 +3,18 @@ import { createReactContext } from "./createReactContext";
 import { DatabasePage } from "./DatabasePage";
 
 export const [RouteProvider, , useRouter] = createReactContext(() => {
-	const routes = useMemo(() => ["database", "settings"], []);
-	type Route = (typeof routes)[number];
-	const [route, setRoute] = useState<Route>("database");
+  const routes = useMemo(() => ["database", "settings"], []);
+  type Route = (typeof routes)[number];
+  const [route, setRoute] = useState<Route>("database");
 
-	return { route, navigateTo: setRoute, routes };
+  return { route, navigateTo: setRoute, routes };
 });
 
 export function Router() {
-	const { route } = useRouter();
+  const { route } = useRouter();
 
-	switch (route) {
-		case "database":
-			return <DatabasePage />;
-	}
+  switch (route) {
+    case "database":
+      return <DatabasePage />;
+  }
 }

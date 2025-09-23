@@ -4,34 +4,34 @@ import { createReactContext } from "@/createReactContext";
 type QueryEntry = { query: string; createdAt: Date };
 
 export const [QueryHistoryProvider, , useQueryHistory] = createReactContext(
-	() => {
-		const [entries, setEntries] = useState<QueryEntry[]>([]);
+  () => {
+    const [entries, setEntries] = useState<QueryEntry[]>([]);
 
-		const addEntry = useCallback(
-			(entry: QueryEntry) => setEntries((h) => [entry, ...h]),
-			[],
-		);
+    const addEntry = useCallback(
+      (entry: QueryEntry) => setEntries((h) => [entry, ...h]),
+      [],
+    );
 
-		return { entries, addEntry };
-	},
+    return { entries, addEntry };
+  },
 );
 
 export function QueryHistory() {
-	const history = useQueryHistory();
+  const history = useQueryHistory();
 
-	return (
-		<div className="overflow-auto">
-			{history.entries.map((e, index) => (
-				<QueryHistoryEntry key={index} entry={e} />
-			))}
-		</div>
-	);
+  return (
+    <div className="overflow-auto">
+      {history.entries.map((e, index) => (
+        <QueryHistoryEntry key={index} entry={e} />
+      ))}
+    </div>
+  );
 }
 function QueryHistoryEntry({ entry }: { entry: QueryEntry }) {
-	return (
-		<div className="flex gap-1">
-			<span>{entry.createdAt.toLocaleTimeString()}</span>
-			<span>{entry.query}</span>
-		</div>
-	);
+  return (
+    <div className="flex gap-1">
+      <span>{entry.createdAt.toLocaleTimeString()}</span>
+      <span>{entry.query}</span>
+    </div>
+  );
 }

@@ -11,26 +11,26 @@ import { SuspenseBoundary } from "./SuspenseBoundary";
 import { TableProvider } from "./TableProvider";
 
 export function App() {
-	return (
-		<SuspenseBoundary>
-			<ErrorBoundary>
-				<KeybindProvider>
-					<QueryHistoryProvider>
-						<ConfigurationProvider>
-							<RouteProvider>
-								<SchemaProvider schemaName="public">
-									<TableProvider>
-										<KeybindHelp />
-										<CommandPalette />
-										<Router />
-									</TableProvider>
-								</SchemaProvider>
-							</RouteProvider>
-						</ConfigurationProvider>
-					</QueryHistoryProvider>
-				</KeybindProvider>
-			</ErrorBoundary>
-			<Toaster />
-		</SuspenseBoundary>
-	);
+  return (
+    <SuspenseBoundary>
+      <ErrorBoundary>
+        <KeybindProvider>
+          <QueryHistoryProvider>
+            <ConfigurationProvider>
+              <RouteProvider>
+                <SchemaProvider schemaName="public">
+                  <TableProvider>
+                    <KeybindHelp />
+                    <CommandPalette />
+                    <Router />
+                  </TableProvider>
+                </SchemaProvider>
+              </RouteProvider>
+            </ConfigurationProvider>
+          </QueryHistoryProvider>
+        </KeybindProvider>
+      </ErrorBoundary>
+      <Toaster />
+    </SuspenseBoundary>
+  );
 }

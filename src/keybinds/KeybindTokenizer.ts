@@ -1,157 +1,157 @@
 export type TokenKind =
-	| "key"
-	| "plus"
-	| "pipe"
-	| "open-paren"
-	| "closed-paren"
-	| "ctrl"
-	| "meta"
-	| "alt"
-	| "leader";
+  | "key"
+  | "plus"
+  | "pipe"
+  | "open-paren"
+  | "closed-paren"
+  | "ctrl"
+  | "meta"
+  | "alt"
+  | "leader";
 
 export type Range = {
-	start: Position;
-	end: Position;
+  start: Position;
+  end: Position;
 };
 
 export type Position = {
-	line: number;
-	col: number;
+  line: number;
+  col: number;
 };
 
 export type Token = {
-	kind: TokenKind;
-	range: Range;
-	lexeme: string;
+  kind: TokenKind;
+  range: Range;
+  lexeme: string;
 };
 
 export class KeybindTokenizer {
-	#text: string;
-	#index = 0;
-	#col = 1;
-	#line = 1;
+  #text: string;
+  #index = 0;
+  #col = 1;
+  #line = 1;
 
-	readonly #kewordRegex = /[ACLMSadefilnort]/;
+  readonly #kewordRegex = /[ACLMSadefilnorcpt]/;
 
-	constructor(text: string) {
-		this.#text = text;
-	}
+  constructor(text: string) {
+    this.#text = text;
+  }
 
-	#next(): string {
-		const char = this.#text[this.#index];
+  #next(): string {
+    const char = this.#text[this.#index];
 
-		if (char === "\n") {
-			this.#col = 1;
-			this.#line += 1;
-			this.#index += 1;
-			return this.#next();
-		}
+    if (char === "\n") {
+      this.#col = 1;
+      this.#line += 1;
+      this.#index += 1;
+      return this.#next();
+    }
 
-		this.#col += 1;
-		this.#index += 1;
-		return char;
-	}
+    this.#col += 1;
+    this.#index += 1;
+    return char;
+  }
 
-	#pos(): Position {
-		return { col: this.#col, line: this.#line };
-	}
+  #pos(): Position {
+    return { col: this.#col, line: this.#line };
+  }
 
-	#peek() {
-		return this.#text[this.#index];
-	}
+  #peek() {
+    return this.#text[this.#index];
+  }
 
-	#isAtEnd() {
-		return this.#peek() === undefined;
-	}
+  #isAtEnd() {
+    return this.#peek() === undefined;
+  }
 
-	#singleChar(kind: TokenKind): Token {
-		const start = this.#pos();
-		const char = this.#next();
+  #singleChar(kind: TokenKind): Token {
+    const start = this.#pos();
+    const char = this.#next();
 
-		return {
-			kind,
-			lexeme: char,
-			range: { start, end: this.#pos() },
-		};
-	}
+    return {
+      kind,
+      lexeme: char,
+      range: { start, end: this.#pos() },
+    };
+  }
 
-	tokenize(): Token[] {
-		const tokens: Token[] = [];
-		while (!this.#isAtEnd()) {
-			const char = this.#peek();
+  tokenize(): Token[] {
+    const tokens: Token[] = [];
+    while (!this.#isAtEnd()) {
+      const char = this.#peek();
 
-			// we dont care about spaces and newlines
-			if (/\s/.test(char)) {
-				this.#next();
-				continue;
-			}
+      // we dont care about spaces and newlines
+      if (/\s/.test(char)) {
+        this.#next();
+        continue;
+      }
 
-			// use backslash as escape sequence
-			if (char === "\\") {
-				this.#next();
-				tokens.push(this.#keywordOrKey());
-				continue;
-			}
+      // use backslash as escape sequence
+      if (char === "\\") {
+        this.#next();
+        tokens.push(this.#keywordOrKey());
+        continue;
+      }
 
-			if (char === "+") {
-				tokens.push(this.#singleChar("plus"));
-				continue;
-			}
+      if (char === "+") {
+        tokens.push(this.#singleChar("plus"));
+        continue;
+      }
 
-			if (char === ")") {
-				tokens.push(this.#singleChar("closed-paren"));
-				continue;
-			}
+      if (char === ")") {
+        tokens.push(this.#singleChar("closed-paren"));
+        continue;
+      }
 
-			if (char === "(") {
-				tokens.push(this.#singleChar("open-paren"));
-				continue;
-			}
+      if (char === "(") {
+        tokens.push(this.#singleChar("open-paren"));
+        continue;
+      }
 
-			if (char === "|") {
-				tokens.push(this.#singleChar("pipe"));
-				continue;
-			}
+      if (char === "|") {
+        tokens.push(this.#singleChar("pipe"));
+        continue;
+      }
 
-			tokens.push(this.#keywordOrKey());
-		}
+      tokens.push(this.#keywordOrKey());
+    }
 
-		return tokens;
-	}
+    return tokens;
+  }
 
-	#keywordOrKey(): Token {
-		const start = this.#pos();
-		let lexeme = this.#next();
+  #keywordOrKey(): Token {
+    const start = this.#pos();
+    let lexeme = this.#next();
 
-		while (this.#kewordRegex.test(this.#peek()) && !this.#isAtEnd()) {
-			lexeme += this.#next();
-		}
+    while (this.#kewordRegex.test(this.#peek()) && !this.#isAtEnd()) {
+      lexeme += this.#next();
+    }
 
-		let kind: TokenKind = "key";
+    let kind: TokenKind = "key";
 
-		switch (lexeme) {
-			case "Leader": {
-				kind = "leader";
-				break;
-			}
-			case "Meta": {
-				kind = "meta";
-				break;
-			}
-			case "Alt": {
-				kind = "alt";
-				break;
-			}
-			case "Control": {
-				kind = "ctrl";
-				break;
-			}
-		}
+    switch (lexeme) {
+      case "Leader": {
+        kind = "leader";
+        break;
+      }
+      case "Meta": {
+        kind = "meta";
+        break;
+      }
+      case "Alt": {
+        kind = "alt";
+        break;
+      }
+      case "Control": {
+        kind = "ctrl";
+        break;
+      }
+    }
 
-		return {
-			kind,
-			lexeme,
-			range: { start, end: this.#pos() },
-		};
-	}
+    return {
+      kind,
+      lexeme,
+      range: { start, end: this.#pos() },
+    };
+  }
 }
