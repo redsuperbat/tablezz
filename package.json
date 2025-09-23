@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "test": "vitest --disable-console-intercept"
+    "test": "vitest --disable-console-intercept",
+    "lint": "biome check ."
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",

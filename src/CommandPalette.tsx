@@ -1,5 +1,6 @@
 import Fuse from "fuse.js";
-import { useEffect, useMemo, useState } from "react";
+import { Route, Table } from "lucide-react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,7 @@ import { useTableContext } from "./TableProvider";
 import { useDatabaseSchema } from "./useDatabaseSchema";
 
 interface CommandPaletteItem {
-  kind: string;
+  icon: ReactNode;
   onSelect(): void;
   searchTerm: string;
 }
@@ -34,23 +35,23 @@ export function CommandPalette() {
   const items = useMemo((): CommandPaletteItem[] => {
     return [
       ...tables.map((t) => ({
-        kind: "table",
+        icon: <Table />,
         searchTerm: t.table_name,
         onSelect() {
           setTableName(t.table_name);
         },
       })),
       ...routes.map((r) => ({
-        kind: "route",
+        icon: <Route />,
         searchTerm: r,
         onSelect() {
           navigateTo(r);
         },
       })),
     ];
-  }, [tables, routes]);
+  }, [tables, routes, setTableName, navigateTo]);
 
-  const filteredTables = useMemo(() => {
+  const filteredItems = useMemo(() => {
     const fuse = new Fuse(items, {
       keys: ["searchTerm"],
     });
@@ -62,20 +63,21 @@ export function CommandPalette() {
     return fuse.search(searchTerm).map((r) => r.item);
   }, [items, searchTerm]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: we want to set the index to zero whenever the search term changes
   useEffect(() => {
     setSelectedIndex(0);
   }, [searchTerm]);
 
   useRegisterKeybind({
     name: "CommandPaletteShow",
-    onTrigger: () => setOpen((o) => !o),
-    keybindExpression: "Space",
+    onTrigger: () => setOpen(true),
+    keybindExpression: "Meta + k",
   });
 
   useRegisterKeybind({
     name: "CommandPaletteSelect",
     onTrigger() {
-      filteredTables[selectedIndex].onSelect?.();
+      filteredItems[selectedIndex].onSelect?.();
       setOpen(false);
       setSearchTerm(undefined);
     },
@@ -84,10 +86,10 @@ export function CommandPalette() {
 
   useRegisterKeybind({
     name: "CommandPaletteSelectPrev",
-    keybindExpression: "Control + k",
+    keybindExpression: "(Control + k) | ArrowUp",
     onTrigger() {
       if (selectedIndex === 0) {
-        return false;
+        return setSelectedIndex(filteredItems.length - 1);
       }
       setSelectedIndex((i) => i - 1);
     },
@@ -95,10 +97,10 @@ export function CommandPalette() {
 
   useRegisterKeybind({
     name: "CommandPaletteSelectNext",
-    keybindExpression: "Control + j",
+    keybindExpression: "(Control + j) | ArrowDown",
     onTrigger() {
-      if (selectedIndex === filteredTables.length - 1) {
-        return false;
+      if (selectedIndex === filteredItems.length - 1) {
+        return setSelectedIndex(0);
       }
       setSelectedIndex((i) => i + 1);
     },
@@ -107,9 +109,9 @@ export function CommandPalette() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent
-        className="h-96 flex flex-col justify-start overflow-y-auto"
+        className="flex flex-col justify-start"
         showCloseButton={false}
-        aria-describedby="Command pallette"
+        aria-describedby="Command palette"
       >
         <DialogHeader>
           <DialogTitle className="sr-only">Command palette</DialogTitle>
@@ -120,20 +122,64 @@ export function CommandPalette() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </DialogHeader>
-        <div>
-          {filteredTables.map((t, i) => (
-            <div
-              className={cn(
-                i === selectedIndex && "bg-gray-100",
-                "p-1 rounded",
-              )}
-              key={t.searchTerm}
-            >
-              {t.searchTerm}
-            </div>
+        <div className="flex flex-col h-80 overflow-y-auto">
+          {filteredItems.map((item, i) => (
+            <SearchItem
+              key={item.searchTerm}
+              index={i}
+              item={item}
+              selectedIndex={selectedIndex}
+            />
           ))}
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function SearchItem({
+  selectedIndex,
+  item,
+  index,
+}: {
+  selectedIndex: number;
+  index: number;
+  item: CommandPaletteItem;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  const [isInView, setIsInView] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsInView(entry.isIntersecting),
+      { threshold: 1.0 }, // Element must be fully visible
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (selectedIndex === index && !isInView) {
+      ref.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [selectedIndex, index, isInView]);
+
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        index === selectedIndex && "bg-gray-100",
+        "p-1 rounded flex gap-1",
+      )}
+      key={item.searchTerm}
+    >
+      <span>{item.icon}</span>
+      <span>{item.searchTerm}</span>
+    </div>
   );
 }

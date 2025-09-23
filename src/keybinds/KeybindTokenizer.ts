@@ -31,7 +31,7 @@ export class KeybindTokenizer {
   #col = 1;
   #line = 1;
 
-  readonly #kewordRegex = /[ACLMSadefilnorcpt]/;
+  readonly #kewordRegex = /[A-Za-z]/;
 
   constructor(text: string) {
     this.#text = text;

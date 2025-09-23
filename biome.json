@@ -1,14 +1,20 @@
 {
   "$schema": "https://biomejs.dev/schemas/latest/schema.json",
+  "files": {
+    "includes": ["src/**/*"]
+  },
   "formatter": {
     "indentStyle": "space"
+  },
+  "css": {
+    "linter": {
+      "enabled": false
+    }
   },
   "linter": {
     "rules": {
       "recommended": true,
-      "a11y": {
-        "noSvgWithoutTitle": "off"
-      },
+      "a11y": "off",
       "correctness": {
         "noUnusedImports": "error"
       }
