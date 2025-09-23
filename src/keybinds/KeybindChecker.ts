@@ -1,5 +1,10 @@
 import type { KeybindLeaderTracker } from "./KeybindLeaderTracker";
-import type { CombinationNode, KeyExpression, KeyNode } from "./KeybindParser";
+import type {
+	CombinationNode,
+	KeyExpression,
+	KeyNode,
+	OrNode,
+} from "./KeybindParser";
 
 export class KeybindChecker {
 	#event: KeyboardEvent;
@@ -16,8 +21,14 @@ export class KeybindChecker {
 				return this.#checkKey(node);
 			case "combination":
 				return this.#checkCombination(node);
+			case "or":
+				return this.#checkOr(node);
 		}
 		return false;
+	}
+
+	#checkOr(node: OrNode): boolean {
+		return this.check(node.left) && this.check(node.right);
 	}
 
 	#checkCombination(n: CombinationNode): boolean {
