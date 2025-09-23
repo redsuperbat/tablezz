@@ -8,7 +8,6 @@ import type {
 
 export interface KeyEvent {
 	metaKey: boolean;
-	shiftKey: boolean;
 	altKey: boolean;
 	ctrlKey: boolean;
 
@@ -38,15 +37,13 @@ export class KeybindChecker {
 	}
 
 	#checkOr(node: OrNode): boolean {
-		return this.check(node.left) && this.check(node.right);
+		return this.check(node.left) || this.check(node.right);
 	}
 
 	#checkCombination(n: CombinationNode): boolean {
 		switch (n.left.kind) {
 			case "meta":
 				return this.#event.metaKey && this.check(n.right);
-			case "shift":
-				return this.#event.shiftKey && this.check(n.right);
 			case "alt":
 				return this.#event.altKey && this.check(n.right);
 			case "ctrl":

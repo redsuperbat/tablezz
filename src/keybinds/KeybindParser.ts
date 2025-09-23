@@ -96,7 +96,7 @@ export class KeybindParser {
 	}
 
 	#parseModifier(): ModifierNode {
-		return this.#assertNext("meta", "alt", "ctrl", "shift");
+		return this.#assertNext("meta", "alt", "ctrl");
 	}
 
 	#parseCombination(left: KeyExpression): CombinationNode {
@@ -115,7 +115,6 @@ export class KeybindParser {
 			"meta",
 			"alt",
 			"ctrl",
-			"shift",
 			"key",
 			"leader",
 			"open-paren",
@@ -129,7 +128,6 @@ export class KeybindParser {
 			case "ctrl":
 			case "meta":
 			case "alt":
-			case "shift":
 				return this.#parseModifier();
 			case "open-paren":
 				return this.#parseParenthesized();

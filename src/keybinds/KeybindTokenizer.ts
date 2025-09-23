@@ -7,7 +7,6 @@ export type TokenKind =
 	| "ctrl"
 	| "meta"
 	| "alt"
-	| "shift"
 	| "leader";
 
 export type Range = {
@@ -141,10 +140,6 @@ export class KeybindTokenizer {
 			}
 			case "Alt": {
 				kind = "alt";
-				break;
-			}
-			case "Shift": {
-				kind = "shift";
 				break;
 			}
 			case "Control": {
