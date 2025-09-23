@@ -1,4 +1,3 @@
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import Fuse from "fuse.js";
 import { useEffect, useMemo, useState } from "react";
 import {

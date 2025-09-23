@@ -31,6 +31,13 @@ export interface CtrlNode {
 	range: Range;
 }
 
+export interface OrNode {
+	kind: "or";
+	left: KeyExpression;
+	right: KeyExpression;
+	range: Range;
+}
+
 export interface CombinationNode {
 	kind: "combination";
 	left: KeyExpression;
@@ -45,7 +52,7 @@ export type ModifierNode =
 	| CtrlNode
 	| LeaderNode;
 
-export type KeyExpression = KeyNode | CombinationNode | ModifierNode;
+export type KeyExpression = KeyNode | OrNode | CombinationNode | ModifierNode;
 
 export class KeybindParser {
 	#tokens: Token[];
@@ -68,7 +75,7 @@ export class KeybindParser {
 			throw new Error("Unexpected end of input");
 		}
 		if (!expected.includes(token.kind as T)) {
-			throw new Error(`Expected ${expected}, got ${token.kind}`);
+			throw new Error(`Expected any of (${expected}), got ${token.kind}`);
 		}
 		return token as Omit<Token, "kind"> & { kind: T };
 	}
@@ -111,6 +118,7 @@ export class KeybindParser {
 			"shift",
 			"key",
 			"leader",
+			"open-paren",
 		);
 
 		switch (next.kind) {
@@ -123,7 +131,20 @@ export class KeybindParser {
 			case "alt":
 			case "shift":
 				return this.#parseModifier();
+			case "open-paren":
+				return this.#parseParenthesized();
 		}
+	}
+
+	#parseParenthesized(): KeyExpression {
+		const openParen = this.#assertNext("open-paren");
+		const innerExpression = this.parseKeyExpression();
+		const closeParen = this.#assertNext("closed-paren");
+
+		return {
+			...innerExpression,
+			range: { start: openParen.range.start, end: closeParen.range.end },
+		};
 	}
 
 	#parseLeader(): LeaderNode {
@@ -138,10 +159,34 @@ export class KeybindParser {
 			return leafExpression;
 		}
 
-		const next = this.#assertPeek("plus");
+		// Only look for operators if we're not at a closing paren
+		let next = this.#peek();
+		if (next?.kind === "closed-paren") {
+			return leafExpression;
+		}
+
+		next = this.#assertPeek("plus", "pipe");
+
 		switch (next.kind) {
 			case "plus":
 				return this.#parseCombination(leafExpression);
+			case "pipe":
+				return this.#parseOr(leafExpression);
+			default:
+				return leafExpression;
 		}
+	}
+
+	#parseOr(left: KeyExpression): OrNode {
+		const start = left.range.start;
+		this.#assertNext("pipe");
+		const right = this.parseKeyExpression();
+
+		return {
+			kind: "or",
+			left,
+			range: { start, end: right.range.end },
+			right,
+		};
 	}
 }
