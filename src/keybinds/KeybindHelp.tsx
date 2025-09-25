@@ -12,7 +12,7 @@ import { useRegisterKeybind } from "./useRegisterKeybind";
 
 function Code({ children }: PropsWithChildren) {
   return (
-    <pre className="bg-gray-200 rounded px-1 w-fit">
+    <pre className="ml-auto bg-gray-200 rounded px-1 w-fit">
       <code>{children}</code>
     </pre>
   );
@@ -35,7 +35,7 @@ export function KeybindHelp() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent
         aria-describedby="Keybinds"
-        className="h-96 flex flex-col justify-start overflow-y-auto"
+        className="sm:max-w-fit flex flex-col justify-start overflow-y-auto"
         showCloseButton={false}
       >
         <DialogHeader>
@@ -47,10 +47,14 @@ export function KeybindHelp() {
           {Object.values(binds.keybinds())
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((key) => (
-              <div className={cn("grid grid-cols-2 gap-1")} key={key.name}>
-                <span>{key.name}</span>
-
+              <div
+                className={cn("grid grid-cols-3 gap-3")}
+                style={{ gridTemplateColumns: "1fr auto 1fr" }}
+                key={key.name}
+              >
                 <Code>{key.keybindExpression}</Code>
+                <span>-&gt;</span>
+                <span>{key.name}</span>
               </div>
             ))}
         </div>

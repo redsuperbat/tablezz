@@ -71,7 +71,7 @@ export function CommandPalette() {
   useRegisterKeybind({
     name: "CommandPaletteShow",
     onTrigger: () => setOpen(true),
-    keybindExpression: "Meta + k",
+    keybindExpression: "Leader + Space",
   });
 
   useRegisterKeybind({
