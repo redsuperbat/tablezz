@@ -53,7 +53,6 @@ export class ConfigurationService {
     );
 
     if (error) {
-      console.error(error);
       throw new FileNotFoundError();
     }
 
@@ -62,7 +61,6 @@ export class ConfigurationService {
     );
 
     if (jsonError) {
-      console.error(jsonError);
       throw new InvalidJsonError();
     }
 

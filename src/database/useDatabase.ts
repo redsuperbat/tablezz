@@ -30,6 +30,6 @@ export function useDatabase(): DatabaseConnection {
           return await databaseQuery.data.select(query, bindValues);
         },
       }) satisfies DatabaseConnection,
-    [databaseQuery.data],
+    [databaseQuery.data, queryHistory.addEntry],
   );
 }

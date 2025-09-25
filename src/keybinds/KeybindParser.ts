@@ -150,7 +150,7 @@ export class KeybindParser {
     return { kind, range };
   }
 
-  public parseKeyExpression(): KeyExpression {
+  parseKeyExpression(): KeyExpression {
     const leafExpression = this.#parseLeafNode();
 
     if (this.#isAtEnd()) {

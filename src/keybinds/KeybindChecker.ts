@@ -66,6 +66,12 @@ export class KeybindChecker {
   }
 
   #checkKey(n: KeyNode): boolean {
-    return n.key === this.#event.key || n.key === this.#event.code;
+    const result = n.key === this.#event.key || n.key === this.#event.code;
+    // If we get a hit, we clear the leader key as to not allow subsequent
+    // keys interfere
+    if (result) {
+      this.#leaderTracker.clear();
+    }
+    return result;
   }
 }

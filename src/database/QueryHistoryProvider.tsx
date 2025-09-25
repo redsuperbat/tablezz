@@ -22,7 +22,7 @@ export function QueryHistory() {
   return (
     <div className="overflow-auto">
       {history.entries.map((e, index) => (
-        <QueryHistoryEntry key={index} entry={e} />
+        <QueryHistoryEntry key={e.query.concat(index.toString())} entry={e} />
       ))}
     </div>
   );

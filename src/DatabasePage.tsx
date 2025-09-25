@@ -4,6 +4,8 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { QueryHistory } from "./database/QueryHistoryProvider";
+import { useRegisterKeybind } from "./keybinds/useRegisterKeybind";
+import { useRegisterToggleKeybind } from "./keybinds/useRegisterToggleKeybind";
 import { cn } from "./lib/utils";
 import { useTableContext } from "./TableProvider";
 import { useDatabaseSchema } from "./useDatabaseSchema";
@@ -84,6 +86,12 @@ function TableContent({ tableName }: { tableName: string }) {
 export function DatabasePage() {
   const { tableName, setTableName } = useTableContext();
 
+  const show = useRegisterToggleKeybind({
+    name: "ToggleSchemaSidebar",
+    keybindExpression: "Leader + e",
+    initialValue: true,
+  });
+
   return (
     <ResizablePanelGroup
       direction="horizontal"
@@ -92,11 +100,13 @@ export function DatabasePage() {
         height: "100vh",
       }}
     >
-      <ResizablePanel defaultSize={20}>
-        <div className="grid items-center">
-          <Schema tableName={tableName} onSelectTable={setTableName} />
-        </div>
-      </ResizablePanel>
+      {show && (
+        <ResizablePanel defaultSize={20}>
+          <div className="grid items-center">
+            <Schema tableName={tableName} onSelectTable={setTableName} />
+          </div>
+        </ResizablePanel>
+      )}
       <ResizableHandle />
       <ResizablePanel defaultSize={80}>
         <ResizablePanelGroup direction="vertical">

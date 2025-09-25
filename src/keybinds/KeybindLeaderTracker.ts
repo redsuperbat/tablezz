@@ -17,13 +17,18 @@ export class KeybindLeaderTracker {
     clearTimeout(this.#isLeaderActive);
 
     this.#isLeaderActive = setTimeout(() => {
-      this.#isLeaderActive = undefined;
-      this.#expired = true;
+      this.clear();
     }, this.#expirationTime);
   }
 
   get isTracking() {
     return this.#isLeaderActive != null;
+  }
+
+  clear() {
+    clearTimeout(this.#isLeaderActive);
+    this.#isLeaderActive = undefined;
+    this.#expired = true;
   }
 
   isLeader(e: KeyEvent) {

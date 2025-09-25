@@ -13,16 +13,10 @@ export const [ConfigurationProvider, , useConfig] = createReactContext(() => {
   });
 
   useEffect(() => {
-    watch(
-      ConfigurationService.filename,
-      () => {
-        return query.refetch();
-      },
-      {
-        baseDir: BaseDirectory.Home,
-      },
-    );
-  }, []);
+    watch(ConfigurationService.filename, () => query.refetch(), {
+      baseDir: BaseDirectory.Home,
+    });
+  }, [query.refetch]);
 
   return query.data;
 });

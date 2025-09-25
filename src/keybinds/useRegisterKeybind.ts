@@ -1,6 +1,4 @@
-import { useEffect } from "react";
 import { useConfig } from "@/config/ConfigurationProvider";
-import { useKeybindChecker } from "@/keybinds/useKeybindChecker";
 import { useKeybindContext } from "./KeybindProvider";
 
 export type KeybindExpression =
@@ -115,17 +113,5 @@ export function useRegisterKeybind(bind: Keybind) {
   bind.keybindExpression =
     config.get("keybindings")[bind.name] ?? bind.keybindExpression;
 
-  const check = useKeybindChecker(bind.keybindExpression);
-
   keybindContext.register(bind);
-
-  useEffect(() => {
-    function checkAndExecute(e: KeyboardEvent) {
-      if (!check(e)) return;
-      bind.onTrigger(e);
-    }
-
-    window.addEventListener("keyup", checkAndExecute);
-    return () => window.removeEventListener("keyup", checkAndExecute);
-  }, [bind.name, bind.onTrigger, check]);
 }

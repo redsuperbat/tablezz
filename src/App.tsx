@@ -14,9 +14,9 @@ export function App() {
   return (
     <SuspenseBoundary>
       <ErrorBoundary>
-        <KeybindProvider>
-          <QueryHistoryProvider>
-            <ConfigurationProvider>
+        <ConfigurationProvider>
+          <KeybindProvider>
+            <QueryHistoryProvider>
               <RouteProvider>
                 <SchemaProvider schemaName="public">
                   <TableProvider>
@@ -26,9 +26,9 @@ export function App() {
                   </TableProvider>
                 </SchemaProvider>
               </RouteProvider>
-            </ConfigurationProvider>
-          </QueryHistoryProvider>
-        </KeybindProvider>
+            </QueryHistoryProvider>
+          </KeybindProvider>
+        </ConfigurationProvider>
       </ErrorBoundary>
       <Toaster />
     </SuspenseBoundary>
