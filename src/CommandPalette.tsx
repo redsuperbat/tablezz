@@ -1,4 +1,4 @@
-import Fuse from "fuse.js";
+import { Highlight, useFuzzySearchList } from "@nozbe/microfuzz/react";
 import { Route, Table } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -25,7 +25,7 @@ export function CommandPalette() {
   const { routes, navigateTo } = useRouter();
   const [open, setOpen] = useState(false);
   const databaseSchema = useDatabaseSchema();
-  const [searchTerm, setSearchTerm] = useState<string>();
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const tables = useMemo(() => {
@@ -51,17 +51,15 @@ export function CommandPalette() {
     ];
   }, [tables, routes, setTableName, navigateTo]);
 
-  const filteredItems = useMemo(() => {
-    const fuse = new Fuse(items, {
-      keys: ["searchTerm"],
-    });
-
-    if (!searchTerm) {
-      return items;
-    }
-
-    return fuse.search(searchTerm).map((r) => r.item);
-  }, [items, searchTerm]);
+  const filteredItems = useFuzzySearchList({
+    list: items,
+    getText: (i) => [i.searchTerm],
+    queryText: searchTerm,
+    mapResultItem: (r) => ({
+      item: r.item,
+      highlightRanges: r.matches.at(0) ?? null,
+    }),
+  });
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: we want to set the index to zero whenever the search term changes
   useEffect(() => {
@@ -77,16 +75,18 @@ export function CommandPalette() {
   useRegisterKeybind({
     name: "CommandPaletteSelect",
     onTrigger() {
-      filteredItems[selectedIndex].onSelect?.();
+      filteredItems[selectedIndex].item.onSelect?.();
       setOpen(false);
-      setSearchTerm(undefined);
+      setSearchTerm("");
     },
     keybindExpression: "Enter",
+    overrideInput: true,
   });
 
   useRegisterKeybind({
     name: "CommandPaletteSelectPrev",
     keybindExpression: "(Control + k) | ArrowUp",
+    overrideInput: true,
     onTrigger() {
       if (selectedIndex === 0) {
         return setSelectedIndex(filteredItems.length - 1);
@@ -98,6 +98,7 @@ export function CommandPalette() {
   useRegisterKeybind({
     name: "CommandPaletteSelectNext",
     keybindExpression: "(Control + j) | ArrowDown",
+    overrideInput: true,
     onTrigger() {
       if (selectedIndex === filteredItems.length - 1) {
         return setSelectedIndex(0);
@@ -123,12 +124,13 @@ export function CommandPalette() {
           />
         </DialogHeader>
         <div className="flex flex-col h-80 overflow-y-auto">
-          {filteredItems.map((item, i) => (
+          {filteredItems.map(({ item, highlightRanges }, i) => (
             <SearchItem
               key={item.searchTerm}
               index={i}
               item={item}
               selectedIndex={selectedIndex}
+              highlightRanges={highlightRanges}
             />
           ))}
         </div>
@@ -141,10 +143,12 @@ function SearchItem({
   selectedIndex,
   item,
   index,
+  highlightRanges,
 }: {
   selectedIndex: number;
   index: number;
   item: CommandPaletteItem;
+  highlightRanges: [number, number][] | null;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -179,7 +183,14 @@ function SearchItem({
       key={item.searchTerm}
     >
       <span>{item.icon}</span>
-      <span>{item.searchTerm}</span>
+      <div>
+        <Highlight
+          style={{}}
+          className="text-blue-400"
+          text={item.searchTerm}
+          ranges={highlightRanges}
+        />
+      </div>
     </div>
   );
 }

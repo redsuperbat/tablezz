@@ -3,7 +3,6 @@ import { z } from "zod";
 import { tryCatch } from "@/lib/utils";
 
 const configuration = z.object({
-  databaseUrl: z.string().optional(),
   leaderKey: z.string().default("Space"),
   leaderKeyTimeoutMs: z.number().default(1000),
   keybindings: z.record(z.string(), z.string()).default({}),

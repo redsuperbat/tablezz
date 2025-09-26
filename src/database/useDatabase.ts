@@ -1,7 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import Database from "@tauri-apps/plugin-sql";
 import { useMemo } from "react";
-import { useConfig } from "@/config/ConfigurationProvider";
+import { useConnectionCredentials } from "@/ConnectionCredentialsProvider";
 import { useQueryHistory } from "./QueryHistoryProvider";
 
 interface DatabaseConnection {
@@ -10,12 +10,12 @@ interface DatabaseConnection {
 }
 
 export function useDatabase(): DatabaseConnection {
-  const config = useConfig();
   const queryHistory = useQueryHistory();
+  const { databaseUrlRaw } = useConnectionCredentials();
 
   const databaseQuery = useSuspenseQuery({
-    queryFn: () => Database.load(config.get("databaseUrl")),
-    queryKey: ["database", config.get("databaseUrl")],
+    queryFn: () => Database.load(databaseUrlRaw),
+    queryKey: ["database", databaseUrlRaw],
   });
 
   return useMemo(

@@ -7,7 +7,7 @@ export interface RegisterToggleKeybindOption {
   initialValue?: boolean;
 }
 
-export function useRegisterToggleKeybind({
+export function useRegisterKeybindToggle({
   keybindExpression,
   name,
   initialValue,

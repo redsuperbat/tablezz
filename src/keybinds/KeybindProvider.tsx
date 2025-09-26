@@ -46,8 +46,15 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
 
   useEffect(() => {
     function checkAndExecute(e: KeyboardEvent) {
+      const isInvalidTarget =
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement;
+
       for (const bind of Object.values(keybinds.current)) {
         if (!bind.check(e)) continue;
+
+        if (isInvalidTarget && !bind.overrideInput) continue;
+
         bind.onTrigger(e);
       }
     }

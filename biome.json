@@ -16,7 +16,8 @@
       "recommended": true,
       "a11y": "off",
       "correctness": {
-        "noUnusedImports": "error"
+        "noUnusedImports": "error",
+        "noChildrenProp": "off"
       }
     }
   },

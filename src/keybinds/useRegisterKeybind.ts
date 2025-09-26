@@ -104,6 +104,12 @@ export interface Keybind {
   name: string;
   keybindExpression: KeybindExpression;
   onTrigger(e: KeyboardEvent): void;
+  /**
+   * Whether the keybind should override the
+   * input if the event target originates from a
+   * textarea or input element
+   * */
+  overrideInput?: boolean;
 }
 
 export function useRegisterKeybind(bind: Keybind) {
