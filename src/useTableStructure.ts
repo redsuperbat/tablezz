@@ -74,9 +74,7 @@ SELECT
     is_nullable,
     column_default
 FROM information_schema.columns
-WHERE table_schema = '${schemaName}'
-  AND table_name = '${tableName}'
-ORDER BY column_name;`,
+WHERE table_schema = '${schemaName}' AND table_name = '${tableName}';`,
       ),
     queryKey: ["schema", schemaName, tableName],
   });
