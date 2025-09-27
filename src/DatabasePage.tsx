@@ -6,10 +6,9 @@ import {
 import { QueryHistory } from "./database/QueryHistoryProvider";
 import { useRegisterKeybindToggle } from "./keybinds/useRegisterToggleKeybind";
 import { cn } from "./lib/utils";
+import { TableContent } from "./TableContent";
 import { useTableContext } from "./TableProvider";
 import { useSelectedSchemaTables } from "./useSelectedSchemaTables";
-import { useTableContent } from "./useTableContent";
-import { useTableStructure } from "./useTableStructure";
 
 function Table({ tableName }: { tableName: string }) {
   return <div>{tableName}</div>;
@@ -42,48 +41,10 @@ function Schema({
   );
 }
 
-function TableContent({ tableName }: { tableName: string }) {
-  const content = useTableContent(tableName);
-  const structure = useTableStructure(tableName);
-
-  return (
-    <div className="overflow-scroll h-full font-normal text-start">
-      <table className="border-spacing-x-4 table-auto border-collapse border border-gray-300 w-full text-sm">
-        <thead>
-          <tr>
-            {structure.data?.map((s) => (
-              <th
-                className="border border-gray-300 px-4 py-2"
-                key={s.column_name}
-              >
-                {s.column_name}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {content.data?.map((row) => (
-            <tr key={JSON.stringify(row)}>
-              {structure.data?.map((s) => (
-                <td
-                  className={cn("border border-gray-300 px-4 py-2 text-sm")}
-                  key={JSON.stringify(s) + JSON.stringify(row)}
-                >
-                  <div className="truncate max-w-40 ">
-                    {row[s.column_name as keyof typeof row]}
-                  </div>
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 export function DatabasePage() {
+  const allTables = useSelectedSchemaTables();
   const { tableName, setTableName } = useTableContext();
+  const selectedTable = tableName || allTables.data?.at(0)?.tableName;
 
   const showQueryHistory = useRegisterKeybindToggle({
     name: "QueryHistoryToggle",
@@ -108,7 +69,7 @@ export function DatabasePage() {
       {showSchemaSidebar && (
         <ResizablePanel defaultSize={20}>
           <div className="grid items-center">
-            <Schema tableName={tableName} onSelectTable={setTableName} />
+            <Schema tableName={selectedTable} onSelectTable={setTableName} />
           </div>
         </ResizablePanel>
       )}
@@ -116,7 +77,7 @@ export function DatabasePage() {
       <ResizablePanel defaultSize={80}>
         <ResizablePanelGroup direction="vertical">
           <ResizablePanel defaultSize={75}>
-            {tableName && <TableContent tableName={tableName} />}
+            {selectedTable && <TableContent tableName={selectedTable} />}
           </ResizablePanel>
           <ResizableHandle />
           {showQueryHistory && (
