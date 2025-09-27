@@ -1,5 +1,5 @@
 import { Highlight, useFuzzySearchList } from "@nozbe/microfuzz/react";
-import { Route, Table } from "lucide-react";
+import { Folder, Route, Table } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import {
   Dialog,
@@ -11,8 +11,10 @@ import { Input } from "./components/ui/input";
 import { useRegisterKeybind } from "./keybinds/useRegisterKeybind";
 import { cn } from "./lib/utils";
 import { useRouter } from "./Router";
+import { useSchemaContext } from "./SchemaProvider";
 import { useTableContext } from "./TableProvider";
-import { useSchemaStructure } from "./useDatabaseSchema";
+import { useSelectedDatabaseSchemas } from "./useSelectedDatabaseSchemas";
+import { useSelectedSchemaTables } from "./useSelectedSchemaTables";
 
 interface CommandPaletteItem {
   icon: ReactNode;
@@ -23,22 +25,32 @@ interface CommandPaletteItem {
 export function CommandPalette() {
   const { setTableName } = useTableContext();
   const { routes, navigateTo } = useRouter();
+  const selectedSchema = useSelectedSchemaTables();
+  const selectedSchemas = useSelectedDatabaseSchemas();
+  const { setSchema } = useSchemaContext();
+
   const [open, setOpen] = useState(false);
-  const databaseSchema = useSchemaStructure();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  const tables = useMemo(() => {
-    return databaseSchema.data ?? [];
-  }, [databaseSchema]);
+  const tables = useMemo(() => selectedSchema.data ?? [], [selectedSchema]);
+
+  const schemas = useMemo(() => selectedSchemas.data ?? [], [selectedSchemas]);
 
   const items = useMemo((): CommandPaletteItem[] => {
     return [
       ...tables.map((t) => ({
         icon: <Table />,
-        searchTerm: t.table_name,
+        searchTerm: t.tableName,
         onSelect() {
-          setTableName(t.table_name);
+          setTableName(t.tableName);
+        },
+      })),
+      ...schemas.map((s) => ({
+        icon: <Folder />,
+        searchTerm: s.schemaName,
+        onSelect() {
+          setSchema(s.schemaName);
         },
       })),
       ...routes.map((r) => ({
@@ -49,7 +61,7 @@ export function CommandPalette() {
         },
       })),
     ];
-  }, [tables, routes, setTableName, navigateTo]);
+  }, [tables, routes, setTableName, navigateTo, schemas, setSchema]);
 
   const filteredItems = useFuzzySearchList({
     list: items,

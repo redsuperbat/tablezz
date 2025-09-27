@@ -7,7 +7,7 @@ import { QueryHistory } from "./database/QueryHistoryProvider";
 import { useRegisterKeybindToggle } from "./keybinds/useRegisterToggleKeybind";
 import { cn } from "./lib/utils";
 import { useTableContext } from "./TableProvider";
-import { useSchemaStructure } from "./useDatabaseSchema";
+import { useSelectedSchemaTables } from "./useSelectedSchemaTables";
 import { useTableContent } from "./useTableContent";
 import { useTableStructure } from "./useTableStructure";
 
@@ -22,20 +22,20 @@ function Schema({
   onSelectTable: (tableName: string) => void;
   tableName?: string;
 }) {
-  const databaseSchema = useSchemaStructure();
+  const databaseSchema = useSelectedSchemaTables();
 
   return (
     <div className="flex flex-col gap-2 items-start">
       {databaseSchema.data?.map((table) => (
         <button
-          key={table.table_name}
+          key={table.tableName}
           className={cn(
             "hover:underline cursor-pointer",
-            table.table_name === tableName && "font-bold",
+            table.tableName === tableName && "font-bold",
           )}
-          onClick={() => onSelectTable(table.table_name)}
+          onClick={() => onSelectTable(table.tableName)}
         >
-          <Table tableName={table.table_name}></Table>
+          <Table tableName={table.tableName}></Table>
         </button>
       ))}
     </div>
