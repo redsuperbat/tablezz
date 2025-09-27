@@ -4,7 +4,7 @@ import { useSchemaContext } from "./SchemaProvider";
 
 export function useTableContent(tableName: string) {
   const database = useDatabase();
-  const schema = useSchemaContext();
+  const { schema } = useSchemaContext();
 
   return useQuery({
     queryFn: () =>

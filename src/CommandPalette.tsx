@@ -12,7 +12,7 @@ import { useRegisterKeybind } from "./keybinds/useRegisterKeybind";
 import { cn } from "./lib/utils";
 import { useRouter } from "./Router";
 import { useTableContext } from "./TableProvider";
-import { useDatabaseSchema } from "./useDatabaseSchema";
+import { useSchemaStructure } from "./useDatabaseSchema";
 
 interface CommandPaletteItem {
   icon: ReactNode;
@@ -24,7 +24,7 @@ export function CommandPalette() {
   const { setTableName } = useTableContext();
   const { routes, navigateTo } = useRouter();
   const [open, setOpen] = useState(false);
-  const databaseSchema = useDatabaseSchema();
+  const databaseSchema = useSchemaStructure();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
 

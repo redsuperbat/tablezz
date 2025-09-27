@@ -22,7 +22,7 @@ export function App() {
               <QueryHistoryProvider>
                 <RouteProvider>
                   <DatabaseProvider>
-                    <SchemaProvider schemaName="public">
+                    <SchemaProvider>
                       <TableProvider>
                         <KeybindHelp />
                         <CommandPalette />

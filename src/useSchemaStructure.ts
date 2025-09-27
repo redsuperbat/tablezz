@@ -2,8 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useDatabase } from "./database/useDatabase";
 import { useSchemaContext } from "./SchemaProvider";
 
-export function useDatabaseSchema() {
-  const { schemaName } = useSchemaContext();
+export function useSchemaStructure() {
+  const { schema } = useSchemaContext();
   const database = useDatabase();
   return useQuery({
     queryFn: () =>
@@ -11,10 +11,10 @@ export function useDatabaseSchema() {
         `
 SELECT table_name
 FROM information_schema.tables
-WHERE table_schema = '${schemaName}'
+WHERE table_schema = '${schema}'
 AND table_type = 'BASE TABLE';
 `,
       ),
-    queryKey: ["schema", schemaName],
+    queryKey: ["schema", schema],
   });
 }

@@ -7,7 +7,7 @@ import { QueryHistory } from "./database/QueryHistoryProvider";
 import { useRegisterKeybindToggle } from "./keybinds/useRegisterToggleKeybind";
 import { cn } from "./lib/utils";
 import { useTableContext } from "./TableProvider";
-import { useDatabaseSchema } from "./useDatabaseSchema";
+import { useSchemaStructure } from "./useDatabaseSchema";
 import { useTableContent } from "./useTableContent";
 import { useTableStructure } from "./useTableStructure";
 
@@ -22,7 +22,7 @@ function Schema({
   onSelectTable: (tableName: string) => void;
   tableName?: string;
 }) {
-  const databaseSchema = useDatabaseSchema();
+  const databaseSchema = useSchemaStructure();
 
   return (
     <div className="flex flex-col gap-2 items-start">

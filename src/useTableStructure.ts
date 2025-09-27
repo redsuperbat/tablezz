@@ -55,8 +55,9 @@ type PostgresDataType =
 type ColumnDefault = "now()" | null;
 
 export function useTableStructure(tableName: string) {
-  const { schemaName } = useSchemaContext();
+  const { schema } = useSchemaContext();
   const database = useDatabase();
+
   return useQuery({
     queryFn: () =>
       database.select<
@@ -74,8 +75,8 @@ SELECT
     is_nullable,
     column_default
 FROM information_schema.columns
-WHERE table_schema = '${schemaName}' AND table_name = '${tableName}';`,
+WHERE table_schema = '${schema}' AND table_name = '${tableName}';`,
       ),
-    queryKey: ["schema", schemaName, tableName],
+    queryKey: ["table-structure", schema, tableName],
   });
 }
