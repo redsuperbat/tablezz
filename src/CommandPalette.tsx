@@ -23,7 +23,7 @@ interface CommandPaletteItem {
 }
 
 export function CommandPalette() {
-  const { setTableName } = useTableContext();
+  const { setSelectedTable } = useTableContext();
   const { routes, navigateTo } = useRouter();
   const selectedSchema = useSelectedSchemaTables();
   const selectedSchemas = useSelectedDatabaseSchemas();
@@ -43,7 +43,7 @@ export function CommandPalette() {
         icon: <Table />,
         searchTerm: t.tableName,
         onSelect() {
-          setTableName(t.tableName);
+          setSelectedTable(t.tableName);
         },
       })),
       ...schemas.map((s) => ({
@@ -61,7 +61,7 @@ export function CommandPalette() {
         },
       })),
     ];
-  }, [tables, routes, setTableName, navigateTo, schemas, setSchema]);
+  }, [tables, routes, setSelectedTable, navigateTo, schemas, setSchema]);
 
   const filteredItems = useFuzzySearchList({
     list: items,
@@ -76,7 +76,7 @@ export function CommandPalette() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: we want to set the index to zero whenever the search term changes
   useEffect(() => {
     setSelectedIndex(0);
-  }, [searchTerm]);
+  }, [searchTerm, items]);
 
   useRegisterKeybind({
     name: "CommandPaletteShow",

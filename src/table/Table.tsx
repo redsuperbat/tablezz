@@ -1,8 +1,8 @@
-import { cn } from "./lib/utils";
-import { useTableItems } from "./useTableItems";
-import { useTableStructure } from "./useTableStructure";
+import { cn } from "@/lib/utils";
+import { useTableItems } from "@/useTableItems";
+import { useTableStructure } from "@/useTableStructure";
 
-export function TableContent({ tableName }: { tableName: string }) {
+export function Table({ tableName }: { tableName: string }) {
   const items = useTableItems(tableName);
   const structure = useTableStructure(tableName);
 

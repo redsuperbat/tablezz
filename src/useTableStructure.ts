@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useDatabase } from "./database/useDatabase";
 import { useSchemaContext } from "./SchemaProvider";
 
-type PostgresDataType =
+export type PostgresDataType =
   | "smallint"
   | "integer"
   | "bigint"

@@ -6,11 +6,11 @@ import {
 import { QueryHistory } from "./database/QueryHistoryProvider";
 import { useRegisterKeybindToggle } from "./keybinds/useRegisterToggleKeybind";
 import { cn } from "./lib/utils";
-import { TableContent } from "./TableContent";
 import { useTableContext } from "./TableProvider";
+import { Table } from "./table/Table";
 import { useSelectedSchemaTables } from "./useSelectedSchemaTables";
 
-function Table({ tableName }: { tableName: string }) {
+function SchemaTable({ tableName }: { tableName: string }) {
   return <div>{tableName}</div>;
 }
 
@@ -34,7 +34,7 @@ function Schema({
           )}
           onClick={() => onSelectTable(table.tableName)}
         >
-          <Table tableName={table.tableName}></Table>
+          <SchemaTable tableName={table.tableName}></SchemaTable>
         </button>
       ))}
     </div>
@@ -42,9 +42,7 @@ function Schema({
 }
 
 export function DatabasePage() {
-  const allTables = useSelectedSchemaTables();
-  const { tableName, setTableName } = useTableContext();
-  const selectedTable = tableName || allTables.data?.at(0)?.tableName;
+  const { selectedTable, setSelectedTable } = useTableContext();
 
   const showQueryHistory = useRegisterKeybindToggle({
     name: "QueryHistoryToggle",
@@ -69,7 +67,10 @@ export function DatabasePage() {
       {showSchemaSidebar && (
         <ResizablePanel defaultSize={20}>
           <div className="grid items-center">
-            <Schema tableName={selectedTable} onSelectTable={setTableName} />
+            <Schema
+              tableName={selectedTable}
+              onSelectTable={setSelectedTable}
+            />
           </div>
         </ResizablePanel>
       )}
@@ -77,7 +78,7 @@ export function DatabasePage() {
       <ResizablePanel defaultSize={80}>
         <ResizablePanelGroup direction="vertical">
           <ResizablePanel defaultSize={75}>
-            {selectedTable && <TableContent tableName={selectedTable} />}
+            {selectedTable && <Table tableName={selectedTable} />}
           </ResizablePanel>
           <ResizableHandle />
           {showQueryHistory && (
