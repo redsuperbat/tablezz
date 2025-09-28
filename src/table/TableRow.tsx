@@ -1,9 +1,9 @@
-import { useTableContext } from "@/TableProvider";
+import { useSelectedTableContext } from "@/TableProvider";
 import { useTableStructure } from "@/useTableStructure";
 import { TableCell } from "./TableCell";
 
 export function TableRow({ row }: { row: object }) {
-  const { selectedTable } = useTableContext();
+  const { selectedTable } = useSelectedTableContext();
   const structure = useTableStructure(selectedTable);
 
   return (

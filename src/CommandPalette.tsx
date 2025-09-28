@@ -12,7 +12,7 @@ import { useRegisterKeybind } from "./keybinds/useRegisterKeybind";
 import { cn } from "./lib/utils";
 import { useRouter } from "./Router";
 import { useSchemaContext } from "./SchemaProvider";
-import { useTableContext } from "./TableProvider";
+import { useSelectedTableContext } from "./SelectedTableProvider";
 import { useSelectedDatabaseSchemas } from "./useSelectedDatabaseSchemas";
 import { useSelectedSchemaTables } from "./useSelectedSchemaTables";
 
@@ -23,7 +23,7 @@ interface CommandPaletteItem {
 }
 
 export function CommandPalette() {
-  const { setSelectedTable } = useTableContext();
+  const { setSelectedTable } = useSelectedTableContext();
   const { routes, navigateTo } = useRouter();
   const selectedSchema = useSelectedSchemaTables();
   const selectedSchemas = useSelectedDatabaseSchemas();

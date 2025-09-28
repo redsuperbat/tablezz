@@ -8,7 +8,7 @@ interface TableContext {
 
 const TableContext = createContext<TableContext | null>(null);
 
-export function TableProvider({ children }: { children: ReactNode }) {
+export function SelectedTableProvider({ children }: { children: ReactNode }) {
   const [tableName, setTableName] = useState<string>();
   const allTables = useSelectedSchemaTables();
   const selectedTable = tableName || allTables.data?.at(0)?.tableName;
@@ -24,7 +24,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useTableContext() {
+export function useSelectedTableContext() {
   const ctx = useContext(TableContext);
   if (!ctx) {
     throw new Error("no context found");

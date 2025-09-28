@@ -6,7 +6,7 @@ import {
 import { QueryHistory } from "./database/QueryHistoryProvider";
 import { useRegisterKeybindToggle } from "./keybinds/useRegisterToggleKeybind";
 import { cn } from "./lib/utils";
-import { useTableContext } from "./TableProvider";
+import { useSelectedTableContext } from "./SelectedTableProvider";
 import { Table } from "./table/Table";
 import { useSelectedSchemaTables } from "./useSelectedSchemaTables";
 
@@ -42,7 +42,7 @@ function Schema({
 }
 
 export function DatabasePage() {
-  const { selectedTable, setSelectedTable } = useTableContext();
+  const { selectedTable, setSelectedTable } = useSelectedTableContext();
 
   const showQueryHistory = useRegisterKeybindToggle({
     name: "QueryHistoryToggle",

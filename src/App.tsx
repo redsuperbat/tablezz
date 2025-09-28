@@ -8,8 +8,8 @@ import { KeybindHelp } from "./keybinds/KeybindHelp";
 import { KeybindProvider } from "./keybinds/KeybindProvider";
 import { RouteProvider, Router } from "./Router";
 import { SchemaProvider } from "./SchemaProvider";
+import { SelectedTableProvider } from "./SelectedTableProvider";
 import { SuspenseBoundary } from "./SuspenseBoundary";
-import { TableProvider } from "./TableProvider";
 
 export function App() {
   return (
@@ -21,11 +21,11 @@ export function App() {
               <QueryHistoryProvider>
                 <RouteProvider>
                   <SchemaProvider>
-                    <TableProvider>
+                    <SelectedTableProvider>
                       <KeybindHelp />
                       <CommandPalette />
                       <Router />
-                    </TableProvider>
+                    </SelectedTableProvider>
                   </SchemaProvider>
                 </RouteProvider>
               </QueryHistoryProvider>
