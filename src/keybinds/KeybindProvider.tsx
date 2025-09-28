@@ -53,14 +53,22 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
       for (const bind of Object.values(keybinds.current)) {
         if (!bind.check(e)) continue;
 
+        // If the target element is an input element we skip triggering
+        // the keybind. Unless the keybind specifically override it
         if (isInvalidTarget && !bind.overrideInput) continue;
 
+        e.preventDefault();
+        e.stopPropagation();
         bind.onTrigger(e);
+
+        // Only trigger a single binding.
+        // We cannot map a single keybind to trigger multiple things
+        break;
       }
     }
 
-    window.addEventListener("keyup", checkAndExecute);
-    return () => window.removeEventListener("keyup", checkAndExecute);
+    window.addEventListener("keydown", checkAndExecute);
+    return () => window.removeEventListener("keydown", checkAndExecute);
   }, []);
 
   return {
