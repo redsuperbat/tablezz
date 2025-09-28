@@ -1,9 +1,9 @@
 import { cn } from "./lib/utils";
-import { useTableContent } from "./useTableContent";
+import { useTableItems } from "./useTableItems";
 import { useTableStructure } from "./useTableStructure";
 
 export function TableContent({ tableName }: { tableName: string }) {
-  const content = useTableContent(tableName);
+  const items = useTableItems(tableName);
   const structure = useTableStructure(tableName);
 
   return (
@@ -22,7 +22,7 @@ export function TableContent({ tableName }: { tableName: string }) {
           </tr>
         </thead>
         <tbody>
-          {content.data?.map((row) => (
+          {items.data?.map((row) => (
             <tr key={JSON.stringify(row)}>
               {structure.data?.map((s) => (
                 <td
