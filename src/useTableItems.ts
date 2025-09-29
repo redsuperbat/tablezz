@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useDatabase } from "./database/useDatabase";
 import { useSchemaContext } from "./SchemaProvider";
 
-export function useTableItems(tableName: string) {
+export function useTableRows(tableName: string) {
   const database = useDatabase();
   const { schema } = useSchemaContext();
 

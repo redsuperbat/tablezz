@@ -1,10 +1,10 @@
-import { useTableItems } from "@/useTableItems";
+import { useTableRows } from "@/useTableItems";
 import { useTableStructure } from "@/useTableStructure";
 import { TableEditorProvider } from "./TableEditorProvider";
 import { TableRow } from "./TableRow";
 
 export function Table({ tableName }: { tableName: string }) {
-  const items = useTableItems(tableName);
+  const items = useTableRows(tableName);
   const structure = useTableStructure(tableName);
 
   return (
