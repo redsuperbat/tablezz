@@ -5,89 +5,51 @@ import {
 } from "@/components/ui/resizable";
 import { QueryHistory } from "./database/QueryHistoryProvider";
 import { useRegisterKeybindToggle } from "./keybinds/useRegisterToggleKeybind";
-import { cn } from "./lib/utils";
 import { useSelectedTableContext } from "./SelectedTableProvider";
+import { SqlEditor } from "./sql-editor/SqlEditor";
 import { Table } from "./table/Table";
-import { useSelectedSchemaTables } from "./useSelectedSchemaTables";
-
-function SchemaTable({ tableName }: { tableName: string }) {
-  return <div>{tableName}</div>;
-}
-
-function Schema({
-  onSelectTable,
-  tableName,
-}: {
-  onSelectTable: (tableName: string) => void;
-  tableName?: string;
-}) {
-  const databaseSchema = useSelectedSchemaTables();
-
-  return (
-    <div className="flex flex-col gap-2 items-start">
-      {databaseSchema.data?.map((table) => (
-        <button
-          key={table.tableName}
-          className={cn(
-            "hover:underline cursor-pointer",
-            table.tableName === tableName && "font-bold",
-          )}
-          onClick={() => onSelectTable(table.tableName)}
-        >
-          <SchemaTable tableName={table.tableName}></SchemaTable>
-        </button>
-      ))}
-    </div>
-  );
-}
 
 export function DatabasePage() {
-  const { selectedTable, setSelectedTable } = useSelectedTableContext();
+  const { selectedTable } = useSelectedTableContext();
 
-  const showQueryHistory = useRegisterKeybindToggle({
-    name: "QueryHistoryToggle",
-    keybindExpression: "Leader + q",
+  const showSqlEditor = useRegisterKeybindToggle({
+    name: "ToggleSqlEditor",
+    keybindExpression: "Leader + s",
     initialValue: false,
   });
 
-  const showSchemaSidebar = useRegisterKeybindToggle({
-    name: "SchemaSidebarToggle",
-    keybindExpression: "Leader + e",
+  const showQueryHistory = useRegisterKeybindToggle({
+    name: "ToggleQueryHistory",
+    keybindExpression: "Leader + q",
     initialValue: false,
   });
 
   return (
     <ResizablePanelGroup
-      direction="horizontal"
-      style={{
-        width: "100vw",
-        height: "100vh",
-      }}
+      style={{ width: "100vw", height: "100vh" }}
+      direction="vertical"
     >
-      {showSchemaSidebar && (
-        <ResizablePanel defaultSize={20}>
-          <div className="grid items-center">
-            <Schema
-              tableName={selectedTable}
-              onSelectTable={setSelectedTable}
-            />
-          </div>
-        </ResizablePanel>
-      )}
-      <ResizableHandle />
-      <ResizablePanel defaultSize={80}>
-        <ResizablePanelGroup direction="vertical">
-          <ResizablePanel defaultSize={75}>
-            {selectedTable && <Table tableName={selectedTable} />}
+      {showSqlEditor && (
+        <>
+          <ResizablePanel defaultSize={50}>
+            <SqlEditor />
           </ResizablePanel>
           <ResizableHandle />
-          {showQueryHistory && (
-            <ResizablePanel defaultSize={25}>
-              <QueryHistory />
-            </ResizablePanel>
-          )}
-        </ResizablePanelGroup>
+        </>
+      )}
+
+      <ResizablePanel defaultSize={50}>
+        {selectedTable && <Table tableName={selectedTable} />}
       </ResizablePanel>
+
+      {showQueryHistory && (
+        <>
+          <ResizableHandle />
+          <ResizablePanel defaultSize={50}>
+            <QueryHistory />
+          </ResizablePanel>
+        </>
+      )}
     </ResizablePanelGroup>
   );
 }
