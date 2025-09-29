@@ -1,3 +1,4 @@
+import { useIntersectionScroll } from "@/lib/useIntersectionScroll";
 import { cn } from "@/lib/utils";
 import type { PostgresDataType } from "@/useTableStructure";
 import { useTableEditorContext } from "./TableEditorProvider";
@@ -29,15 +30,17 @@ export function TableCell({
   columnIndex: number;
 }) {
   const { column, row } = useTableEditorContext();
+  const isActive = column === columnIndex && row === rowIndex;
+  const { ref } = useIntersectionScroll<HTMLTableCellElement>(isActive);
+
   return (
     <td
+      ref={ref}
       className={cn(
         "border text-sm border-gray-300 py-2 px-2",
         column === columnIndex && row === rowIndex + 1 && "border-b-red-300",
         row === rowIndex && column === columnIndex + 1 && "border-r-red-300",
-        column === columnIndex &&
-          row === rowIndex &&
-          "border-red-300 bg-red-200",
+        isActive && "border-red-300 bg-red-200",
       )}
     >
       <TableCellDataType

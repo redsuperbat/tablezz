@@ -1,6 +1,6 @@
 import { Highlight, useFuzzySearchList } from "@nozbe/microfuzz/react";
 import { Folder, Route, Table } from "lucide-react";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "./components/ui/input";
 import { useRegisterKeybind } from "./keybinds/useRegisterKeybind";
+import { useIntersectionScroll } from "./lib/useIntersectionScroll";
 import { cn } from "./lib/utils";
 import { useRouter } from "./Router";
 import { useSchemaContext } from "./SchemaProvider";
@@ -162,36 +163,13 @@ function SearchItem({
   item: CommandPaletteItem;
   highlightRanges: [number, number][] | null;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  const [isInView, setIsInView] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => setIsInView(entry.isIntersecting),
-      { threshold: 1.0 }, // Element must be fully visible
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (selectedIndex === index && !isInView) {
-      ref.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
-  }, [selectedIndex, index, isInView]);
+  const isActive = selectedIndex === index;
+  const { ref } = useIntersectionScroll(isActive);
 
   return (
     <div
       ref={ref}
-      className={cn(
-        index === selectedIndex && "bg-gray-100",
-        "p-1 rounded flex gap-1",
-      )}
+      className={cn(isActive && "bg-gray-100", "p-1 rounded flex gap-1")}
       key={item.searchTerm}
     >
       <span>{item.icon}</span>
