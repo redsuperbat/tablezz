@@ -1,4 +1,4 @@
-import { useTableRows } from "@/useTableItems";
+import { useTableRows } from "@/useTableRows";
 import { useTableStructure } from "@/useTableStructure";
 import { TableEditorProvider } from "./TableEditorProvider";
 import { TableRow } from "./TableRow";

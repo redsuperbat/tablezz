@@ -1,8 +1,10 @@
+use notify_debouncer_mini::new_debouncer;
 use portable_pty::{CommandBuilder, MasterPty, NativePtySystem, PtySize, PtySystem};
 use std::env;
 use std::fs;
 use std::io::{Read, Write};
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use tauri::{Emitter, State};
 
 pub struct PtyState {
@@ -20,7 +22,6 @@ pub fn create_pty(
     state: State<Arc<Mutex<Option<PtyState>>>>,
 ) -> Result<(), String> {
     let pty_system = NativePtySystem::default();
-
     let pair = pty_system
         .openpty(PtySize {
             rows,
@@ -32,18 +33,43 @@ pub fn create_pty(
 
     let mut cmd = CommandBuilder::new(editor);
 
-    if let Some(content) = initial_content {
+    let content = initial_content.unwrap_or_else(|| "-- sql".to_string());
+
+    let temp_file = {
         let temp_dir = env::temp_dir();
         let temp_file = temp_dir.join(format!("sql_edit_{}.sql", std::process::id()));
-
         fs::write(&temp_file, content).map_err(|e| e.to_string())?;
 
-        cmd.arg(temp_file.to_string_lossy().to_string());
-    }
+        let path = temp_file.to_string_lossy().to_string();
+        cmd.arg(path);
+        temp_file
+    };
 
     let mut child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
     let mut reader = pair.master.try_clone_reader().map_err(|e| e.to_string())?;
     let writer = pair.master.take_writer().map_err(|e| e.to_string())?;
+
+    let window_watcher = window.clone();
+
+    std::thread::spawn(move || {
+        let (tx, rx) = std::sync::mpsc::channel();
+
+        let mut debouncer = new_debouncer(Duration::from_millis(200), tx).ok();
+
+        if let Some(ref mut d) = debouncer {
+            let _ = d
+                .watcher()
+                .watch(&temp_file, notify::RecursiveMode::NonRecursive);
+
+            while let Ok(Ok(events)) = rx.recv() {
+                if let Ok(content) = fs::read_to_string(&temp_file) {
+                    if window_watcher.emit("file-changed", content).is_err() {
+                        return;
+                    };
+                }
+            }
+        }
+    });
 
     // Spawn thread to read PTY output
     let window_clone = window.clone();
@@ -95,7 +121,7 @@ pub fn resize_pty(
         pixel_height: 0,
     };
     if let Some(pty_state) = guard.as_ref() {
-        let mut master = pty_state
+        let master = pty_state
             .master
             .lock()
             .map_err(|_| "Failed to lock PTY master")?;

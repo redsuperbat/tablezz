@@ -7,7 +7,7 @@ import {
 } from "react";
 import { useRegisterKeybind } from "@/keybinds/useRegisterKeybind";
 import { useSelectedTableContext } from "@/SelectedTableProvider";
-import { useTableRows } from "@/useTableItems";
+import { useTableRows } from "@/useTableRows";
 import { useTableStructure } from "@/useTableStructure";
 
 interface TableEditorContext {
