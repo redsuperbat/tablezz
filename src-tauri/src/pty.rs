@@ -30,7 +30,7 @@ pub fn create_pty(
         })
         .map_err(|e| e.to_string())?;
 
-    let mut cmd = CommandBuilder::new("nvim");
+    let mut cmd = CommandBuilder::new(editor);
 
     if let Some(content) = initial_content {
         let temp_dir = env::temp_dir();
