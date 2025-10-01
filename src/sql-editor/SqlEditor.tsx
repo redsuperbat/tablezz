@@ -11,27 +11,24 @@ export function SqlEditor({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     const ref = terminalRef.current;
     if (!ref) return;
-    const term = new Terminal({
-      fontFamily: "Fira Code",
-    });
+
+    const term = new Terminal({ fontFamily: "Fira Code" });
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
     term.open(ref);
 
-    fitAddon.fit();
-
-    term.onData((data) => {
-      invoke("write_to_pty", { data });
-    });
-
-    // Listen for resize events
-    term.onResize(({ cols, rows }) => {
-      invoke("resize_pty", { cols, rows });
-    });
-
-    window.addEventListener("resize", () => {
+    requestAnimationFrame(() => {
       fitAddon.fit();
+      invoke("create_pty", { cols: term.cols, rows: term.rows });
     });
+
+    term.onData((data) => invoke("write_to_pty", { data }));
+    term.onResize(({ cols, rows }) => invoke("resize_pty", { cols, rows }));
+
+    const handleResize = () => fitAddon.fit();
+
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(ref);
 
     const output = listen("pty-output", (event) => {
       const data = String(event.payload);
@@ -40,17 +37,13 @@ export function SqlEditor({ onClose }: { onClose: () => void }) {
 
     const exit = listen("pty-exit", onClose);
 
-    invoke("create_pty", {
-      cols: term.cols,
-      rows: term.rows,
-    });
-
     term.focus();
 
     return () => {
+      resizeObserver.disconnect();
       output.then((o) => o());
       exit.then((o) => o());
-      return term.dispose();
+      term.dispose();
     };
   }, [onClose]);
 
