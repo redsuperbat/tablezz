@@ -4,9 +4,11 @@ import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 import { useEffect, useRef } from "react";
 import "@xterm/xterm/css/xterm.css";
+import { useConfig } from "@/config/ConfigurationProvider";
 
 export function SqlEditor({ onClose }: { onClose: () => void }) {
   const terminalRef = useRef<HTMLDivElement>(null);
+  const config = useConfig();
 
   useEffect(() => {
     const ref = terminalRef.current;
@@ -50,7 +52,12 @@ export function SqlEditor({ onClose }: { onClose: () => void }) {
         ref.style.paddingTop = `${paddingTop}px`;
         ref.style.paddingBottom = `${paddingBottom}px`;
       } finally {
-        invoke("create_pty", { cols: term.cols, rows: term.rows });
+        invoke("create_pty", {
+          cols: term.cols,
+          rows: term.rows,
+          initialContent: `-- write sql here`,
+          editor: config.get("editor"),
+        });
       }
     });
 
@@ -59,6 +66,7 @@ export function SqlEditor({ onClose }: { onClose: () => void }) {
 
     const handleResize = () => fitAddon.fit();
 
+    window.addEventListener("resize", handleResize);
     const resizeObserver = new ResizeObserver(handleResize);
     resizeObserver.observe(ref);
 
@@ -72,12 +80,13 @@ export function SqlEditor({ onClose }: { onClose: () => void }) {
     term.focus();
 
     return () => {
+      window.removeEventListener("resize", handleResize);
       resizeObserver.disconnect();
       output.then((o) => o());
       exit.then((o) => o());
       term.dispose();
     };
-  }, [onClose]);
+  }, [onClose, config]);
 
   return <div ref={terminalRef} className="w-full h-full overflow-hidden" />;
 }

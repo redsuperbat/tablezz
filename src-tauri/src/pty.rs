@@ -1,4 +1,6 @@
 use portable_pty::{CommandBuilder, MasterPty, NativePtySystem, PtySize, PtySystem};
+use std::env;
+use std::fs;
 use std::io::{Read, Write};
 use std::sync::{Arc, Mutex};
 use tauri::{Emitter, State};
@@ -13,6 +15,8 @@ pub fn create_pty(
     window: tauri::Window,
     cols: u16,
     rows: u16,
+    initial_content: Option<String>,
+    editor: String,
     state: State<Arc<Mutex<Option<PtyState>>>>,
 ) -> Result<(), String> {
     let pty_system = NativePtySystem::default();
@@ -26,16 +30,24 @@ pub fn create_pty(
         })
         .map_err(|e| e.to_string())?;
 
-    let cmd = CommandBuilder::new("nvim");
-    let mut child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
+    let mut cmd = CommandBuilder::new("nvim");
 
+    if let Some(content) = initial_content {
+        let temp_dir = env::temp_dir();
+        let temp_file = temp_dir.join(format!("sql_edit_{}.sql", std::process::id()));
+
+        fs::write(&temp_file, content).map_err(|e| e.to_string())?;
+
+        cmd.arg(temp_file.to_string_lossy().to_string());
+    }
+
+    let mut child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
     let mut reader = pair.master.try_clone_reader().map_err(|e| e.to_string())?;
     let writer = pair.master.take_writer().map_err(|e| e.to_string())?;
 
     // Spawn thread to read PTY output
     let window_clone = window.clone();
     let window_clone_exit = window.clone();
-
     std::thread::spawn(move || {
         let mut buf = [0u8; 8192];
         loop {
@@ -50,7 +62,6 @@ pub fn create_pty(
                 Err(_) => break,
             }
         }
-
         match child.wait() {
             Ok(status) => {
                 let exit_code = status.exit_code();
@@ -62,7 +73,6 @@ pub fn create_pty(
         }
     });
 
-    // Store the writer and child in state
     *state.lock().map_err(|_| "Failed to lock PTY state")? = Some(PtyState {
         writer: Arc::new(Mutex::new(writer)),
         master: Arc::new(Mutex::new(pair.master)),

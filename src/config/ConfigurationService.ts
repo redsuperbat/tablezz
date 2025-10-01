@@ -6,6 +6,7 @@ const configuration = z.object({
   leaderKey: z.string().default("Space"),
   leaderKeyTimeoutMs: z.number().default(1000),
   keybindings: z.record(z.string(), z.string()).default({}),
+  editor: z.string().default("nvim"),
 });
 
 export type Configuration = z.infer<typeof configuration>;

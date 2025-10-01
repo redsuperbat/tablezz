@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -24,6 +25,11 @@ export function DatabasePage() {
     initialValue: false,
   });
 
+  const handleClose = useCallback(
+    () => showSqlEditor.set(false),
+    [showSqlEditor.set],
+  );
+
   return (
     <ResizablePanelGroup
       style={{ width: "100vw", height: "100vh" }}
@@ -32,7 +38,7 @@ export function DatabasePage() {
       {showSqlEditor.value && (
         <>
           <ResizablePanel defaultSize={50}>
-            <SqlEditor onClose={() => showSqlEditor.set(false)} />
+            <SqlEditor onClose={handleClose} />
           </ResizablePanel>
           <ResizableHandle />
         </>
