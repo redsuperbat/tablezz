@@ -22,5 +22,5 @@ export function useRegisterKeybindToggle({
     },
   });
 
-  return show;
+  return { value: show, set: setShow };
 }

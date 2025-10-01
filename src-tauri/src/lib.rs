@@ -9,7 +9,11 @@ pub fn run() {
         .plugin(tauri_plugin_sql::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .manage(Arc::new(Mutex::new(None::<pty::PtyState>)))
-        .invoke_handler(tauri::generate_handler![pty::create_pty, pty::write_to_pty])
+        .invoke_handler(tauri::generate_handler![
+            pty::create_pty,
+            pty::write_to_pty,
+            pty::resize_pty
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

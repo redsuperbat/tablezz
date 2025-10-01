@@ -29,10 +29,10 @@ export function DatabasePage() {
       style={{ width: "100vw", height: "100vh" }}
       direction="vertical"
     >
-      {showSqlEditor && (
+      {showSqlEditor.value && (
         <>
           <ResizablePanel defaultSize={50}>
-            <SqlEditor />
+            <SqlEditor onClose={() => showSqlEditor.set(false)} />
           </ResizablePanel>
           <ResizableHandle />
         </>
@@ -42,7 +42,7 @@ export function DatabasePage() {
         {selectedTable && <Table tableName={selectedTable} />}
       </ResizablePanel>
 
-      {showQueryHistory && (
+      {showQueryHistory.value && (
         <>
           <ResizableHandle />
           <ResizablePanel defaultSize={50}>
