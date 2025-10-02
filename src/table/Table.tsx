@@ -1,11 +1,14 @@
 import { useTableRows } from "@/useTableRows";
-import { useTableStructure } from "@/useTableStructure";
 import { TableEditorProvider } from "./TableEditorProvider";
 import { TableRow } from "./TableRow";
 
 export function Table({ tableName }: { tableName: string }) {
-  const items = useTableRows(tableName);
-  const structure = useTableStructure(tableName);
+  const rows = useTableRows(tableName);
+
+  const structure = Object.keys(rows.data?.at(0) ?? {}).map((k) => ({
+    columnName: k,
+    dataType: "text" as const,
+  }));
 
   return (
     <TableEditorProvider>
@@ -13,24 +16,27 @@ export function Table({ tableName }: { tableName: string }) {
         <table className="border-spacing-x-4 table-auto border-collapse border border-gray-300 w-full text-sm">
           <thead>
             <tr>
-              {structure.data?.map((s) => (
+              {structure.map((s) => (
                 <th
                   className="border border-gray-300 px-4 py-2"
-                  key={s.column_name}
+                  key={s.columnName}
                 >
-                  {s.column_name}
+                  {s.columnName}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {items.data?.map((row, rowIndex) => (
-              <TableRow
-                rowIndex={rowIndex}
-                key={JSON.stringify(row)}
-                row={row}
-              />
-            ))}
+            {rows.data?.map((row, rowIndex) => {
+              return (
+                <TableRow
+                  rowIndex={rowIndex}
+                  key={JSON.stringify(row)}
+                  row={row}
+                  structure={structure}
+                />
+              );
+            })}
           </tbody>
         </table>
       </div>

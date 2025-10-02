@@ -10,7 +10,6 @@ function useTableRowsDatabaseQuery(tableName: string) {
 
   useEffect(() => {
     const fileChanged = listen("file-changed", (e) => {
-      console.log(e);
       setWrittenFile(String(e.payload));
     });
 
@@ -36,7 +35,7 @@ export function useTableRows(tableName: string) {
   const query = useTableRowsDatabaseQuery(tableName);
 
   return useQuery({
-    queryFn: () => database.select<object[]>(query),
+    queryFn: () => database.select<Record<string, unknown>[]>(query),
 
     queryKey: ["table-content", query],
   });

@@ -1,20 +1,24 @@
-import { useSelectedTableContext } from "@/SelectedTableProvider";
-import { useTableStructure } from "@/useTableStructure";
+import type { PostgresDataType } from "@/useTableStructure";
 import { TableCell } from "./TableCell";
 
-export function TableRow({ rowIndex, row }: { row: object; rowIndex: number }) {
-  const { selectedTable } = useSelectedTableContext();
-  const structure = useTableStructure(selectedTable);
-
+export function TableRow<T extends Record<string, unknown>, K extends keyof T>({
+  rowIndex,
+  row,
+  structure,
+}: {
+  row: T;
+  rowIndex: number;
+  structure: { columnName: K; dataType: PostgresDataType }[];
+}) {
   return (
     <tr key={JSON.stringify(row)}>
-      {structure.data?.map((s, index) => (
+      {structure.map((s, index) => (
         <TableCell
           columnIndex={index}
           rowIndex={rowIndex}
-          key={JSON.stringify(index) + JSON.stringify(row)}
-          dataType={s.data_type}
-          data={row[s.column_name as keyof typeof row]}
+          key={s.columnName as string}
+          dataType={s.dataType}
+          data={row[s.columnName]}
         />
       ))}
     </tr>
