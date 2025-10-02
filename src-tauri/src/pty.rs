@@ -1,4 +1,8 @@
-use notify_debouncer_mini::new_debouncer;
+use crossbeam_channel::select;
+use crossbeam_channel::unbounded;
+use notify::Event;
+use notify::RecursiveMode;
+use notify::Watcher;
 use portable_pty::{CommandBuilder, MasterPty, NativePtySystem, PtySize, PtySystem};
 use std::env;
 use std::fs;
@@ -21,6 +25,7 @@ pub fn create_pty(
     editor: String,
     state: State<Arc<Mutex<Option<PtyState>>>>,
 ) -> Result<(), String> {
+    let (tx, rx) = unbounded::<()>();
     let pty_system = NativePtySystem::default();
     let pair = pty_system
         .openpty(PtySize {
@@ -37,7 +42,7 @@ pub fn create_pty(
 
     let temp_file = {
         let temp_dir = env::temp_dir();
-        let temp_file = temp_dir.join(format!("sql_edit_{}.sql", std::process::id()));
+        let temp_file = temp_dir.join(format!("sql_edit_{}.sql", rand::random::<u16>()));
         fs::write(&temp_file, content).map_err(|e| e.to_string())?;
 
         let path = temp_file.to_string_lossy().to_string();
@@ -51,26 +56,55 @@ pub fn create_pty(
 
     let window_watcher = window.clone();
 
+    let exit_watcher = rx.clone();
     std::thread::spawn(move || {
-        let (tx, rx) = std::sync::mpsc::channel();
+        let (tx, file_rx) = unbounded();
 
-        let mut debouncer = new_debouncer(Duration::from_millis(200), tx).ok();
+        // Create the file watcher
+        let mut watcher = notify::recommended_watcher(move |res: Result<Event, notify::Error>| {
+            if let Ok(event) = res {
+                let _ = tx.send(event);
+            }
+        })
+        .ok()
+        .expect("Failed to create watcher");
 
-        if let Some(ref mut d) = debouncer {
-            let _ = d
-                .watcher()
-                .watch(&temp_file, notify::RecursiveMode::NonRecursive);
+        // Start watching the file
+        let _ = watcher.watch(&temp_file, RecursiveMode::NonRecursive);
 
-            while let Ok(Ok(events)) = rx.recv() {
-                if let Ok(content) = fs::read_to_string(&temp_file) {
-                    if window_watcher.emit("file-changed", content).is_err() {
-                        return;
-                    };
+        loop {
+            select! {
+                recv(file_rx) -> msg => {
+                    match msg {
+                        Ok(event) => {
+                            println!("{:?}",event);
+                            // Drain all messages within debounce window
+                            let mut latest = event;
+                            while let Ok(msg) = file_rx.recv_timeout(Duration::from_millis(200)) {
+                                latest = msg;
+                            }
+
+                            // Only process data modification events
+                            if latest.kind.is_modify() {
+                                if let Ok(content) = fs::read_to_string(&temp_file) {
+                                    if window_watcher.emit("file-changed", content).is_err() {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        Err(_) => break,
+                    }
+                }
+                recv(exit_watcher) -> msg => {
+                    println!("Exit {:?}", msg);
+                    break;
                 }
             }
         }
+        let _ = watcher.unwatch(&temp_file);
+        drop(watcher)
     });
-
     // Spawn thread to read PTY output
     let window_clone = window.clone();
     let window_clone_exit = window.clone();
@@ -96,7 +130,8 @@ pub fn create_pty(
             Err(_) => {
                 let _ = window_clone_exit.emit("pty-exit", -1);
             }
-        }
+        };
+        let _ = tx.send(());
     });
 
     *state.lock().map_err(|_| "Failed to lock PTY state")? = Some(PtyState {
