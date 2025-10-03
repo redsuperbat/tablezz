@@ -94,12 +94,14 @@ export function Finder() {
     },
     keybindExpression: "Enter",
     overrideInput: true,
+    disabled: !open,
   });
 
   useRegisterKeybindCommand({
     command: "FinderSelectPrev",
     keybindExpression: "(Control + k) | ArrowUp",
     overrideInput: true,
+    disabled: !open,
     action() {
       if (selectedIndex === 0) {
         return setSelectedIndex(filteredItems.length - 1);
@@ -112,6 +114,7 @@ export function Finder() {
     command: "FinderSelectNext",
     keybindExpression: "(Control + j) | ArrowDown",
     overrideInput: true,
+    disabled: !open,
     action() {
       if (selectedIndex === filteredItems.length - 1) {
         return setSelectedIndex(0);

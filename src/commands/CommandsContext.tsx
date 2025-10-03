@@ -8,8 +8,12 @@ import {
 } from "react";
 import type { Command } from "./Command";
 
+interface RegisterCommand extends Command {
+  disabled?: boolean;
+}
+
 interface CommandsContext {
-  registerCommand(command: Command): void;
+  registerCommand(command: RegisterCommand): void;
   triggerCommand(name: string): void;
   listCommands(): Command[];
 }
@@ -28,8 +32,12 @@ export function useCommandsContext() {
 export function CommandsProvider({ children }: PropsWithChildren) {
   const commands = useRef<Map<string, Command>>(new Map());
 
-  const registerCommand = useCallback((command: Command) => {
-    commands.current.set(command.name, command);
+  const registerCommand = useCallback((command: RegisterCommand) => {
+    if (command.disabled) {
+      commands.current.delete(command.name);
+    } else {
+      commands.current.set(command.name, command);
+    }
   }, []);
 
   const triggerCommand = useCallback((name: string) => {
