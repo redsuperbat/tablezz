@@ -8,12 +8,11 @@ import {
 } from "react";
 import type { Command } from "./Command";
 
-interface RegisterCommand extends Command {
-  disabled?: boolean;
-}
+interface RegisterCommand extends Command {}
 
 interface CommandsContext {
   registerCommand(command: RegisterCommand): void;
+  unregisterCommand(name: string): void;
   triggerCommand(name: string): void;
   listCommands(): Command[];
 }
@@ -32,12 +31,12 @@ export function useCommandsContext() {
 export function CommandsProvider({ children }: PropsWithChildren) {
   const commands = useRef<Map<string, Command>>(new Map());
 
+  const unregisterCommand = useCallback((command: string) => {
+    commands.current.delete(command);
+  }, []);
+
   const registerCommand = useCallback((command: RegisterCommand) => {
-    if (command.disabled) {
-      commands.current.delete(command.name);
-    } else {
-      commands.current.set(command.name, command);
-    }
+    commands.current.set(command.name, command);
   }, []);
 
   const triggerCommand = useCallback((name: string) => {
@@ -47,8 +46,13 @@ export function CommandsProvider({ children }: PropsWithChildren) {
   const listCommands = useCallback(() => [...commands.current.values()], []);
 
   const value = useMemo(
-    () => ({ listCommands, triggerCommand, registerCommand }),
-    [listCommands, triggerCommand, registerCommand],
+    () => ({
+      listCommands,
+      triggerCommand,
+      registerCommand,
+      unregisterCommand,
+    }),
+    [listCommands, triggerCommand, registerCommand, unregisterCommand],
   );
 
   return (

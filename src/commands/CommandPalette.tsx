@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
 import { useRegisterKeybindToggle } from "@/keybinds/useRegisterToggleKeybind";
+import { cn, wrap } from "@/lib/utils";
 import { useCommandsContext } from "./CommandsContext";
 
 function Autocomplete({
@@ -17,9 +18,10 @@ function Autocomplete({
   onValueChanged: (v: string) => void;
 }) {
   const commandContext = useCommandsContext();
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: this will lazily show commands when user types
-  const filteredCommands = useMemo(() => {
+  const commands = useMemo(() => {
     return commandContext.listCommands();
   }, [value]);
 
@@ -28,30 +30,57 @@ function Autocomplete({
       return "";
     }
 
-    const match = filteredCommands.find((suggestion) =>
+    const matchingCommand = commands.find((suggestion) =>
       suggestion.name.startsWith(value),
     );
 
-    if (!match) {
+    if (!matchingCommand) {
       return "";
     }
 
-    return match?.name;
-  }, [filteredCommands, value]);
+    return matchingCommand?.name;
+  }, [commands, value]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Tab" || e.key === "ArrowRight") {
-      if (ghostText && ghostText !== value) {
-        e.preventDefault();
-        onValueChanged(ghostText);
-      }
-    } else if (e.key === "Enter") {
-      if (ghostText && ghostText !== value) {
-        e.preventDefault();
-        onValueChanged(ghostText);
-      }
-    }
-  };
+  const filteredCommands = useMemo(() => {
+    return commands.filter((c) => c.name.startsWith(value));
+  }, [commands, value]);
+
+  const toggleShowAutocomplete = useRegisterKeybindToggle({
+    keybindExpression: "Control + Space",
+    command: "CommandShowAutocomplete",
+    overrideInput: true,
+  });
+
+  useRegisterKeybindCommand({
+    command: "CommandAutocompleteNext",
+    keybindExpression: "Tab",
+    action() {
+      setSelectedIndex((i) => wrap(i + 1, 0, filteredCommands.length - 1));
+    },
+    disabled: filteredCommands.length === 1,
+    overrideInput: true,
+  });
+
+  useRegisterKeybindCommand({
+    command: "CommandAutocompleteAccept",
+    keybindExpression: "Enter",
+    action() {
+      const command = filteredCommands.at(selectedIndex);
+      if (!command) return;
+      onValueChanged(command.name);
+    },
+    disabled: filteredCommands.length === 1,
+  });
+
+  useRegisterKeybindCommand({
+    command: "CommandComplete",
+    action() {
+      onValueChanged(ghostText);
+    },
+    keybindExpression: "Tab",
+    disabled: filteredCommands.length > 1,
+    overrideInput: true,
+  });
 
   return (
     <div className="relative w-full max-w-md">
@@ -67,12 +96,23 @@ function Autocomplete({
           <span className="invisible">{value}</span>
           <span>{ghostText.slice(value.length)}</span>
         </div>
+        {toggleShowAutocomplete.value && (
+          <div className="absolute top-full bg-white -left-2 px-2 rounded">
+            {filteredCommands.map((c, index) => (
+              <div
+                key={c.name}
+                className={cn(index === selectedIndex && "bg-blue-200")}
+              >
+                {c.name}
+              </div>
+            ))}
+          </div>
+        )}
 
         <input
           type="text"
           value={value}
           onChange={(e) => onValueChanged(e.target.value)}
-          onKeyDown={handleKeyDown}
           placeholder="Type to search..."
           className="relative w-full focus:outline-none bg-transparent"
           style={{ caretColor: "black" }}
@@ -88,7 +128,7 @@ export function CommandPalette() {
 
   const toggle = useRegisterKeybindToggle({
     keybindExpression: ":",
-    name: "CommandPaletteOpen",
+    command: "CommandPaletteOpen",
   });
 
   useRegisterKeybindCommand({

@@ -29,3 +29,9 @@ export function tryCatch<T>(
     return [error instanceof Error ? error : new Error(String(error)), null];
   }
 }
+
+export function wrap(value: number, min: number, max: number): number {
+  if (value < min) return max;
+  if (value > max) return min;
+  return value;
+}

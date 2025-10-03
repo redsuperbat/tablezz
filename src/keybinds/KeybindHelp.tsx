@@ -23,7 +23,7 @@ export function KeybindHelp() {
 
   useRegisterKeybindCommand({
     keybindExpression: "?",
-    command: "OpenKeybindHelp",
+    command: "KeybindHelpOpen",
     action() {
       setOpen((o) => !o);
     },

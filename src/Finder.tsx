@@ -10,7 +10,7 @@ import {
 import { Input } from "./components/ui/input";
 import { useRegisterKeybindCommand } from "./keybinds/useRegisterKeybindCommand";
 import { useIntersectionScroll } from "./lib/useIntersectionScroll";
-import { cn } from "./lib/utils";
+import { cn, wrap } from "./lib/utils";
 import { useRouter } from "./Router";
 import { useSchemaContext } from "./SchemaProvider";
 import { useSelectedTableContext } from "./SelectedTableProvider";
@@ -103,10 +103,7 @@ export function Finder() {
     overrideInput: true,
     disabled: !open,
     action() {
-      if (selectedIndex === 0) {
-        return setSelectedIndex(filteredItems.length - 1);
-      }
-      setSelectedIndex((i) => i - 1);
+      setSelectedIndex((i) => wrap(i - 1, 0, filteredItems.length - 1));
     },
   });
 
@@ -116,10 +113,7 @@ export function Finder() {
     overrideInput: true,
     disabled: !open,
     action() {
-      if (selectedIndex === filteredItems.length - 1) {
-        return setSelectedIndex(0);
-      }
-      setSelectedIndex((i) => i + 1);
+      setSelectedIndex((i) => wrap(i + 1, 0, filteredItems.length - 1));
     },
   });
 

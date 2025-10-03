@@ -10,6 +10,11 @@ import { KeybindTokenizer } from "./KeybindTokenizer";
 
 interface RegisteredKeybind extends Keybind {
   check: (e: KeyEvent) => boolean;
+  disabled?: boolean;
+}
+
+interface RegisterKeybind extends Keybind {
+  disabled?: boolean;
 }
 
 export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
@@ -37,18 +42,15 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
   );
 
   const registerKeybind = useCallback(
-    (key: Keybind) => {
+    (key: RegisterKeybind) => {
       const cacheKey = key.command + key.keybindExpression;
-      if (keybinds.current.has(cacheKey)) {
-        return;
-      }
-
       // The map serves as a de-duplication of keybinds
       // causing the checkers to stay up to date
       keybinds.current.set(cacheKey, {
         command: key.command,
         overrideInput: key.overrideInput,
         keybindExpression: key.keybindExpression,
+        disabled: key.disabled,
         check: createChecker(key.keybindExpression),
       });
     },
@@ -69,7 +71,8 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement;
 
-      for (const bind of keybinds.current.values()) {
+      for (const bind of [...keybinds.current.values()].reverse()) {
+        if (bind.disabled) continue;
         if (!bind.check(e)) continue;
 
         // If the target element is an input element we skip triggering

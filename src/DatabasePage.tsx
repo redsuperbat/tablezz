@@ -14,13 +14,13 @@ export function DatabasePage() {
   const { selectedTable } = useSelectedTableContext();
 
   const showSqlEditor = useRegisterKeybindToggle({
-    name: "ToggleSqlEditor",
+    command: "ToggleSqlEditor",
     keybindExpression: "Leader + s",
     initialValue: false,
   });
 
   const showQueryHistory = useRegisterKeybindToggle({
-    name: "ToggleQueryHistory",
+    command: "ToggleQueryHistory",
     keybindExpression: "Leader + q",
     initialValue: false,
   });
