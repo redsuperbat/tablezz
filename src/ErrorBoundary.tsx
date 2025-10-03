@@ -31,6 +31,7 @@ export class ErrorBoundary extends Component<
   }
 
   render(): ReactNode {
+    console.log(this.state.error);
     if (this.state.error) {
       return (
         <div className="grid place-items-center w-screen h-screen">

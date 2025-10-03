@@ -10,6 +10,10 @@ export function Table({ tableName }: { tableName: string }) {
     dataType: "text" as const,
   }));
 
+  if (rows.error) {
+    return <div>{rows.error.message}</div>;
+  }
+
   return (
     <TableEditorProvider>
       <div className="overflow-scroll h-full font-normal text-start">

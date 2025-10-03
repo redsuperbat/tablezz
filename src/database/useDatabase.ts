@@ -14,22 +14,33 @@ export function useDatabase(): DatabaseConnection {
   const { databaseUrlRaw } = useConnectionCredentials();
 
   const databaseQuery = useSuspenseQuery({
-    queryFn: () => Database.load(databaseUrlRaw),
+    queryFn: () =>
+      Database.load(databaseUrlRaw).catch((e) => {
+        // For some reason the tauri sql sdk throws strings 🤷
+        throw new Error(String(e), { cause: e });
+      }),
     queryKey: ["database", databaseUrlRaw],
   });
 
   return useMemo(
-    () =>
-      ({
-        async execute(query, bindValues) {
+    (): DatabaseConnection => ({
+      async execute(query, bindValues) {
+        try {
           queryHistory.addEntry({ query, createdAt: new Date() });
           await databaseQuery.data.execute(query, bindValues);
-        },
-        async select(query, bindValues) {
+        } catch (error) {
+          throw new Error(String(error), { cause: error });
+        }
+      },
+      async select(query, bindValues) {
+        try {
           queryHistory.addEntry({ query, createdAt: new Date() });
           return await databaseQuery.data.select(query, bindValues);
-        },
-      }) satisfies DatabaseConnection,
+        } catch (error) {
+          throw new Error(String(error), { cause: error });
+        }
+      },
+    }),
     [databaseQuery.data, queryHistory.addEntry],
   );
 }

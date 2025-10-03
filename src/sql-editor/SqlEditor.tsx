@@ -57,9 +57,7 @@ export function SqlEditor({ onClose }: { onClose: () => void }) {
       invoke("create_pty", {
         cols: term.cols,
         rows: term.rows,
-        initialContent: `
-
-`,
+        initialContent: "",
         editor: config.get("editor"),
       });
     });
@@ -89,5 +87,7 @@ export function SqlEditor({ onClose }: { onClose: () => void }) {
     };
   }, [onClose, config]);
 
-  return <div ref={terminalRef} className="w-full h-full overflow-hidden" />;
+  return (
+    <div ref={terminalRef} className="w-full h-full overflow-auto resize " />
+  );
 }
