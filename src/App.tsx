@@ -1,10 +1,10 @@
 import { Toaster } from "@/components/ui/sonner";
-import { CommandPalette } from "./CommandPalette";
 import { ConnectionCredentialsProvider } from "./ConnectionCredentialsProvider";
 import { CommandsProvider } from "./commands/CommandsContext";
 import { ConfigurationProvider } from "./config/ConfigurationProvider";
 import { QueryHistoryProvider } from "./database/QueryHistoryProvider";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { Finder } from "./Finder";
 import { KeybindHelp } from "./keybinds/KeybindHelp";
 import { KeybindProvider } from "./keybinds/KeybindProvider";
 import { RouteProvider, Router } from "./Router";
@@ -25,7 +25,7 @@ export function App() {
                     <SchemaProvider>
                       <SelectedTableProvider>
                         <KeybindHelp />
-                        <CommandPalette />
+                        <Finder />
                         <Router />
                       </SelectedTableProvider>
                     </SchemaProvider>

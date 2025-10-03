@@ -17,13 +17,13 @@ import { useSelectedTableContext } from "./SelectedTableProvider";
 import { useSelectedDatabaseSchemas } from "./useSelectedDatabaseSchemas";
 import { useSelectedSchemaTables } from "./useSelectedSchemaTables";
 
-interface CommandPaletteItem {
+interface FinderItem {
   icon: ReactNode;
   onSelect(): void;
   searchTerm: string;
 }
 
-export function CommandPalette() {
+export function Finder() {
   const { setSelectedTable } = useSelectedTableContext();
   const { routes, navigateTo } = useRouter();
   const selectedSchema = useSelectedSchemaTables();
@@ -38,7 +38,7 @@ export function CommandPalette() {
 
   const schemas = useMemo(() => selectedSchemas.data ?? [], [selectedSchemas]);
 
-  const items = useMemo((): CommandPaletteItem[] => {
+  const items = useMemo((): FinderItem[] => {
     return [
       ...tables.map((t) => ({
         icon: <Table />,
@@ -80,13 +80,13 @@ export function CommandPalette() {
   }, [searchTerm, items]);
 
   useRegisterKeybindCommand({
-    command: "CommandPaletteShow",
+    command: "FinderShow",
     action: () => setOpen(true),
     keybindExpression: "Leader + Space",
   });
 
   useRegisterKeybindCommand({
-    command: "CommandPaletteSelect",
+    command: "FinderSelect",
     action() {
       filteredItems[selectedIndex].item.onSelect?.();
       setOpen(false);
@@ -97,7 +97,7 @@ export function CommandPalette() {
   });
 
   useRegisterKeybindCommand({
-    command: "CommandPaletteSelectPrev",
+    command: "FinderSelectPrev",
     keybindExpression: "(Control + k) | ArrowUp",
     overrideInput: true,
     action() {
@@ -109,7 +109,7 @@ export function CommandPalette() {
   });
 
   useRegisterKeybindCommand({
-    command: "CommandPaletteSelectNext",
+    command: "FinderSelectNext",
     keybindExpression: "(Control + j) | ArrowDown",
     overrideInput: true,
     action() {
@@ -160,7 +160,7 @@ function SearchItem({
 }: {
   selectedIndex: number;
   index: number;
-  item: CommandPaletteItem;
+  item: FinderItem;
   highlightRanges: [number, number][] | null;
 }) {
   const isActive = selectedIndex === index;
