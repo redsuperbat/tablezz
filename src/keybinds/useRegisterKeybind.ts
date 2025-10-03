@@ -1,123 +1,26 @@
+import type { Command } from "@/commands/Command";
+import { useCommandsContext } from "@/commands/CommandsContext";
 import { useConfig } from "@/config/ConfigurationProvider";
+import type { Keybind } from "./Keybind";
 import { useKeybindContext } from "./KeybindProvider";
 
-export type KeybindExpression =
-  // Whitespace & Editing
-  | (
-      | "Enter"
-      | "Tab"
-      | "Backspace"
-      | "Delete"
-      | "Insert"
+interface KeybindCommand extends Omit<Command, "name">, Keybind {}
 
-      // Navigation
-      | "ArrowUp"
-      | "ArrowDown"
-      | "ArrowLeft"
-      | "ArrowRight"
-      | "Home"
-      | "End"
-      | "PageUp"
-      | "PageDown"
-
-      // Modifiers
-      | "Shift"
-      | "Control"
-      | "Alt"
-      | "Meta"
-      | "AltGraph"
-
-      // Function keys
-      | "F1"
-      | "F2"
-      | "F3"
-      | "F4"
-      | "F5"
-      | "F6"
-      | "F7"
-      | "F8"
-      | "F9"
-      | "F10"
-      | "F11"
-      | "F12"
-      | "F13"
-      | "F14"
-      | "F15"
-      | "F16"
-      | "F17"
-      | "F18"
-      | "F19"
-      | "F20"
-      | "F21"
-      | "F22"
-      | "F23"
-      | "F24"
-
-      // Multimedia & System control
-      | "AudioVolumeUp"
-      | "AudioVolumeDown"
-      | "AudioVolumeMute"
-      | "MediaPlayPause"
-      | "MediaStop"
-      | "MediaTrackNext"
-      | "MediaTrackPrevious"
-      | "LaunchApplication1"
-      | "LaunchApplication2"
-      | "LaunchMail"
-      | "BrowserBack"
-      | "BrowserForward"
-      | "BrowserRefresh"
-      | "BrowserStop"
-      | "BrowserSearch"
-      | "BrowserFavorites"
-      | "BrowserHome"
-
-      // Lock keys
-      | "CapsLock"
-      | "NumLock"
-      | "ScrollLock"
-
-      // IME & Composition
-      | "Dead"
-      | "Compose"
-      | "Process"
-      | "Convert"
-      | "NonConvert"
-      | "KanaMode"
-      | "KanjiMode"
-      | "Hiragana"
-      | "Katakana"
-      | "HangulMode"
-      | "HanjaMode"
-
-      // Miscellaneous
-      | "Escape"
-      | "Space"
-      | "PrintScreen"
-      | "Pause"
-      | "ContextMenu"
-      | "Help"
-    )
-  | (string & {});
-
-export interface Keybind {
-  name: string;
-  keybindExpression: KeybindExpression;
-  onTrigger(e: KeyboardEvent): void;
-  /**
-   * Whether the keybind should override the
-   * input if the event target originates from a
-   * textarea or input element
-   * */
-  overrideInput?: boolean;
-}
-
-export function useRegisterKeybind(bind: Keybind) {
+export function useRegisterKeybindCommand(keybindCommand: KeybindCommand) {
   const config = useConfig();
   const keybindContext = useKeybindContext();
+  const commandsContext = useCommandsContext();
 
-  bind.keybindExpression =
-    config.get("keybindings")[bind.name] ?? bind.keybindExpression;
+  commandsContext.registerCommand({
+    action: keybindCommand.action,
+    name: keybindCommand.command,
+  });
 
-  keybindContext.register(bind);
+  keybindContext.register({
+    command: keybindCommand.command,
+    keybindExpression:
+      config.get("keybindings")[keybindCommand.command] ??
+      keybindCommand.keybindExpression,
+    overrideInput: keybindCommand.overrideInput,
+  });
 }

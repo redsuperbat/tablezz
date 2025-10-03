@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useKeybindContext } from "./KeybindProvider";
-import { useRegisterKeybind } from "./useRegisterKeybind";
+import { useRegisterKeybindCommand } from "./useRegisterKeybind";
 
 function Code({ children }: PropsWithChildren) {
   return (
@@ -21,10 +21,10 @@ function Code({ children }: PropsWithChildren) {
 export function KeybindHelp() {
   const [open, setOpen] = useState(false);
 
-  useRegisterKeybind({
+  useRegisterKeybindCommand({
     keybindExpression: "?",
-    name: "OpenKeybindHelp",
-    onTrigger() {
+    command: "OpenKeybindHelp",
+    action() {
       setOpen((o) => !o);
     },
   });
@@ -45,16 +45,16 @@ export function KeybindHelp() {
         </DialogHeader>
         <div className="flex flex-col gap-0.5">
           {Object.values(binds.keybinds())
-            .sort((a, b) => a.name.localeCompare(b.name))
+            .sort((a, b) => a.command.localeCompare(b.command))
             .map((key) => (
               <div
                 className={cn("grid grid-cols-3 gap-3")}
                 style={{ gridTemplateColumns: "1fr auto 1fr" }}
-                key={key.name}
+                key={key.command}
               >
                 <Code>{key.keybindExpression}</Code>
                 <span>-&gt;</span>
-                <span>{key.name}</span>
+                <span>{key.command}</span>
               </div>
             ))}
         </div>

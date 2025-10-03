@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "./components/ui/input";
-import { useRegisterKeybind } from "./keybinds/useRegisterKeybind";
+import { useRegisterKeybindCommand } from "./keybinds/useRegisterKeybind";
 import { useIntersectionScroll } from "./lib/useIntersectionScroll";
 import { cn } from "./lib/utils";
 import { useRouter } from "./Router";
@@ -79,15 +79,15 @@ export function CommandPalette() {
     setSelectedIndex(0);
   }, [searchTerm, items]);
 
-  useRegisterKeybind({
-    name: "CommandPaletteShow",
-    onTrigger: () => setOpen(true),
+  useRegisterKeybindCommand({
+    command: "CommandPaletteShow",
+    action: () => setOpen(true),
     keybindExpression: "Leader + Space",
   });
 
-  useRegisterKeybind({
-    name: "CommandPaletteSelect",
-    onTrigger() {
+  useRegisterKeybindCommand({
+    command: "CommandPaletteSelect",
+    action() {
       filteredItems[selectedIndex].item.onSelect?.();
       setOpen(false);
       setSearchTerm("");
@@ -96,11 +96,11 @@ export function CommandPalette() {
     overrideInput: true,
   });
 
-  useRegisterKeybind({
-    name: "CommandPaletteSelectPrev",
+  useRegisterKeybindCommand({
+    command: "CommandPaletteSelectPrev",
     keybindExpression: "(Control + k) | ArrowUp",
     overrideInput: true,
-    onTrigger() {
+    action() {
       if (selectedIndex === 0) {
         return setSelectedIndex(filteredItems.length - 1);
       }
@@ -108,11 +108,11 @@ export function CommandPalette() {
     },
   });
 
-  useRegisterKeybind({
-    name: "CommandPaletteSelectNext",
+  useRegisterKeybindCommand({
+    command: "CommandPaletteSelectNext",
     keybindExpression: "(Control + j) | ArrowDown",
     overrideInput: true,
-    onTrigger() {
+    action() {
       if (selectedIndex === filteredItems.length - 1) {
         return setSelectedIndex(0);
       }

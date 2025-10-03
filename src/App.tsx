@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { CommandPalette } from "./CommandPalette";
 import { ConnectionCredentialsProvider } from "./ConnectionCredentialsProvider";
+import { CommandsProvider } from "./commands/CommandsContext";
 import { ConfigurationProvider } from "./config/ConfigurationProvider";
 import { QueryHistoryProvider } from "./database/QueryHistoryProvider";
 import { ErrorBoundary } from "./ErrorBoundary";
@@ -17,19 +18,21 @@ export function App() {
       <ErrorBoundary>
         <ConnectionCredentialsProvider>
           <ConfigurationProvider>
-            <KeybindProvider>
-              <QueryHistoryProvider>
-                <RouteProvider>
-                  <SchemaProvider>
-                    <SelectedTableProvider>
-                      <KeybindHelp />
-                      <CommandPalette />
-                      <Router />
-                    </SelectedTableProvider>
-                  </SchemaProvider>
-                </RouteProvider>
-              </QueryHistoryProvider>
-            </KeybindProvider>
+            <CommandsProvider>
+              <KeybindProvider>
+                <QueryHistoryProvider>
+                  <RouteProvider>
+                    <SchemaProvider>
+                      <SelectedTableProvider>
+                        <KeybindHelp />
+                        <CommandPalette />
+                        <Router />
+                      </SelectedTableProvider>
+                    </SchemaProvider>
+                  </RouteProvider>
+                </QueryHistoryProvider>
+              </KeybindProvider>
+            </CommandsProvider>
           </ConfigurationProvider>
         </ConnectionCredentialsProvider>
       </ErrorBoundary>

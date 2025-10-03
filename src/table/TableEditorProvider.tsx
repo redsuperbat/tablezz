@@ -5,7 +5,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { useRegisterKeybind } from "@/keybinds/useRegisterKeybind";
+import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybind";
 import { useSelectedTableContext } from "@/SelectedTableProvider";
 import { useTableRows } from "@/useTableRows";
 import { useTableStructure } from "@/useTableStructure";
@@ -24,10 +24,10 @@ export function TableEditorProvider({ children }: { children: ReactNode }) {
   const [row, setRow] = useState<number>(0);
   const [column, setColumn] = useState<number>(0);
 
-  useRegisterKeybind({
-    name: "MoveCellRight",
+  useRegisterKeybindCommand({
+    command: "MoveCellRight",
     keybindExpression: "l",
-    onTrigger() {
+    action() {
       if (column === columnLength - 1) {
         return setColumn(0);
       }
@@ -35,10 +35,10 @@ export function TableEditorProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  useRegisterKeybind({
-    name: "MoveCellLeft",
+  useRegisterKeybindCommand({
+    command: "MoveCellLeft",
     keybindExpression: "h",
-    onTrigger() {
+    action() {
       if (column === 0) {
         return setColumn(columnLength - 1);
       }
@@ -46,10 +46,10 @@ export function TableEditorProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  useRegisterKeybind({
-    name: "MoveCellUp",
+  useRegisterKeybindCommand({
+    command: "MoveCellUp",
     keybindExpression: "k",
-    onTrigger() {
+    action() {
       if (row === 0) {
         return setRow(rowLength - 1);
       }
@@ -57,10 +57,10 @@ export function TableEditorProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  useRegisterKeybind({
-    name: "MoveCellDown",
+  useRegisterKeybindCommand({
+    command: "MoveCellDown",
     keybindExpression: "j",
-    onTrigger() {
+    action() {
       if (row === rowLength - 1) {
         return setRow(0);
       }

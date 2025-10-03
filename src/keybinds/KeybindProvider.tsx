@@ -1,19 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCommandsContext } from "@/commands/CommandsContext";
 import { useConfig } from "@/config/ConfigurationProvider";
 import { createReactContext } from "@/createReactContext";
+import type { Keybind } from "./Keybind";
 import { KeybindChecker, type KeyEvent } from "./KeybindChecker";
 import { KeybindLeaderTracker } from "./KeybindLeaderTracker";
 import { KeybindParser } from "./KeybindParser";
 import { KeybindTokenizer } from "./KeybindTokenizer";
-import type { Keybind } from "./useRegisterKeybind";
 
-interface RegisteredKeybind extends Keybind {
+interface RegisteredKeybind extends Omit<Keybind, "keybindExpression"> {
   check: (e: KeyEvent) => boolean;
 }
 
 export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
   const config = useConfig();
-  const keybinds = useRef<{ [name: string]: RegisteredKeybind }>({});
+  const commandsContext = useCommandsContext();
+  const keybinds = useRef<Map<string, RegisteredKeybind>>(new Map());
 
   const leaderTracker = useMemo(
     () =>
@@ -36,21 +38,22 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
 
   const register = useCallback(
     (key: Keybind) => {
-      keybinds.current[key.name] = {
-        ...key,
+      keybinds.current.set(key.command, {
+        command: key.command,
+        overrideInput: key.overrideInput,
         check: createChecker(key.keybindExpression),
-      };
+      });
     },
     [createChecker],
   );
 
   useEffect(() => {
-    function checkAndExecute(e: KeyboardEvent) {
+    function checkAndTrigger(e: KeyboardEvent) {
       const isInvalidTarget =
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement;
 
-      for (const bind of Object.values(keybinds.current)) {
+      for (const bind of keybinds.current.values()) {
         if (!bind.check(e)) continue;
 
         // If the target element is an input element we skip triggering
@@ -59,7 +62,7 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
 
         e.preventDefault();
         e.stopPropagation();
-        bind.onTrigger(e);
+        commandsContext.triggerCommand(bind.command);
 
         // Only trigger a single binding.
         // We cannot map a single keybind to trigger multiple things
@@ -67,9 +70,9 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
       }
     }
 
-    window.addEventListener("keydown", checkAndExecute);
-    return () => window.removeEventListener("keydown", checkAndExecute);
-  }, []);
+    window.addEventListener("keydown", checkAndTrigger);
+    return () => window.removeEventListener("keydown", checkAndTrigger);
+  }, [commandsContext.triggerCommand]);
 
   return {
     keybinds: () => keybinds.current,

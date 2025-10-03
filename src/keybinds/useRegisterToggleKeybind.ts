@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useRegisterKeybind } from "./useRegisterKeybind";
+import { useRegisterKeybindCommand } from "./useRegisterKeybind";
 
 export interface RegisterToggleKeybindOption {
   keybindExpression: string;
@@ -14,10 +14,10 @@ export function useRegisterKeybindToggle({
 }: RegisterToggleKeybindOption) {
   const [show, setShow] = useState(initialValue ?? false);
 
-  useRegisterKeybind({
-    name,
+  useRegisterKeybindCommand({
+    command: name,
     keybindExpression,
-    onTrigger() {
+    action() {
       setShow((s) => !s);
     },
   });
