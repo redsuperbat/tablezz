@@ -6,6 +6,7 @@ import {
   useState,
 } from "react";
 import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
+import { wrapWithZero } from "@/lib/utils";
 import { useSelectedTableContext } from "@/SelectedTableProvider";
 import { useTableRows } from "@/useTableRows";
 import { useTableStructure } from "@/useTableStructure";
@@ -28,10 +29,7 @@ export function TableEditorProvider({ children }: { children: ReactNode }) {
     command: "MoveCellRight",
     keybindExpression: "l",
     action() {
-      if (column === columnLength - 1) {
-        return setColumn(0);
-      }
-      setColumn((c) => c + 1);
+      setColumn((c) => wrapWithZero(c + 1, columnLength - 1));
     },
   });
 
@@ -39,10 +37,7 @@ export function TableEditorProvider({ children }: { children: ReactNode }) {
     command: "MoveCellLeft",
     keybindExpression: "h",
     action() {
-      if (column === 0) {
-        return setColumn(columnLength - 1);
-      }
-      setColumn((c) => c - 1);
+      setColumn((c) => wrapWithZero(c - 1, columnLength - 1));
     },
   });
 
@@ -50,10 +45,7 @@ export function TableEditorProvider({ children }: { children: ReactNode }) {
     command: "MoveCellUp",
     keybindExpression: "k",
     action() {
-      if (row === 0) {
-        return setRow(rowLength - 1);
-      }
-      setRow((r) => r - 1);
+      setRow((r) => wrapWithZero(r - 1, rowLength - 1));
     },
   });
 
@@ -61,10 +53,7 @@ export function TableEditorProvider({ children }: { children: ReactNode }) {
     command: "MoveCellDown",
     keybindExpression: "j",
     action() {
-      if (row === rowLength - 1) {
-        return setRow(0);
-      }
-      setRow((c) => c + 1);
+      setRow((r) => wrapWithZero(r + 1, rowLength - 1));
     },
   });
 

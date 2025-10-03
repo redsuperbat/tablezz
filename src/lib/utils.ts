@@ -35,3 +35,7 @@ export function wrap(value: number, min: number, max: number): number {
   if (value > max) return min;
   return value;
 }
+
+export function wrapWithZero(value: number, max: number): number {
+  return wrap(value, 0, max);
+}
