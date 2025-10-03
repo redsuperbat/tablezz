@@ -64,6 +64,16 @@ function Autocomplete({
   });
 
   useRegisterKeybindCommand({
+    command: "CommandCompletePrev",
+    action() {
+      selectedIndex.decrement();
+    },
+    keybindExpression: "Shift + Tab",
+    disabled: filteredCommands.length === 1,
+    overrideInput: true,
+  });
+
+  useRegisterKeybindCommand({
     command: "CommandAutocompleteAccept",
     keybindExpression: "Enter",
     action() {
