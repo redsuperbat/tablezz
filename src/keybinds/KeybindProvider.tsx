@@ -36,9 +36,16 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
     [leaderTracker],
   );
 
-  const register = useCallback(
+  const registerKeybind = useCallback(
     (key: Keybind) => {
-      keybinds.current.set(key.command, {
+      const cacheKey = key.command + key.keybindExpression;
+      if (keybinds.current.has(cacheKey)) {
+        return;
+      }
+
+      // The map serves as a de-duplication of keybinds
+      // causing the checkers to stay up to date
+      keybinds.current.set(cacheKey, {
         command: key.command,
         overrideInput: key.overrideInput,
         keybindExpression: key.keybindExpression,
@@ -47,6 +54,14 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
     },
     [createChecker],
   );
+
+  useEffect(() => {
+    const configurationKeybinds = Object.entries(config.get("keybindings"));
+
+    for (const [keybindExpression, command] of configurationKeybinds) {
+      registerKeybind({ command, keybindExpression });
+    }
+  }, [config, registerKeybind]);
 
   useEffect(() => {
     function checkAndTrigger(e: KeyboardEvent) {
@@ -78,6 +93,6 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
   return {
     keybinds: () => keybinds.current,
     leaderTracker,
-    register,
+    registerKeybind,
   };
 });

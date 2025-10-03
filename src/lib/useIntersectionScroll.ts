@@ -11,7 +11,7 @@ export function useIntersectionScroll<T extends HTMLElement = HTMLDivElement>(
     if (!el) return;
 
     const observer = new IntersectionObserver(
-      ([entry]) => setIsInView(entry.isIntersecting),
+      ([entry]) => entry && setIsInView(entry.isIntersecting),
       { threshold: 1.0 },
     );
 

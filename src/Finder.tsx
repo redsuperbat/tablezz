@@ -88,7 +88,7 @@ export function Finder() {
   useRegisterKeybindCommand({
     command: "FinderSelect",
     action() {
-      filteredItems[selectedIndex].item.onSelect?.();
+      filteredItems[selectedIndex]?.item.onSelect?.();
       setOpen(false);
       setSearchTerm("");
     },

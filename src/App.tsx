@@ -1,5 +1,6 @@
 import { Toaster } from "@/components/ui/sonner";
 import { ConnectionCredentialsProvider } from "./ConnectionCredentialsProvider";
+import { CommandPalette } from "./commands/CommandPalette";
 import { CommandsProvider } from "./commands/CommandsContext";
 import { ConfigurationProvider } from "./config/ConfigurationProvider";
 import { QueryHistoryProvider } from "./database/QueryHistoryProvider";
@@ -20,6 +21,7 @@ export function App() {
           <ConfigurationProvider>
             <CommandsProvider>
               <KeybindProvider>
+                <CommandPalette />
                 <QueryHistoryProvider>
                   <RouteProvider>
                     <SchemaProvider>

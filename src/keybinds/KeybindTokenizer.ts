@@ -40,6 +40,10 @@ export class KeybindTokenizer {
   #next(): string {
     const char = this.#text[this.#index];
 
+    if (char == null) {
+      throw new Error("Unexpected end of expression");
+    }
+
     if (char === "\n") {
       this.#col = 1;
       this.#line += 1;
@@ -81,7 +85,7 @@ export class KeybindTokenizer {
       const char = this.#peek();
 
       // we dont care about spaces and newlines
-      if (/\s/.test(char)) {
+      if (/\s/.test(char ?? "")) {
         this.#next();
         continue;
       }
@@ -123,7 +127,7 @@ export class KeybindTokenizer {
     const start = this.#pos();
     let lexeme = this.#next();
 
-    while (this.#kewordRegex.test(this.#peek()) && !this.#isAtEnd()) {
+    while (this.#kewordRegex.test(this.#peek() ?? "") && !this.#isAtEnd()) {
       lexeme += this.#next();
     }
 
