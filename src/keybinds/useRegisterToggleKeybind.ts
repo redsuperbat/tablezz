@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useRegisterKeybindCommand } from "./useRegisterKeybind";
+import { useRegisterKeybindCommand } from "./useRegisterKeybindCommand";
 
 export interface RegisterToggleKeybindOption {
   keybindExpression: string;

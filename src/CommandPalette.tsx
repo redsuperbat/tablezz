@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "./components/ui/input";
-import { useRegisterKeybindCommand } from "./keybinds/useRegisterKeybind";
+import { useRegisterKeybindCommand } from "./keybinds/useRegisterKeybindCommand";
 import { useIntersectionScroll } from "./lib/useIntersectionScroll";
 import { cn } from "./lib/utils";
 import { useRouter } from "./Router";

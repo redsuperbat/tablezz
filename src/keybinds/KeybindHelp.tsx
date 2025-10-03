@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useKeybindContext } from "./KeybindProvider";
-import { useRegisterKeybindCommand } from "./useRegisterKeybind";
+import { useRegisterKeybindCommand } from "./useRegisterKeybindCommand";
 
 function Code({ children }: PropsWithChildren) {
   return (
@@ -44,7 +44,7 @@ export function KeybindHelp() {
           </VisuallyHidden>
         </DialogHeader>
         <div className="flex flex-col gap-0.5">
-          {Object.values(binds.keybinds())
+          {[...binds.keybinds().values()]
             .sort((a, b) => a.command.localeCompare(b.command))
             .map((key) => (
               <div

@@ -5,7 +5,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybind";
+import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
 import { useSelectedTableContext } from "@/SelectedTableProvider";
 import { useTableRows } from "@/useTableRows";
 import { useTableStructure } from "@/useTableStructure";

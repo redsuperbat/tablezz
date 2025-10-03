@@ -8,7 +8,7 @@ import { KeybindLeaderTracker } from "./KeybindLeaderTracker";
 import { KeybindParser } from "./KeybindParser";
 import { KeybindTokenizer } from "./KeybindTokenizer";
 
-interface RegisteredKeybind extends Omit<Keybind, "keybindExpression"> {
+interface RegisteredKeybind extends Keybind {
   check: (e: KeyEvent) => boolean;
 }
 
@@ -41,6 +41,7 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
       keybinds.current.set(key.command, {
         command: key.command,
         overrideInput: key.overrideInput,
+        keybindExpression: key.keybindExpression,
         check: createChecker(key.keybindExpression),
       });
     },

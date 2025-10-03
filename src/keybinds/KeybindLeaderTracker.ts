@@ -1,5 +1,5 @@
+import type { KeybindExpression } from "./Keybind";
 import type { KeyEvent } from "./KeybindChecker";
-import type { KeybindExpression } from "./useRegisterKeybind";
 
 export class KeybindLeaderTracker {
   #isLeaderActive?: ReturnType<typeof setTimeout>;
