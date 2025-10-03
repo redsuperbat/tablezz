@@ -1,29 +1,106 @@
-import { useId, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
 import { useRegisterKeybindToggle } from "@/keybinds/useRegisterToggleKeybind";
 import { useCommandsContext } from "./CommandsContext";
 
-export function CommandPalette() {
-  const [searchTerm, setSearchTerm] = useState("");
+function Autocomplete({
+  value,
+  onValueChanged,
+}: {
+  value: string;
+  onValueChanged: (v: string) => void;
+}) {
   const commandContext = useCommandsContext();
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: this will lazily show commands when user types
-  const _filteredCommands = useMemo(() => {
-    return commandContext
-      .listCommands()
-      .filter((c) => c.name.startsWith(searchTerm));
-  }, [searchTerm]);
+  const filteredCommands = useMemo(() => {
+    return commandContext.listCommands();
+  }, [value]);
+
+  const ghostText = useMemo(() => {
+    if (value.trim() === "") {
+      return "";
+    }
+
+    const match = filteredCommands.find((suggestion) =>
+      suggestion.name.startsWith(value),
+    );
+
+    if (!match) {
+      return "";
+    }
+
+    return match?.name;
+  }, [filteredCommands, value]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Tab" || e.key === "ArrowRight") {
+      if (ghostText && ghostText !== value) {
+        e.preventDefault();
+        onValueChanged(ghostText);
+      }
+    } else if (e.key === "Enter") {
+      if (ghostText && ghostText !== value) {
+        e.preventDefault();
+        onValueChanged(ghostText);
+      }
+    }
+  };
+
+  return (
+    <div className="relative w-full max-w-md">
+      <div className="relative">
+        <div
+          className="absolute inset-0  pointer-events-none text-gray-400 whitespace-nowrap overflow-hidden"
+          style={{
+            fontFamily: "inherit",
+            fontSize: "inherit",
+            lineHeight: "inherit",
+          }}
+        >
+          <span className="invisible">{value}</span>
+          <span>{ghostText.slice(value.length)}</span>
+        </div>
+
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onValueChanged(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Type to search..."
+          className="relative w-full focus:outline-none bg-transparent"
+          style={{ caretColor: "black" }}
+        />
+      </div>
+    </div>
+  );
+}
+
+export function CommandPalette() {
+  const commandContext = useCommandsContext();
+  const [inputValue, setInputValue] = useState("");
 
   const toggle = useRegisterKeybindToggle({
     keybindExpression: ":",
-    name: "OpenCommandPalette",
+    name: "CommandPaletteOpen",
   });
-  const id = useId();
+
+  useRegisterKeybindCommand({
+    keybindExpression: "Enter",
+    disabled: !toggle.value,
+    action() {
+      commandContext.triggerCommand(inputValue);
+      toggle.set(false);
+    },
+    command: "CommandAccept",
+    overrideInput: true,
+  });
 
   return (
     <Dialog open={toggle.value} onOpenChange={toggle.set}>
@@ -36,21 +113,7 @@ export function CommandPalette() {
           <DialogTitle className="sr-only">Command palette</DialogTitle>
           <div className="flex px-2 py-1 gap-0.5">
             <span>:</span>
-            <input
-              list={id}
-              autoFocus
-              type="text"
-              value={searchTerm}
-              className="outline-none"
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <datalist id={id}>
-              <option value="New York" />
-              <option value="Los Angeles" />
-              <option value="Chicago" />
-              <option value="Houston" />
-              <option value="Phoenix" />
-            </datalist>
+            <Autocomplete value={inputValue} onValueChanged={setInputValue} />
           </div>
         </DialogHeader>
       </DialogContent>

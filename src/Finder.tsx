@@ -80,7 +80,7 @@ export function Finder() {
   }, [searchTerm, items]);
 
   useRegisterKeybindCommand({
-    command: "FinderShow",
+    command: "FinderOpen",
     action: () => setOpen(true),
     keybindExpression: "Leader + Space",
   });
