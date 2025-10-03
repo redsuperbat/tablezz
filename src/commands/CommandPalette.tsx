@@ -7,7 +7,8 @@ import {
 } from "@/components/ui/dialog";
 import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
 import { useRegisterKeybindToggle } from "@/keybinds/useRegisterToggleKeybind";
-import { cn, wrap } from "@/lib/utils";
+import { useWrapWithZero } from "@/lib/useWrapWithZero";
+import { cn } from "@/lib/utils";
 import { useCommandsContext } from "./CommandsContext";
 
 function Autocomplete({
@@ -18,7 +19,6 @@ function Autocomplete({
   onValueChanged: (v: string) => void;
 }) {
   const commandContext = useCommandsContext();
-  const [selectedIndex, setSelectedIndex] = useState(0);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: this will lazily show commands when user types
   const commands = useMemo(() => {
@@ -45,6 +45,8 @@ function Autocomplete({
     return commands.filter((c) => c.name.startsWith(value));
   }, [commands, value]);
 
+  const selectedIndex = useWrapWithZero(filteredCommands.length - 1);
+
   const toggleShowAutocomplete = useRegisterKeybindToggle({
     keybindExpression: "Control + Space",
     command: "CommandShowAutocomplete",
@@ -55,7 +57,7 @@ function Autocomplete({
     command: "CommandAutocompleteNext",
     keybindExpression: "Tab",
     action() {
-      setSelectedIndex((i) => wrap(i + 1, 0, filteredCommands.length - 1));
+      selectedIndex.increment();
     },
     disabled: filteredCommands.length === 1,
     overrideInput: true,
@@ -65,7 +67,7 @@ function Autocomplete({
     command: "CommandAutocompleteAccept",
     keybindExpression: "Enter",
     action() {
-      const command = filteredCommands.at(selectedIndex);
+      const command = filteredCommands.at(selectedIndex.value);
       if (!command) return;
       onValueChanged(command.name);
     },
@@ -101,7 +103,7 @@ function Autocomplete({
             {filteredCommands.map((c, index) => (
               <div
                 key={c.name}
-                className={cn(index === selectedIndex && "bg-blue-200")}
+                className={cn(index === selectedIndex.value && "bg-blue-200")}
               >
                 {c.name}
               </div>

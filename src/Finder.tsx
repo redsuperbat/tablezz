@@ -10,7 +10,8 @@ import {
 import { Input } from "./components/ui/input";
 import { useRegisterKeybindCommand } from "./keybinds/useRegisterKeybindCommand";
 import { useIntersectionScroll } from "./lib/useIntersectionScroll";
-import { cn, wrap } from "./lib/utils";
+import { useWrapWithZero } from "./lib/useWrapWithZero";
+import { cn } from "./lib/utils";
 import { useRouter } from "./Router";
 import { useSchemaContext } from "./SchemaProvider";
 import { useSelectedTableContext } from "./SelectedTableProvider";
@@ -32,7 +33,6 @@ export function Finder() {
 
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedIndex, setSelectedIndex] = useState(0);
 
   const tables = useMemo(() => selectedSchema.data ?? [], [selectedSchema]);
 
@@ -74,9 +74,11 @@ export function Finder() {
     }),
   });
 
+  const selectedIndex = useWrapWithZero(filteredItems.length - 1);
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: we want to set the index to zero whenever the search term changes
   useEffect(() => {
-    setSelectedIndex(0);
+    selectedIndex.reset();
   }, [searchTerm, items]);
 
   useRegisterKeybindCommand({
@@ -88,7 +90,7 @@ export function Finder() {
   useRegisterKeybindCommand({
     command: "FinderSelect",
     action() {
-      filteredItems[selectedIndex]?.item.onSelect?.();
+      filteredItems[selectedIndex.value]?.item.onSelect?.();
       setOpen(false);
       setSearchTerm("");
     },
@@ -103,7 +105,7 @@ export function Finder() {
     overrideInput: true,
     disabled: !open,
     action() {
-      setSelectedIndex((i) => wrap(i - 1, 0, filteredItems.length - 1));
+      selectedIndex.decrement();
     },
   });
 
@@ -113,7 +115,7 @@ export function Finder() {
     overrideInput: true,
     disabled: !open,
     action() {
-      setSelectedIndex((i) => wrap(i + 1, 0, filteredItems.length - 1));
+      selectedIndex.increment();
     },
   });
 
@@ -139,7 +141,7 @@ export function Finder() {
               key={item.searchTerm}
               index={i}
               item={item}
-              selectedIndex={selectedIndex}
+              selectedIndex={selectedIndex.value}
               highlightRanges={highlightRanges}
             />
           ))}

@@ -1,12 +1,6 @@
-import {
-  createContext,
-  type ReactNode,
-  useContext,
-  useMemo,
-  useState,
-} from "react";
+import { createContext, type ReactNode, useContext, useMemo } from "react";
 import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
-import { wrapWithZero } from "@/lib/utils";
+import { useWrapWithZero } from "@/lib/useWrapWithZero";
 import { useSelectedTableContext } from "@/SelectedTableProvider";
 import { useTableRows } from "@/useTableRows";
 import { useTableStructure } from "@/useTableStructure";
@@ -22,14 +16,14 @@ export function TableEditorProvider({ children }: { children: ReactNode }) {
   const { selectedTable } = useSelectedTableContext();
   const columnLength = useTableStructure(selectedTable).data?.length ?? 0;
   const rowLength = useTableRows(selectedTable).data?.length ?? 0;
-  const [row, setRow] = useState<number>(0);
-  const [column, setColumn] = useState<number>(0);
+  const row = useWrapWithZero(rowLength - 1);
+  const column = useWrapWithZero(columnLength - 1);
 
   useRegisterKeybindCommand({
     command: "MoveCellRight",
     keybindExpression: "l",
     action() {
-      setColumn((c) => wrapWithZero(c + 1, columnLength - 1));
+      column.increment();
     },
   });
 
@@ -37,7 +31,7 @@ export function TableEditorProvider({ children }: { children: ReactNode }) {
     command: "MoveCellLeft",
     keybindExpression: "h",
     action() {
-      setColumn((c) => wrapWithZero(c - 1, columnLength - 1));
+      column.decrement();
     },
   });
 
@@ -45,7 +39,7 @@ export function TableEditorProvider({ children }: { children: ReactNode }) {
     command: "MoveCellUp",
     keybindExpression: "k",
     action() {
-      setRow((r) => wrapWithZero(r - 1, rowLength - 1));
+      row.decrement();
     },
   });
 
@@ -53,11 +47,14 @@ export function TableEditorProvider({ children }: { children: ReactNode }) {
     command: "MoveCellDown",
     keybindExpression: "j",
     action() {
-      setRow((r) => wrapWithZero(r + 1, rowLength - 1));
+      row.increment();
     },
   });
 
-  const context = useMemo(() => ({ row, column }), [row, column]);
+  const context = useMemo(
+    () => ({ row: row.value, column: column.value }),
+    [row, column],
+  );
 
   return (
     <TableEditorContext.Provider value={context}>
