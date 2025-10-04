@@ -50,6 +50,10 @@ export class KeybindLeaderTracker {
   }
 
   #isLeader(e: KeyEvent) {
+    // If any modifier keys are held, it can't be the leader key
+    if (e.altKey || e.ctrlKey || e.metaKey) {
+      return false;
+    }
     // check code here as well for more configuration options
     return e.code === this.#leaderKey || this.#leaderKey === e.key;
   }
