@@ -115,14 +115,12 @@ function FinderContent({
     },
     keybindExpression: "Enter",
     overrideInput: true,
-    disabled: !open,
   });
 
   useRegisterKeybindCommand({
     command: "FinderSelectPrev",
     keybindExpression: "(Control + k) | ArrowUp",
     overrideInput: true,
-    disabled: !open,
     action() {
       selectedIndex.decrement();
     },
@@ -132,7 +130,6 @@ function FinderContent({
     command: "FinderSelectNext",
     keybindExpression: "(Control + j) | ArrowDown",
     overrideInput: true,
-    disabled: !open,
     action() {
       selectedIndex.increment();
     },
