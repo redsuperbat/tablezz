@@ -12,35 +12,45 @@ export class KeybindLeaderTracker {
     this.#leaderKey = leaderKey;
   }
 
-  track(): void {
+  #track(): void {
     this.#expired = false;
     clearTimeout(this.#isLeaderActive);
 
     this.#isLeaderActive = setTimeout(() => {
-      this.clear();
+      this.#clear();
     }, this.#expirationTime);
   }
 
-  get isTracking() {
+  #isTracking() {
     return this.#isLeaderActive != null;
   }
 
-  clear() {
+  #clear() {
     clearTimeout(this.#isLeaderActive);
     this.#isLeaderActive = undefined;
     this.#expired = true;
   }
 
-  isLeader(e: KeyEvent) {
-    // check code here as well for more configuration options
-    return e.code === this.#leaderKey || this.#leaderKey === e.key;
+  get isActive() {
+    return !this.#expired;
   }
 
-  withLeaderScope(cb: () => boolean) {
-    if (this.#expired) {
-      return false;
+  checkLeaderAndStartTracking(e: KeyEvent): { trackingStarted: boolean } {
+    // If it is the leader key and we are not tracking we
+    // start tracking and ignore the event for the keybind
+    // checks
+    if (this.#isLeader(e) && !this.#isTracking()) {
+      this.#track();
+      return { trackingStarted: true };
     }
 
-    return cb();
+    // If it's not a leader key we just ignore and allow
+    // the consecutive checks to happen
+    return { trackingStarted: false };
+  }
+
+  #isLeader(e: KeyEvent) {
+    // check code here as well for more configuration options
+    return e.code === this.#leaderKey || this.#leaderKey === e.key;
   }
 }

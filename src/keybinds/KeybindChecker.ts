@@ -49,16 +49,7 @@ export class KeybindChecker {
       case "ctrl":
         return this.#event.ctrlKey && this.check(n.right);
       case "leader": {
-        if (this.#leaderTracker.isTracking) {
-          return this.#leaderTracker.withLeaderScope(() => this.check(n.right));
-        }
-
-        if (this.#leaderTracker.isLeader(this.#event)) {
-          this.#leaderTracker.track();
-          return false;
-        }
-
-        return false;
+        return this.#leaderTracker.isActive && this.check(n.right);
       }
     }
 
@@ -66,12 +57,6 @@ export class KeybindChecker {
   }
 
   #checkKey(n: KeyNode): boolean {
-    const result = n.key === this.#event.key || n.key === this.#event.code;
-    // If we get a hit, we clear the leader key as to not allow subsequent
-    // keys interfere
-    if (result) {
-      this.#leaderTracker.clear();
-    }
-    return result;
+    return n.key === this.#event.key || n.key === this.#event.code;
   }
 }

@@ -67,6 +67,14 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
 
   useEffect(() => {
     function checkAndTrigger(e: KeyboardEvent) {
+      const { trackingStarted } = leaderTracker.checkLeaderAndStartTracking(e);
+
+      // If we started tracking the leader key we
+      // do not want to check keybinds for the next event
+      if (trackingStarted) {
+        return;
+      }
+
       const isInvalidTarget =
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement;
@@ -74,7 +82,6 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
       for (const bind of [...keybinds.current.values()].reverse()) {
         if (bind.disabled) continue;
         if (!bind.check(e)) continue;
-        console.log(bind, e);
 
         // If the target element is an input element we skip triggering
         // the keybind. Unless the keybind specifically override it
@@ -92,7 +99,7 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
 
     window.addEventListener("keydown", checkAndTrigger);
     return () => window.removeEventListener("keydown", checkAndTrigger);
-  }, [commandsContext.triggerCommand]);
+  }, [commandsContext.triggerCommand, leaderTracker]);
 
   return {
     keybinds: () => keybinds.current,
