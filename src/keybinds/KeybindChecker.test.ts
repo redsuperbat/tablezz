@@ -1,23 +1,46 @@
-import { expect, test } from "vitest";
-import { KeybindChecker } from "./KeybindChecker.ts";
+import { describe, expect, test } from "vitest";
+import { KeybindChecker, type KeyEvent } from "./KeybindChecker.ts";
 import { KeybindLeaderTracker } from "./KeybindLeaderTracker.ts";
 import { KeybindParser } from "./KeybindParser.ts";
 import { KeybindTokenizer } from "./KeybindTokenizer";
 
-test("KeybindChecker", () => {
-  const tokenizer = new KeybindTokenizer("(Enter + k) | (Meta + j)");
+const check = ({
+  event,
+  expr,
+}: {
+  expr: string;
+  event: Partial<KeyEvent> & { key: string };
+}): boolean => {
+  const tokenizer = new KeybindTokenizer(expr);
   const parser = new KeybindParser(tokenizer.tokenize());
   const checker = new KeybindChecker(
     {
       altKey: false,
       ctrlKey: false,
-      metaKey: true,
-      code: "k",
-      key: "j",
+      metaKey: false,
+      code: "",
+      ...event,
     },
-    new KeybindLeaderTracker(1000, "Enter"),
+    new KeybindLeaderTracker(1000, "Space"),
   );
-  const expresssion = parser.parseKeyExpression();
-  const result = checker.check(expresssion);
-  expect(result).toBe(true);
+  const expression = parser.parseKeyExpression();
+  return checker.check(expression);
+};
+
+describe("KeybindChecker", () => {
+  test("or statements", () => {
+    const result = check({
+      expr: "(Control + k) | (Meta + j)",
+      event: { key: "k", ctrlKey: true },
+    });
+    expect(result).toBe(true);
+  });
+
+  test("leader key", () => {
+    const result = check({
+      event: { key: "Space" },
+      expr: "Leader + Space",
+    });
+    expect(result).toBe(false);
+  });
 });

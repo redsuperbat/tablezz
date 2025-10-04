@@ -74,6 +74,7 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
       for (const bind of [...keybinds.current.values()].reverse()) {
         if (bind.disabled) continue;
         if (!bind.check(e)) continue;
+        console.log(bind, e);
 
         // If the target element is an input element we skip triggering
         // the keybind. Unless the keybind specifically override it
