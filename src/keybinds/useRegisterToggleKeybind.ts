@@ -13,7 +13,6 @@ export function useRegisterKeybindToggle({
   keybindExpression,
   command,
   initialValue,
-  disabled,
   overrideInput,
 }: RegisterToggleKeybindOption) {
   const [show, setShow] = useState(initialValue ?? false);
@@ -21,7 +20,6 @@ export function useRegisterKeybindToggle({
   useRegisterKeybindCommand({
     command,
     keybindExpression,
-    disabled,
     overrideInput,
     action() {
       setShow((s) => !s);

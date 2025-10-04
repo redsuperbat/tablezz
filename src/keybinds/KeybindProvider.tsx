@@ -10,11 +10,6 @@ import { KeybindTokenizer } from "./KeybindTokenizer";
 
 interface RegisteredKeybind extends Keybind {
   check: (e: KeyEvent) => boolean;
-  disabled?: boolean;
-}
-
-interface RegisterKeybind extends Keybind {
-  disabled?: boolean;
 }
 
 export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
@@ -42,7 +37,7 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
   );
 
   const registerKeybind = useCallback(
-    (key: RegisterKeybind) => {
+    (key: Keybind) => {
       const cacheKey = key.command + key.keybindExpression;
       // The map serves as a de-duplication of keybinds
       // causing the checkers to stay up to date
@@ -50,12 +45,16 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
         command: key.command,
         overrideInput: key.overrideInput,
         keybindExpression: key.keybindExpression,
-        disabled: key.disabled,
         check: createChecker(key.keybindExpression),
       });
     },
     [createChecker],
   );
+
+  const unregisterKeybind = useCallback((key: Keybind) => {
+    const cacheKey = key.command + key.keybindExpression;
+    keybinds.current.delete(cacheKey);
+  }, []);
 
   useEffect(() => {
     const configurationKeybinds = Object.entries(config.get("keybindings"));
@@ -80,7 +79,6 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
         e.target instanceof HTMLTextAreaElement;
 
       for (const bind of [...keybinds.current.values()].reverse()) {
-        if (bind.disabled) continue;
         if (!bind.check(e)) continue;
 
         // If the target element is an input element we skip triggering
@@ -105,5 +103,6 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
     keybinds: () => keybinds.current,
     leaderTracker,
     registerKeybind,
+    unregisterKeybind,
   };
 });

@@ -1,5 +1,5 @@
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { type PropsWithChildren, useState } from "react";
+import type { PropsWithChildren } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useKeybindContext } from "./KeybindProvider";
-import { useRegisterKeybindCommand } from "./useRegisterKeybindCommand";
+import { useRegisterKeybindToggle } from "./useRegisterToggleKeybind";
 
 function Code({ children }: PropsWithChildren) {
   return (
@@ -19,20 +19,16 @@ function Code({ children }: PropsWithChildren) {
 }
 
 export function KeybindHelp() {
-  const [open, setOpen] = useState(false);
-
-  useRegisterKeybindCommand({
-    keybindExpression: "?",
+  const toggle = useRegisterKeybindToggle({
+    keybindExpression: "? | (Control + ?)",
     command: "KeybindHelpOpen",
-    action() {
-      setOpen((o) => !o);
-    },
+    overrideInput: true,
   });
 
   const binds = useKeybindContext();
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={toggle.value} onOpenChange={toggle.set}>
       <DialogContent
         aria-describedby="Keybinds"
         className="sm:max-w-fit flex flex-col justify-start overflow-y-auto"

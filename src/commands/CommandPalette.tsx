@@ -59,7 +59,6 @@ function Autocomplete({
     action() {
       selectedIndex.increment();
     },
-    disabled: filteredCommands.length === 1,
     overrideInput: true,
   });
 
@@ -69,7 +68,6 @@ function Autocomplete({
       selectedIndex.decrement();
     },
     keybindExpression: "Shift + Tab",
-    disabled: filteredCommands.length === 1,
     overrideInput: true,
   });
 
@@ -81,7 +79,6 @@ function Autocomplete({
       if (!command) return;
       onValueChanged(command.name);
     },
-    disabled: filteredCommands.length === 1,
   });
 
   useRegisterKeybindCommand({
@@ -90,7 +87,6 @@ function Autocomplete({
       onValueChanged(ghostText);
     },
     keybindExpression: "Tab",
-    disabled: filteredCommands.length > 1,
     overrideInput: true,
   });
 

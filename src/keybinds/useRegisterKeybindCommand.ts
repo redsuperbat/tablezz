@@ -4,9 +4,7 @@ import { useCommandsContext } from "@/commands/CommandsContext";
 import type { Keybind } from "./Keybind";
 import { useKeybindContext } from "./KeybindProvider";
 
-export interface KeybindCommand extends Omit<Command, "name">, Keybind {
-  disabled?: boolean;
-}
+export interface KeybindCommand extends Omit<Command, "name">, Keybind {}
 
 export function useRegisterKeybindCommand(keybindCommand: KeybindCommand) {
   const keybindContext = useKeybindContext();
@@ -20,13 +18,13 @@ export function useRegisterKeybindCommand(keybindCommand: KeybindCommand) {
 
     keybindContext.registerKeybind({
       command: keybindCommand.command,
-      disabled: keybindCommand.disabled,
       keybindExpression: keybindCommand.keybindExpression,
       overrideInput: keybindCommand.overrideInput,
     });
 
     return () => {
       commandsContext.unregisterCommand(keybindCommand.command);
+      keybindContext.unregisterKeybind(keybindCommand);
     };
   }, [keybindCommand, keybindContext, commandsContext]);
 }

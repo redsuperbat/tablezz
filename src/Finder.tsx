@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "./components/ui/input";
 import { useRegisterKeybindCommand } from "./keybinds/useRegisterKeybindCommand";
+import { useRegisterKeybindToggle } from "./keybinds/useRegisterToggleKeybind";
 import { useIntersectionScroll } from "./lib/useIntersectionScroll";
 import { useWrapWithZero } from "./lib/useWrapWithZero";
 import { cn } from "./lib/utils";
@@ -30,9 +31,6 @@ export function Finder() {
   const selectedSchema = useSelectedSchemaTables();
   const selectedSchemas = useSelectedDatabaseSchemas();
   const { setSchema } = useSchemaContext();
-
-  const [open, setOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
 
   const tables = useMemo(() => selectedSchema.data ?? [], [selectedSchema]);
 
@@ -64,6 +62,33 @@ export function Finder() {
     ];
   }, [tables, routes, setSelectedTable, navigateTo, schemas, setSchema]);
 
+  const toggle = useRegisterKeybindToggle({
+    command: "FinderOpen",
+    keybindExpression: "Leader + Space",
+  });
+
+  return (
+    <Dialog modal open={toggle.value} onOpenChange={toggle.set}>
+      <DialogContent
+        forceMount
+        className="flex flex-col justify-start"
+        showCloseButton={false}
+        aria-describedby="Command palette"
+      >
+        <FinderContent onSelect={() => toggle.set(false)} items={items} />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FinderContent({
+  items,
+  onSelect,
+}: {
+  items: FinderItem[];
+  onSelect: () => void;
+}) {
+  const [searchTerm, setSearchTerm] = useState("");
   const filteredItems = useFuzzySearchList({
     list: items,
     getText: (i) => [i.searchTerm],
@@ -79,19 +104,13 @@ export function Finder() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: we want to set the index to zero whenever the search term changes
   useEffect(() => {
     selectedIndex.reset();
-  }, [searchTerm, items]);
-
-  useRegisterKeybindCommand({
-    command: "FinderOpen",
-    action: () => setOpen(true),
-    keybindExpression: "Leader + Space",
-  });
+  }, [searchTerm]);
 
   useRegisterKeybindCommand({
     command: "FinderSelect",
     action() {
       filteredItems[selectedIndex.value]?.item.onSelect?.();
-      setOpen(false);
+      onSelect();
       setSearchTerm("");
     },
     keybindExpression: "Enter",
@@ -120,34 +139,28 @@ export function Finder() {
   });
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent
-        className="flex flex-col justify-start"
-        showCloseButton={false}
-        aria-describedby="Command palette"
-      >
-        <DialogHeader>
-          <DialogTitle className="sr-only">Command palette</DialogTitle>
-          <Input
-            placeholder="Type something..."
-            autoFocus
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+    <>
+      <DialogHeader>
+        <DialogTitle className="sr-only">Command palette</DialogTitle>
+        <Input
+          placeholder="Type something..."
+          autoFocus
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </DialogHeader>
+      <div className="flex flex-col h-80 overflow-y-auto">
+        {filteredItems.map(({ item, highlightRanges }, i) => (
+          <SearchItem
+            key={item.searchTerm}
+            index={i}
+            item={item}
+            selectedIndex={selectedIndex.value}
+            highlightRanges={highlightRanges}
           />
-        </DialogHeader>
-        <div className="flex flex-col h-80 overflow-y-auto">
-          {filteredItems.map(({ item, highlightRanges }, i) => (
-            <SearchItem
-              key={item.searchTerm}
-              index={i}
-              item={item}
-              selectedIndex={selectedIndex.value}
-              highlightRanges={highlightRanges}
-            />
-          ))}
-        </div>
-      </DialogContent>
-    </Dialog>
+        ))}
+      </div>
+    </>
   );
 }
 
