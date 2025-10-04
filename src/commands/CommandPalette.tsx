@@ -130,40 +130,46 @@ function Autocomplete({
   );
 }
 
-export function CommandPalette() {
+function DialogPaletteContent({ onSelect }: { onSelect: () => void }) {
   const commandContext = useCommandsContext();
   const [inputValue, setInputValue] = useState("");
 
-  const toggle = useRegisterKeybindToggle({
-    keybindExpression: ":",
-    command: "CommandPaletteOpen",
-  });
-
   useRegisterKeybindCommand({
     keybindExpression: "Enter",
-    disabled: !toggle.value,
     action() {
       commandContext.triggerCommand(inputValue);
-      toggle.set(false);
+      onSelect();
     },
     command: "CommandAccept",
     overrideInput: true,
   });
 
   return (
+    <DialogHeader>
+      <DialogTitle className="sr-only">Command palette</DialogTitle>
+      <div className="flex px-2 py-1 gap-0.5">
+        <span>:</span>
+        <Autocomplete value={inputValue} onValueChanged={setInputValue} />
+      </div>
+    </DialogHeader>
+  );
+}
+
+export function CommandPalette() {
+  const toggle = useRegisterKeybindToggle({
+    keybindExpression: ":",
+    command: "CommandPaletteOpen",
+  });
+
+  return (
     <Dialog open={toggle.value} onOpenChange={toggle.set}>
       <DialogContent
+        forceMount
         className="flex flex-col justify-start p-0 rounded"
         showCloseButton={false}
         aria-describedby="Command palette"
       >
-        <DialogHeader>
-          <DialogTitle className="sr-only">Command palette</DialogTitle>
-          <div className="flex px-2 py-1 gap-0.5">
-            <span>:</span>
-            <Autocomplete value={inputValue} onValueChanged={setInputValue} />
-          </div>
-        </DialogHeader>
+        <DialogPaletteContent onSelect={() => toggle.set(false)} />
       </DialogContent>
     </Dialog>
   );
