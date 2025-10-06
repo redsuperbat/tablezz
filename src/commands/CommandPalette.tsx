@@ -9,7 +9,73 @@ import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand"
 import { useRegisterKeybindToggle } from "@/keybinds/useRegisterToggleKeybind";
 import { useWrapWithZero } from "@/lib/useWrapWithZero";
 import { cn } from "@/lib/utils";
+import type { Command } from "./Command";
 import { useCommandsContext } from "./CommandsContext";
+
+function AutocompleteOptions({
+  filteredCommands,
+  onCommandNameAccepted,
+  onClose,
+}: {
+  filteredCommands: Command[];
+  onCommandNameAccepted: (commandName: string) => void;
+  onClose: () => void;
+}) {
+  const selectedIndex = useWrapWithZero(filteredCommands.length - 1);
+
+  useRegisterKeybindCommand({
+    command: "CommandAutocompleteHide",
+    keybindExpression: "Escape",
+    action() {
+      console.log("closing");
+      onClose();
+    },
+    overrideInput: true,
+  });
+
+  useRegisterKeybindCommand({
+    command: "CommandAutocompleteNext",
+    keybindExpression: "Tab",
+    action() {
+      console.log("incrementing");
+      selectedIndex.increment();
+    },
+    overrideInput: true,
+  });
+
+  useRegisterKeybindCommand({
+    command: "CommandCompletePrev",
+    action() {
+      selectedIndex.decrement();
+    },
+    keybindExpression: "Shift + Tab",
+    overrideInput: true,
+  });
+
+  useRegisterKeybindCommand({
+    command: "CommandAutocompleteAccept",
+    keybindExpression: "Enter",
+    action() {
+      const command = filteredCommands.at(selectedIndex.value);
+      if (!command) return;
+      onCommandNameAccepted(command.name);
+    },
+    overrideInput: true,
+  });
+
+  return (
+    <div className="absolute top-full bg-white -left-2 px-2 rounded">
+      {filteredCommands.map((c, index) => (
+        <div
+          key={c.name}
+          className={cn(index === selectedIndex.value && "bg-blue-200")}
+        >
+          {c.name}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function Autocomplete({
   value,
@@ -41,50 +107,25 @@ function Autocomplete({
     return matchingCommand?.name;
   }, [commands, value]);
 
-  const filteredCommands = useMemo(() => {
-    return commands.filter((c) => c.name.startsWith(value));
-  }, [commands, value]);
-
-  const selectedIndex = useWrapWithZero(filteredCommands.length - 1);
-
   const toggleShowAutocomplete = useRegisterKeybindToggle({
     keybindExpression: "Control + Space",
     command: "CommandShowAutocomplete",
     overrideInput: true,
   });
 
-  useRegisterKeybindCommand({
-    command: "CommandAutocompleteNext",
-    keybindExpression: "Tab",
-    action() {
-      selectedIndex.increment();
-    },
-    overrideInput: true,
-  });
-
-  useRegisterKeybindCommand({
-    command: "CommandCompletePrev",
-    action() {
-      selectedIndex.decrement();
-    },
-    keybindExpression: "Shift + Tab",
-    overrideInput: true,
-  });
-
-  useRegisterKeybindCommand({
-    command: "CommandAutocompleteAccept",
-    keybindExpression: "Enter",
-    action() {
-      const command = filteredCommands.at(selectedIndex.value);
-      if (!command) return;
-      onValueChanged(command.name);
-    },
-  });
+  const filteredCommands = useMemo(() => {
+    return commands.filter((c) => c.name.startsWith(value));
+  }, [commands, value]);
 
   useRegisterKeybindCommand({
     command: "CommandComplete",
     action() {
-      onValueChanged(ghostText);
+      if (filteredCommands.length === 1) {
+        return onValueChanged(ghostText);
+      }
+      if (filteredCommands.length > 1) {
+        return toggleShowAutocomplete.set(true);
+      }
     },
     keybindExpression: "Tab",
     overrideInput: true,
@@ -104,17 +145,16 @@ function Autocomplete({
           <span className="invisible">{value}</span>
           <span>{ghostText.slice(value.length)}</span>
         </div>
+
         {toggleShowAutocomplete.value && (
-          <div className="absolute top-full bg-white -left-2 px-2 rounded">
-            {filteredCommands.map((c, index) => (
-              <div
-                key={c.name}
-                className={cn(index === selectedIndex.value && "bg-blue-200")}
-              >
-                {c.name}
-              </div>
-            ))}
-          </div>
+          <AutocompleteOptions
+            onClose={() => toggleShowAutocomplete.set(false)}
+            onCommandNameAccepted={(commandName) => {
+              onValueChanged(commandName);
+              toggleShowAutocomplete.set(false);
+            }}
+            filteredCommands={commands}
+          />
         )}
 
         <input
@@ -130,9 +170,24 @@ function Autocomplete({
   );
 }
 
-function DialogPaletteContent({ onSelect }: { onSelect: () => void }) {
+function DialogPaletteContent({
+  onSelect,
+  onClose,
+}: {
+  onClose: () => void;
+  onSelect: () => void;
+}) {
   const commandContext = useCommandsContext();
   const [inputValue, setInputValue] = useState("");
+
+  useRegisterKeybindCommand({
+    keybindExpression: "Escape",
+    action() {
+      onClose();
+    },
+    command: "CommandAccept",
+    overrideInput: true,
+  });
 
   useRegisterKeybindCommand({
     keybindExpression: "Enter",
@@ -162,14 +217,19 @@ export function CommandPalette() {
   });
 
   return (
-    <Dialog open={toggle.value} onOpenChange={toggle.set}>
+    <Dialog modal open={toggle.value} onOpenChange={toggle.set}>
       <DialogContent
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
         forceMount
         className="flex flex-col justify-start p-0 rounded"
         showCloseButton={false}
         aria-describedby="Command palette"
       >
-        <DialogPaletteContent onSelect={() => toggle.set(false)} />
+        <DialogPaletteContent
+          onClose={() => toggle.set(false)}
+          onSelect={() => toggle.set(false)}
+        />
       </DialogContent>
     </Dialog>
   );

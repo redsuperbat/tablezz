@@ -37,15 +37,17 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
   );
 
   const registerKeybind = useCallback(
-    (key: Keybind) => {
-      const cacheKey = key.command + key.keybindExpression;
+    (keybind: Keybind) => {
+      const key = keybind.command + keybind.keybindExpression;
+
+      keybinds.current.delete(key);
       // The map serves as a de-duplication of keybinds
       // causing the checkers to stay up to date
-      keybinds.current.set(cacheKey, {
-        command: key.command,
-        overrideInput: key.overrideInput,
-        keybindExpression: key.keybindExpression,
-        check: createChecker(key.keybindExpression),
+      keybinds.current.set(key, {
+        command: keybind.command,
+        overrideInput: keybind.overrideInput,
+        keybindExpression: keybind.keybindExpression,
+        check: createChecker(keybind.keybindExpression),
       });
     },
     [createChecker],
@@ -78,7 +80,12 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement;
 
-      for (const bind of [...keybinds.current.values()].reverse()) {
+      // We reverse the keybind because we want to potentially trigger them
+      // in the reverse order they were registered. If a keybind was registered
+      // after another one it should take precedence
+      const reverseKeybinds = [...keybinds.current.values()].reverse();
+
+      for (const bind of reverseKeybinds) {
         if (!bind.check(e)) continue;
 
         // If the target element is an input element we skip triggering

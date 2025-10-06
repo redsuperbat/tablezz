@@ -15,6 +15,7 @@ interface CommandsContext {
   unregisterCommand(name: string): void;
   triggerCommand(name: string): void;
   listCommands(): Command[];
+  isCommand(name: string): void;
 }
 const CommandsContext = createContext<CommandsContext | null>(null);
 
@@ -39,6 +40,11 @@ export function CommandsProvider({ children }: PropsWithChildren) {
     commands.current.set(command.name, command);
   }, []);
 
+  const isCommand = useCallback(
+    (name: string) => commands.current.has(name),
+    [],
+  );
+
   const triggerCommand = useCallback((name: string) => {
     commands.current.get(name)?.action();
   }, []);
@@ -51,8 +57,15 @@ export function CommandsProvider({ children }: PropsWithChildren) {
       triggerCommand,
       registerCommand,
       unregisterCommand,
+      isCommand,
     }),
-    [listCommands, triggerCommand, registerCommand, unregisterCommand],
+    [
+      listCommands,
+      triggerCommand,
+      registerCommand,
+      unregisterCommand,
+      isCommand,
+    ],
   );
 
   return (
