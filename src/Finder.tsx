@@ -1,5 +1,5 @@
 import createFuzzySearch, { type FuzzyMatches } from "@nozbe/microfuzz";
-import { Folder, Route, Table } from "lucide-react";
+import { Folder, Route, Table } from "lucide-solid";
 import { createEffect, createSignal, For, type JSXElement } from "solid-js";
 import {
   Dialog,

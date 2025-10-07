@@ -71,6 +71,9 @@ importers:
       lucide-react:
         specifier: ^0.544.0
         version: 0.544.0(react@19.1.1)
+      lucide-solid:
+        specifier: ^0.545.0
+        version: 0.545.0(solid-js@1.9.9)
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -1341,6 +1344,11 @@ packages:
     resolution: {integrity: sha512-t5tS44bqd825zAW45UQxpG2CvcC4urOwn2TrwSH8u+MjeE+1NnWl6QqeQ/6NdjMqdOygyiT9p3Ev0p1NJykxjw==}
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  lucide-solid@0.545.0:
+    resolution: {integrity: sha512-VAzoU/4aLECC/9yGg0RfYPPtgbwpu+DVo5EysU64pGuDT6n59NRIAZanu8O9D4xlcyW3PcigvZv7kBHPN7JItQ==}
+    peerDependencies:
+      solid-js: ^1.4.7
 
   magic-string@0.30.19:
     resolution: {integrity: sha512-2N21sPY9Ws53PZvsEpVtNuSW+ScYbQdp4b9qUaL+9QkHUrGFKo56Lg9Emg5s9V/qrtNBmiR01sYhUOwu3H+VOw==}
@@ -2736,6 +2744,10 @@ snapshots:
   lucide-react@0.544.0(react@19.1.1):
     dependencies:
       react: 19.1.1
+
+  lucide-solid@0.545.0(solid-js@1.9.9):
+    dependencies:
+      solid-js: 1.9.9
 
   magic-string@0.30.19:
     dependencies:
