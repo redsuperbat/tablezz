@@ -26,13 +26,11 @@ function AutocompleteOptions({
   useRegisterKeybindCommand({
     command: "CommandAutocompleteHide",
     keybindExpression: "Escape",
-    action() {
-      console.log("closing");
-      onClose();
-    },
+    action: onClose,
     overrideInput: true,
   });
 
+  console.log("registering next");
   useRegisterKeybindCommand({
     command: "CommandAutocompleteNext",
     keybindExpression: "Tab",
@@ -117,6 +115,7 @@ function Autocomplete({
     return commands.filter((c) => c.name.startsWith(value));
   }, [commands, value]);
 
+  console.log("registering command complete");
   useRegisterKeybindCommand({
     command: "CommandComplete",
     action() {
@@ -226,10 +225,7 @@ export function CommandPalette() {
         showCloseButton={false}
         aria-describedby="Command palette"
       >
-        <DialogPaletteContent
-          onClose={() => toggle.set(false)}
-          onSelect={() => toggle.set(false)}
-        />
+        <DialogPaletteContent onClose={toggle.close} onSelect={toggle.close} />
       </DialogContent>
     </Dialog>
   );

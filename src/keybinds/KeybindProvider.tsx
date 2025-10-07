@@ -12,10 +12,31 @@ interface RegisteredKeybind extends Keybind {
   check: (e: KeyEvent) => boolean;
 }
 
+class KeybindCollection {
+  #keybinds: RegisteredKeybind[] = [];
+
+  register(keybind: RegisteredKeybind) {
+    this.delete(keybind);
+    this.#keybinds.push(keybind);
+  }
+
+  delete(keybind: Keybind) {
+    const key = keybind.command + keybind.keybindExpression;
+    this.#keybinds = this.#keybinds.filter((k) => {
+      const innerKey = k.command + k.keybindExpression;
+      return key !== innerKey;
+    });
+  }
+
+  values() {
+    return this.#keybinds.values();
+  }
+}
+
 export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
   const config = useConfig();
   const commandsContext = useCommandsContext();
-  const keybinds = useRef<Map<string, RegisteredKeybind>>(new Map());
+  const keybinds = useRef<KeybindCollection>(new KeybindCollection());
 
   const leaderTracker = useMemo(
     () =>
@@ -38,15 +59,8 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
 
   const registerKeybind = useCallback(
     (keybind: Keybind) => {
-      const key = keybind.command + keybind.keybindExpression;
-
-      keybinds.current.delete(key);
-      // The map serves as a de-duplication of keybinds
-      // causing the checkers to stay up to date
-      keybinds.current.set(key, {
-        command: keybind.command,
-        overrideInput: keybind.overrideInput,
-        keybindExpression: keybind.keybindExpression,
+      keybinds.current.register({
+        ...keybind,
         check: createChecker(keybind.keybindExpression),
       });
     },
@@ -54,8 +68,7 @@ export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
   );
 
   const unregisterKeybind = useCallback((key: Keybind) => {
-    const cacheKey = key.command + key.keybindExpression;
-    keybinds.current.delete(cacheKey);
+    keybinds.current.delete(key);
   }, []);
 
   useEffect(() => {
