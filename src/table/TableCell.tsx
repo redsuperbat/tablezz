@@ -14,7 +14,7 @@ function TableCellDataType({
 }) {
   switch (dataType) {
     default:
-      return <div className={cn("truncate max-w-48")}>{String(data)}</div>;
+      return <div class={cn("truncate max-w-48")}>{String(data)}</div>;
   }
 }
 
@@ -36,7 +36,7 @@ export function TableCell({
   return (
     <td
       ref={ref}
-      className={cn(
+      class={cn(
         "border text-sm border-gray-300 py-2 px-2",
         column === columnIndex && row === rowIndex + 1 && "border-b-red-300",
         row === rowIndex && column === columnIndex + 1 && "border-r-red-300",

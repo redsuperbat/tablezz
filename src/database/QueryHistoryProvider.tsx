@@ -1,9 +1,9 @@
 import { useCallback, useState } from "react";
-import { createReactContext } from "@/createReactContext";
+import { createSolidContext } from "@/createReactContext";
 
 type QueryEntry = { query: string; createdAt: Date };
 
-export const [QueryHistoryProvider, , useQueryHistory] = createReactContext(
+export const [QueryHistoryProvider, , useQueryHistory] = createSolidContext(
   () => {
     const [entries, setEntries] = useState<QueryEntry[]>([]);
 
@@ -20,7 +20,7 @@ export function QueryHistory() {
   const history = useQueryHistory();
 
   return (
-    <div className="overflow-auto">
+    <div class="overflow-auto">
       {history.entries.map((e, index) => (
         <QueryHistoryEntry key={e.query.concat(index.toString())} entry={e} />
       ))}
@@ -29,7 +29,7 @@ export function QueryHistory() {
 }
 function QueryHistoryEntry({ entry }: { entry: QueryEntry }) {
   return (
-    <div className="flex gap-1">
+    <div class="flex gap-1">
       <span>{entry.createdAt.toLocaleTimeString()}</span>
       <span>{entry.query}</span>
     </div>

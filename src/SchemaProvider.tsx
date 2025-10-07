@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { createReactContext } from "./createReactContext";
+import { createSolidContext } from "./createReactContext";
 
-export const [SchemaProvider, , useSchemaContext] = createReactContext(() => {
+export const [SchemaProvider, , useSchemaContext] = createSolidContext(() => {
   const [schema, setSchema] = useState("public");
 
   return { schema, setSchema };

@@ -12,7 +12,7 @@ import { useRegisterKeybindToggle } from "./useRegisterToggleKeybind";
 
 function Code({ children }: PropsWithChildren) {
   return (
-    <pre className="ml-auto bg-gray-200 rounded px-1 w-fit">
+    <pre class="ml-auto bg-gray-200 rounded px-1 w-fit">
       <code>{children}</code>
     </pre>
   );
@@ -31,7 +31,7 @@ export function KeybindHelp() {
     <Dialog open={toggle.value} onOpenChange={toggle.set}>
       <DialogContent
         aria-describedby="Keybinds"
-        className="sm:max-w-fit flex flex-col justify-start overflow-y-auto"
+        class="sm:max-w-fit flex flex-col justify-start overflow-y-auto"
         showCloseButton={false}
       >
         <DialogHeader>
@@ -39,12 +39,12 @@ export function KeybindHelp() {
             <DialogTitle>Keybind help</DialogTitle>
           </VisuallyHidden>
         </DialogHeader>
-        <div className="flex flex-col gap-0.5">
+        <div class="flex flex-col gap-0.5">
           {[...binds.keybinds().values()]
             .sort((a, b) => a.command.localeCompare(b.command))
             .map((key) => (
               <div
-                className={cn("grid grid-cols-3 gap-3")}
+                class={cn("grid grid-cols-3 gap-3")}
                 style={{ gridTemplateColumns: "1fr auto 1fr" }}
                 key={key.command}
               >

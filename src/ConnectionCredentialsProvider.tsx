@@ -1,13 +1,13 @@
-import { useLocalStorage } from "@mantine/hooks";
+import { makePersisted } from "@solid-primitives/storage";
 import Database from "@tauri-apps/plugin-sql";
-import type { ReactNode } from "react";
+import { createSignal, Match, type ParentProps, Switch } from "solid-js";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useAppForm } from "./components/form";
-import { createReactContext } from "./createReactContext";
+import { createSolidContext } from "./createReactContext";
 
 export const [RootConnectionCredentialsProvider, , useConnectionCredentials] =
-  createReactContext(({ databaseUrlRaw }: { databaseUrlRaw: string }) => {
+  createSolidContext(({ databaseUrlRaw }: { databaseUrlRaw: string }) => {
     let url = new URL(databaseUrlRaw);
     let database = url.pathname.slice(1) || undefined;
 
@@ -20,14 +20,10 @@ export const [RootConnectionCredentialsProvider, , useConnectionCredentials] =
     return { databaseUrlRaw, database };
   });
 
-export function ConnectionCredentialsProvider({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  const [databaseUrlRaw, setDatabaseUrlRaw] = useLocalStorage({
-    key: "databaseUrl",
-  });
+export function ConnectionCredentialsProvider({ children }: ParentProps) {
+  const [databaseUrlRaw, setDatabaseUrlRaw] = makePersisted(
+    createSignal<string>(),
+  );
 
   const form = useAppForm({
     defaultValues: { databaseUrl: "" },
@@ -46,34 +42,37 @@ export function ConnectionCredentialsProvider({
     },
   });
 
-  if (!databaseUrlRaw) {
-    return (
-      <div className="h-screen w-screen grid place-items-center">
-        <form
-          className="flex min-w-sm flex-col gap-1"
-          onSubmit={(e) => {
-            e.preventDefault();
-            form.handleSubmit();
-          }}
-        >
-          <form.AppField
-            name="databaseUrl"
-            children={(field) => (
-              <field.TextField
-                type="url"
-                placeholder="postgres://ai:slop@localhost:1337/vibin"
-              />
-            )}
-          />
-          <form.SubmitButton children="Submit" />
-        </form>
-      </div>
-    );
-  }
-
   return (
-    <RootConnectionCredentialsProvider databaseUrlRaw={databaseUrlRaw}>
-      {children}
-    </RootConnectionCredentialsProvider>
+    <Switch>
+      <Match when={databaseUrlRaw()}>
+        <RootConnectionCredentialsProvider
+          databaseUrlRaw={databaseUrlRaw() as string}
+        >
+          {children}
+        </RootConnectionCredentialsProvider>
+      </Match>
+      <Match when={!databaseUrlRaw()}>
+        <div class="h-screen w-screen grid place-items-center">
+          <form
+            class="flex min-w-sm flex-col gap-1"
+            onSubmit={(e) => {
+              e.preventDefault();
+              form.handleSubmit();
+            }}
+          >
+            <form.AppField
+              name="databaseUrl"
+              children={(field) => (
+                <field.TextField
+                  type="url"
+                  placeholder="postgres://ai:slop@localhost:1337/vibin"
+                />
+              )}
+            />
+            <form.SubmitButton children="Submit" />
+          </form>
+        </div>
+      </Match>
+    </Switch>
   );
 }

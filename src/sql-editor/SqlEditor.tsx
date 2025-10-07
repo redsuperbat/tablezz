@@ -87,5 +87,5 @@ export function SqlEditor({ onClose }: { onClose: () => void }) {
     };
   }, [onClose, config]);
 
-  return <div ref={terminalRef} className="w-full h-full overflow-auto" />;
+  return <div ref={terminalRef} class="w-full h-full overflow-auto" />;
 }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useCommandsContext } from "@/commands/CommandsContext";
 import { useConfig } from "@/config/ConfigurationProvider";
-import { createReactContext } from "@/createReactContext";
+import { createSolidContext } from "@/createReactContext";
 import type { Keybind } from "./Keybind";
 import { KeybindChecker, type KeyEvent } from "./KeybindChecker";
 import { KeybindLeaderTracker } from "./KeybindLeaderTracker";
@@ -33,7 +33,7 @@ class KeybindCollection {
   }
 }
 
-export const [KeybindProvider, , useKeybindContext] = createReactContext(() => {
+export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
   const config = useConfig();
   const commandsContext = useCommandsContext();
   const keybinds = useRef<KeybindCollection>(new KeybindCollection());

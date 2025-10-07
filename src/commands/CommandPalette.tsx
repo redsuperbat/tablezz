@@ -62,11 +62,11 @@ function AutocompleteOptions({
   });
 
   return (
-    <div className="absolute top-full bg-white -left-2 px-2 rounded">
+    <div class="absolute top-full bg-white -left-2 px-2 rounded">
       {filteredCommands.map((c, index) => (
         <div
           key={c.name}
-          className={cn(index === selectedIndex.value && "bg-blue-200")}
+          class={cn(index === selectedIndex.value && "bg-blue-200")}
         >
           {c.name}
         </div>
@@ -131,17 +131,17 @@ function Autocomplete({
   });
 
   return (
-    <div className="relative w-full max-w-md">
-      <div className="relative">
+    <div class="relative w-full max-w-md">
+      <div class="relative">
         <div
-          className="absolute inset-0  pointer-events-none text-gray-400 whitespace-nowrap overflow-hidden"
+          class="absolute inset-0  pointer-events-none text-gray-400 whitespace-nowrap overflow-hidden"
           style={{
             fontFamily: "inherit",
             fontSize: "inherit",
             lineHeight: "inherit",
           }}
         >
-          <span className="invisible">{value}</span>
+          <span class="invisible">{value}</span>
           <span>{ghostText.slice(value.length)}</span>
         </div>
 
@@ -161,7 +161,7 @@ function Autocomplete({
           value={value}
           onChange={(e) => onValueChanged(e.target.value)}
           placeholder="Type to search..."
-          className="relative w-full focus:outline-none bg-transparent"
+          class="relative w-full focus:outline-none bg-transparent"
           style={{ caretColor: "black" }}
         />
       </div>
@@ -200,8 +200,8 @@ function DialogPaletteContent({
 
   return (
     <DialogHeader>
-      <DialogTitle className="sr-only">Command palette</DialogTitle>
-      <div className="flex px-2 py-1 gap-0.5">
+      <DialogTitle class="sr-only">Command palette</DialogTitle>
+      <div class="flex px-2 py-1 gap-0.5">
         <span>:</span>
         <Autocomplete value={inputValue} onValueChanged={setInputValue} />
       </div>
@@ -221,7 +221,7 @@ export function CommandPalette() {
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
         forceMount
-        className="flex flex-col justify-start p-0 rounded"
+        class="flex flex-col justify-start p-0 rounded"
         showCloseButton={false}
         aria-describedby="Command palette"
       >

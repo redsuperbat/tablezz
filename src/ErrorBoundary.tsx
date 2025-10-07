@@ -34,9 +34,9 @@ export class ErrorBoundary extends Component<
     console.log(this.state.error);
     if (this.state.error) {
       return (
-        <div className="grid place-items-center w-screen h-screen">
-          <div className="flex flex-col items-center max-w-2xl">
-            <h3 className="font-bold">An unexpected error occurred</h3>
+        <div class="grid place-items-center w-screen h-screen">
+          <div class="flex flex-col items-center max-w-2xl">
+            <h3 class="font-bold">An unexpected error occurred</h3>
             <span>{this.state.error.message}</span>
           </div>
         </div>

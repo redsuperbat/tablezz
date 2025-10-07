@@ -1,20 +1,25 @@
-import React, { createContext, type PropsWithChildren } from "react";
+import {
+  createContext,
+  type ParentProps,
+  useContext as useContextSolid,
+} from "solid-js";
 
 type ContextHook<Props, Value> = (props: Props) => Value;
 
-export function createReactContext<Props, Value>(
-  useValue: ContextHook<Props, Value>,
-) {
+export function createSolidContext<
+  Props extends Record<string, unknown>,
+  Value,
+>(useValue: ContextHook<Props, Value>) {
   const Context = createContext<Value | null>(null);
 
-  function Provider(props: PropsWithChildren<Props>) {
+  function Provider(props: ParentProps<Props>) {
     const value = useValue(props);
 
-    return <Context.Provider value={value} {...props} />;
+    return <Context.Provider value={value}>{props.children}</Context.Provider>;
   }
 
   function useContext() {
-    return React.useContext(Context);
+    return useContextSolid(Context);
   }
 
   function useContextOrThrow() {

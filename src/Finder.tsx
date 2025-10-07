@@ -71,7 +71,7 @@ export function Finder() {
     <Dialog modal open={toggle.value} onOpenChange={toggle.set}>
       <DialogContent
         forceMount
-        className="flex flex-col justify-start"
+        class="flex flex-col justify-start"
         showCloseButton={false}
         aria-describedby="Command palette"
       >
@@ -138,7 +138,7 @@ function FinderContent({
   return (
     <>
       <DialogHeader>
-        <DialogTitle className="sr-only">Command palette</DialogTitle>
+        <DialogTitle class="sr-only">Command palette</DialogTitle>
         <Input
           placeholder="Type something..."
           autoFocus
@@ -146,7 +146,7 @@ function FinderContent({
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </DialogHeader>
-      <div className="flex flex-col h-80 overflow-y-auto">
+      <div class="flex flex-col h-80 overflow-y-auto">
         {filteredItems.map(({ item, highlightRanges }, i) => (
           <SearchItem
             key={item.searchTerm}
@@ -178,14 +178,14 @@ function SearchItem({
   return (
     <div
       ref={ref}
-      className={cn(isActive && "bg-gray-100", "p-1 rounded flex gap-1")}
+      class={cn(isActive && "bg-gray-100", "p-1 rounded flex gap-1")}
       key={item.searchTerm}
     >
       <span>{item.icon}</span>
       <div>
         <Highlight
           style={{}}
-          className="text-blue-400"
+          class="text-blue-400"
           text={item.searchTerm}
           ranges={highlightRanges}
         />

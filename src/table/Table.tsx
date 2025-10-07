@@ -16,15 +16,12 @@ export function Table({ tableName }: { tableName: string }) {
 
   return (
     <TableEditorProvider>
-      <div className="overflow-scroll h-full font-normal text-start">
-        <table className="border-spacing-x-4 table-auto border-collapse border border-gray-300 w-full text-sm">
+      <div class="overflow-scroll h-full font-normal text-start">
+        <table class="border-spacing-x-4 table-auto border-collapse border border-gray-300 w-full text-sm">
           <thead>
             <tr>
               {structure.map((s) => (
-                <th
-                  className="border border-gray-300 px-4 py-2"
-                  key={s.columnName}
-                >
+                <th class="border border-gray-300 px-4 py-2" key={s.columnName}>
                   {s.columnName}
                 </th>
               ))}
