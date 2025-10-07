@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useContext, useMemo } from "react";
+import { createContext, type ParentProps, useContext } from "solid-js";
 import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
 import { useWrapWithZero } from "@/lib/useWrapWithZero";
 import { useSelectedTableContext } from "@/SelectedTableProvider";
@@ -12,7 +12,7 @@ interface TableEditorContext {
 
 const TableEditorContext = createContext<TableEditorContext | null>(null);
 
-export function TableEditorProvider({ children }: { children: ReactNode }) {
+export function TableEditorProvider({ children }: ParentProps) {
   const { selectedTable } = useSelectedTableContext();
   const columnLength = useTableStructure(selectedTable).data?.length ?? 0;
   const rowLength = useTableRows(selectedTable).data?.length ?? 0;
@@ -51,13 +51,10 @@ export function TableEditorProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  const context = useMemo(
-    () => ({ row: row.value, column: column.value }),
-    [row, column],
-  );
+  const context = () => ({ row: row.value(), column: column.value() });
 
   return (
-    <TableEditorContext.Provider value={context}>
+    <TableEditorContext.Provider value={context()}>
       {children}
     </TableEditorContext.Provider>
   );

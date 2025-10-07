@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/solid-query";
 import { BaseDirectory, watch } from "@tauri-apps/plugin-fs";
 import { useEffect } from "react";
 import { createSolidContext } from "@/createReactContext";

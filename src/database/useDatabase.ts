@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/solid-query";
 import Database from "@tauri-apps/plugin-sql";
 import { useMemo } from "react";
 import { useConnectionCredentials } from "@/ConnectionCredentialsProvider";

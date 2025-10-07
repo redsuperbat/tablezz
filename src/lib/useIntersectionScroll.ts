@@ -1,29 +1,30 @@
-import { useEffect, useRef, useState } from "react";
+import { createEffect, createSignal, onCleanup, onMount } from "solid-js";
 
 export function useIntersectionScroll<T extends HTMLElement = HTMLDivElement>(
   shouldScrollIntoView: boolean = false,
 ) {
-  const ref = useRef<T>(null);
-  const [isInView, setIsInView] = useState(false);
+  let ref: T | undefined;
+  let observer: IntersectionObserver | undefined;
+  const [isInView, setIsInView] = createSignal(false);
 
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
+  onMount(() => {
+    if (!ref) return;
+    observer = new IntersectionObserver(
       ([entry]) => entry && setIsInView(entry.isIntersecting),
       { threshold: 1.0 },
     );
 
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+    observer.observe(ref);
+  });
 
-  useEffect(() => {
-    if (shouldScrollIntoView && !isInView) {
-      ref.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  onCleanup(() => observer?.disconnect());
+
+  createEffect(() => {
+    if (!ref) return;
+    if (shouldScrollIntoView && !isInView()) {
+      ref.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
-  }, [shouldScrollIntoView, isInView]);
+  });
 
   return { ref };
 }

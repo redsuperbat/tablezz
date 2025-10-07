@@ -1,11 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/solid-query";
 import { useDatabase } from "./database/useDatabase";
 import { useSchemaContext } from "./SchemaProvider";
 
 export function useSelectedSchemaTables() {
   const { schema } = useSchemaContext();
   const database = useDatabase();
-  return useQuery({
+  return useQuery(() => ({
     queryFn: () =>
       database.select<{ tableName: string }[]>(
         `
@@ -16,5 +16,5 @@ AND table_type = 'BASE TABLE';
 `,
       ),
     queryKey: ["schema", schema],
-  });
+  }));
 }

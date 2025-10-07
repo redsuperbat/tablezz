@@ -1,11 +1,11 @@
-import { useMemo, useState } from "react";
+import { createSignal } from "solid-js";
 import { createSolidContext } from "./createReactContext";
 import { DatabasePage } from "./DatabasePage";
 
 export const [RouteProvider, , useRouter] = createSolidContext(() => {
-  const routes = useMemo(() => ["database", "settings"], []);
+  const routes = ["database"];
   type Route = (typeof routes)[number];
-  const [route, setRoute] = useState<Route>("database");
+  const [route, setRoute] = createSignal<Route>("database");
 
   return { route, navigateTo: setRoute, routes };
 });
@@ -13,7 +13,7 @@ export const [RouteProvider, , useRouter] = createSolidContext(() => {
 export function Router() {
   const { route } = useRouter();
 
-  switch (route) {
+  switch (route()) {
     case "database":
       return <DatabasePage />;
   }

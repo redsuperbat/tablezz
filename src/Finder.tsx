@@ -1,6 +1,6 @@
-import { Highlight, useFuzzySearchList } from "@nozbe/microfuzz/react";
+import createFuzzySearch, { type FuzzyMatches } from "@nozbe/microfuzz";
 import { Folder, Route, Table } from "lucide-react";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { createEffect, createSignal, For, type JSXElement } from "solid-js";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,7 @@ import { useSelectedDatabaseSchemas } from "./useSelectedDatabaseSchemas";
 import { useSelectedSchemaTables } from "./useSelectedSchemaTables";
 
 interface FinderItem {
-  icon: ReactNode;
+  icon: JSXElement;
   onSelect(): void;
   searchTerm: string;
 }
@@ -32,20 +32,20 @@ export function Finder() {
   const selectedSchemas = useSelectedDatabaseSchemas();
   const { setSchema } = useSchemaContext();
 
-  const tables = useMemo(() => selectedSchema.data ?? [], [selectedSchema]);
+  const tables = () => selectedSchema.data ?? [];
 
-  const schemas = useMemo(() => selectedSchemas.data ?? [], [selectedSchemas]);
+  const schemas = () => selectedSchemas.data ?? [];
 
-  const items = useMemo((): FinderItem[] => {
+  const items = (): FinderItem[] => {
     return [
-      ...tables.map((t) => ({
+      ...tables().map((t) => ({
         icon: <Table />,
         searchTerm: t.tableName,
         onSelect() {
           setSelectedTable(t.tableName);
         },
       })),
-      ...schemas.map((s) => ({
+      ...schemas().map((s) => ({
         icon: <Folder />,
         searchTerm: s.schemaName,
         onSelect() {
@@ -60,7 +60,7 @@ export function Finder() {
         },
       })),
     ];
-  }, [tables, routes, setSelectedTable, navigateTo, schemas, setSchema]);
+  };
 
   const toggle = useRegisterKeybindToggle({
     command: "FinderOpen",
@@ -88,28 +88,23 @@ function FinderContent({
   items: FinderItem[];
   onSelect: () => void;
 }) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const filteredItems = useFuzzySearchList({
-    list: items,
-    getText: (i) => [i.searchTerm],
-    queryText: searchTerm,
-    mapResultItem: (r) => ({
-      item: r.item,
-      highlightRanges: r.matches.at(0) ?? null,
-    }),
-  });
+  const [searchTerm, setSearchTerm] = createSignal("");
 
-  const selectedIndex = useWrapWithZero(filteredItems.length - 1);
+  const fuzzySearch = () => createFuzzySearch(items);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: we want to set the index to zero whenever the search term changes
-  useEffect(() => {
+  const filteredItems = () => fuzzySearch()(searchTerm());
+
+  const selectedIndex = useWrapWithZero(() => filteredItems().length - 1);
+
+  createEffect(() => {
+    searchTerm();
     selectedIndex.reset();
-  }, [searchTerm]);
+  });
 
   useRegisterKeybindCommand({
     command: "FinderSelect",
     action() {
-      filteredItems[selectedIndex.value]?.item.onSelect?.();
+      filteredItems()[selectedIndex.value()]?.item.onSelect?.();
       onSelect();
       setSearchTerm("");
     },
@@ -147,15 +142,16 @@ function FinderContent({
         />
       </DialogHeader>
       <div class="flex flex-col h-80 overflow-y-auto">
-        {filteredItems.map(({ item, highlightRanges }, i) => (
-          <SearchItem
-            key={item.searchTerm}
-            index={i}
-            item={item}
-            selectedIndex={selectedIndex.value}
-            highlightRanges={highlightRanges}
-          />
-        ))}
+        <For each={filteredItems()}>
+          {({ item, matches }, i) => (
+            <SearchItem
+              index={i()}
+              item={item}
+              selectedIndex={selectedIndex.value()}
+              highlightRanges={matches}
+            />
+          )}
+        </For>
       </div>
     </>
   );
@@ -170,7 +166,7 @@ function SearchItem({
   selectedIndex: number;
   index: number;
   item: FinderItem;
-  highlightRanges: [number, number][] | null;
+  highlightRanges: FuzzyMatches;
 }) {
   const isActive = selectedIndex === index;
   const { ref } = useIntersectionScroll(isActive);
@@ -179,17 +175,9 @@ function SearchItem({
     <div
       ref={ref}
       class={cn(isActive && "bg-gray-100", "p-1 rounded flex gap-1")}
-      key={item.searchTerm}
     >
       <span>{item.icon}</span>
-      <div>
-        <Highlight
-          style={{}}
-          class="text-blue-400"
-          text={item.searchTerm}
-          ranges={highlightRanges}
-        />
-      </div>
+      <div>{item.searchTerm}</div>
     </div>
   );
 }

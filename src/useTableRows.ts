@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/solid-query";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useMemo, useState } from "react";
 import { useDatabase } from "./database/useDatabase";
@@ -34,9 +34,9 @@ export function useTableRows(tableName: string) {
   const database = useDatabase();
   const query = useTableRowsDatabaseQuery(tableName);
 
-  return useQuery({
+  return useQuery(() => ({
     queryFn: () => database.select<Record<string, unknown>[]>(query),
 
     queryKey: ["table-content", query],
-  });
+  }));
 }

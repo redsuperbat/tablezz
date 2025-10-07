@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { type Accessor, createSignal } from "solid-js";
 
 function wrap(value: number, min: number, max: number): number {
   if (value < min) return max;
@@ -9,23 +9,14 @@ function wrap(value: number, min: number, max: number): number {
 function wrapWithZero(value: number, max: number): number {
   return wrap(value, 0, max);
 }
-export function useWrapWithZero(max: number) {
-  const [value, setValue] = useState(0);
+export function useWrapWithZero(max: Accessor<number>) {
+  const [value, setValue] = createSignal(0);
 
-  const increment = useCallback(() => {
-    setValue((v) => wrapWithZero(v + 1, max));
-  }, [max]);
+  const increment = () => setValue((v) => wrapWithZero(v + 1, max()));
 
-  const decrement = useCallback(() => {
-    setValue((v) => wrapWithZero(v - 1, max));
-  }, [max]);
+  const decrement = () => setValue((v) => wrapWithZero(v - 1, max()));
 
-  const reset = useCallback(() => {
-    setValue(0);
-  }, []);
+  const reset = () => setValue(0);
 
-  return useMemo(
-    () => ({ increment, decrement, value, reset }),
-    [increment, decrement, value, reset],
-  );
+  return { increment, decrement, value, reset };
 }

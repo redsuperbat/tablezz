@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/solid-query";
 import { useDatabase } from "./database/useDatabase";
 import { useSchemaContext } from "./SchemaProvider";
 
@@ -58,7 +58,7 @@ export function useTableStructure(tableName: string) {
   const { schema } = useSchemaContext();
   const database = useDatabase();
 
-  return useQuery({
+  return useQuery(() => ({
     queryFn: () =>
       database.select<
         {
@@ -70,13 +70,13 @@ export function useTableStructure(tableName: string) {
       >(
         `
 SELECT
-    column_name,
-    data_type,
-    is_nullable,
-    column_default
+column_name,
+data_type,
+is_nullable,
+column_default
 FROM information_schema.columns
 WHERE table_schema = '${schema}' AND table_name = '${tableName}';`,
       ),
     queryKey: ["table-structure", schema, tableName],
-  });
+  }));
 }
