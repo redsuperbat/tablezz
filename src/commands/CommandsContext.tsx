@@ -1,11 +1,4 @@
-import {
-  createContext,
-  type PropsWithChildren,
-  useCallback,
-  useContext,
-  useMemo,
-  useRef,
-} from "react";
+import { createContext, type ParentProps, useContext } from "solid-js";
 import type { Command } from "./Command";
 
 interface RegisterCommand extends Command {}
@@ -29,47 +22,30 @@ export function useCommandsContext() {
   return ctx;
 }
 
-export function CommandsProvider({ children }: PropsWithChildren) {
-  const commands = useRef<Map<string, Command>>(new Map());
+export function CommandsProvider({ children }: ParentProps) {
+  const commands = new Map<string, Command>();
 
-  const unregisterCommand = useCallback((command: string) => {
-    commands.current.delete(command);
-  }, []);
+  const unregisterCommand = (command: string) => commands.delete(command);
 
-  const registerCommand = useCallback((command: RegisterCommand) => {
-    commands.current.set(command.name, command);
-  }, []);
+  const registerCommand = (command: RegisterCommand) =>
+    commands.set(command.name, command);
 
-  const isCommand = useCallback(
-    (name: string) => commands.current.has(name),
-    [],
-  );
+  const isCommand = (name: string) => commands.has(name);
 
-  const triggerCommand = useCallback((name: string) => {
-    commands.current.get(name)?.action();
-  }, []);
+  const triggerCommand = (name: string) => commands.get(name)?.action();
 
-  const listCommands = useCallback(() => [...commands.current.values()], []);
-
-  const value = useMemo(
-    () => ({
-      listCommands,
-      triggerCommand,
-      registerCommand,
-      unregisterCommand,
-      isCommand,
-    }),
-    [
-      listCommands,
-      triggerCommand,
-      registerCommand,
-      unregisterCommand,
-      isCommand,
-    ],
-  );
+  const listCommands = () => [...commands.values()];
 
   return (
-    <CommandsContext.Provider value={value}>
+    <CommandsContext.Provider
+      value={{
+        listCommands,
+        triggerCommand,
+        registerCommand,
+        unregisterCommand,
+        isCommand,
+      }}
+    >
       {children}
     </CommandsContext.Provider>
   );

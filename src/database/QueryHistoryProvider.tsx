@@ -1,16 +1,13 @@
-import { useCallback, useState } from "react";
-import { createSolidContext } from "@/createReactContext";
+import { createSignal, For } from "solid-js";
+import { createSolidContext } from "@/createSolidContext";
 
 type QueryEntry = { query: string; createdAt: Date };
 
 export const [QueryHistoryProvider, , useQueryHistory] = createSolidContext(
   () => {
-    const [entries, setEntries] = useState<QueryEntry[]>([]);
+    const [entries, setEntries] = createSignal<QueryEntry[]>([]);
 
-    const addEntry = useCallback(
-      (entry: QueryEntry) => setEntries((h) => [entry, ...h]),
-      [],
-    );
+    const addEntry = (entry: QueryEntry) => setEntries((h) => [entry, ...h]);
 
     return { entries, addEntry };
   },
@@ -21,12 +18,13 @@ export function QueryHistory() {
 
   return (
     <div class="overflow-auto">
-      {history.entries.map((e, index) => (
-        <QueryHistoryEntry key={e.query.concat(index.toString())} entry={e} />
-      ))}
+      <For each={history.entries()}>
+        {(e) => <QueryHistoryEntry entry={e} />}
+      </For>
     </div>
   );
 }
+
 function QueryHistoryEntry({ entry }: { entry: QueryEntry }) {
   return (
     <div class="flex gap-1">

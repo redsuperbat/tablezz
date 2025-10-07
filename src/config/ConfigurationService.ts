@@ -1,6 +1,6 @@
 import { BaseDirectory, readFile } from "@tauri-apps/plugin-fs";
 import { z } from "zod";
-import { tryCatch } from "@/lib/utils";
+import { tryCatch } from "@/lib/tryCatch";
 
 const configuration = z.object({
   leaderKey: z.string().default("Space"),

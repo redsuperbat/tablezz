@@ -1,4 +1,4 @@
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toast";
 import { ConnectionCredentialsProvider } from "./ConnectionCredentialsProvider";
 import { CommandPalette } from "./commands/CommandPalette";
 import { CommandsProvider } from "./commands/CommandsContext";

@@ -1,22 +1,22 @@
-import { useSuspenseQuery } from "@tanstack/solid-query";
+import { useQuery } from "@tanstack/solid-query";
 import { BaseDirectory, watch } from "@tauri-apps/plugin-fs";
-import { useEffect } from "react";
-import { createSolidContext } from "@/createReactContext";
+import { onMount } from "solid-js";
+import { createSolidContext } from "@/createSolidContext";
 import { ConfigurationService } from "./ConfigurationService";
 
 export const [ConfigurationProvider, , useConfig] = createSolidContext(() => {
-  const query = useSuspenseQuery({
+  const query = useQuery(() => ({
     queryFn: () => ConfigurationService.init(),
     queryKey: [],
     refetchOnWindowFocus: false,
     retry: false,
-  });
+  }));
 
-  useEffect(() => {
+  onMount(() => {
     watch(ConfigurationService.filename, () => query.refetch(), {
       baseDir: BaseDirectory.Home,
     });
-  }, [query.refetch]);
+  });
 
   return query.data;
 });

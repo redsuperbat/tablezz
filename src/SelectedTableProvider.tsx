@@ -1,4 +1,10 @@
-import { createContext, type ReactNode, useContext, useState } from "react";
+import {
+  createContext,
+  createSignal,
+  type JSXElement,
+  Show,
+  useContext,
+} from "solid-js";
 import { useSelectedSchemaTables } from "./useSelectedSchemaTables";
 
 interface TableContext {
@@ -8,19 +14,22 @@ interface TableContext {
 
 const TableContext = createContext<TableContext | null>(null);
 
-export function SelectedTableProvider({ children }: { children: ReactNode }) {
-  const [tableName, setTableName] = useState<string>();
+export function SelectedTableProvider({ children }: { children: JSXElement }) {
+  const [tableName, setTableName] = createSignal<string>();
   const allTables = useSelectedSchemaTables();
-  const selectedTable = tableName || allTables.data?.at(0)?.tableName;
-
-  if (!selectedTable) return null;
+  const selectedTable = () => tableName() || allTables.data?.at(0)?.tableName;
 
   return (
-    <TableContext.Provider
-      value={{ selectedTable, setSelectedTable: setTableName }}
-    >
-      {children}
-    </TableContext.Provider>
+    <Show fallback={null} when={selectedTable()}>
+      <TableContext.Provider
+        value={{
+          selectedTable: selectedTable() as string,
+          setSelectedTable: setTableName,
+        }}
+      >
+        {children}
+      </TableContext.Provider>
+    </Show>
   );
 }
 

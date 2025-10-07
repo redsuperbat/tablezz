@@ -1,5 +1,5 @@
+import { cn } from "@/lib/cn";
 import { useIntersectionScroll } from "@/lib/useIntersectionScroll";
-import { cn } from "@/lib/utils";
 import type { PostgresDataType } from "@/useTableStructure";
 import { useTableEditorContext } from "./TableEditorProvider";
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { createSignal, For, Show } from "solid-js";
 import {
   Dialog,
   DialogContent,
@@ -7,8 +7,8 @@ import {
 } from "@/components/ui/dialog";
 import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
 import { useRegisterKeybindToggle } from "@/keybinds/useRegisterToggleKeybind";
+import { cn } from "@/lib/cn";
 import { useWrapWithZero } from "@/lib/useWrapWithZero";
-import { cn } from "@/lib/utils";
 import type { Command } from "./Command";
 import { useCommandsContext } from "./CommandsContext";
 
@@ -21,7 +21,7 @@ function AutocompleteOptions({
   onCommandNameAccepted: (commandName: string) => void;
   onClose: () => void;
 }) {
-  const selectedIndex = useWrapWithZero(filteredCommands.length - 1);
+  const selectedIndex = useWrapWithZero(() => filteredCommands.length - 1);
 
   useRegisterKeybindCommand({
     command: "CommandAutocompleteHide",
@@ -30,7 +30,6 @@ function AutocompleteOptions({
     overrideInput: true,
   });
 
-  console.log("registering next");
   useRegisterKeybindCommand({
     command: "CommandAutocompleteNext",
     keybindExpression: "Tab",
@@ -54,7 +53,7 @@ function AutocompleteOptions({
     command: "CommandAutocompleteAccept",
     keybindExpression: "Enter",
     action() {
-      const command = filteredCommands.at(selectedIndex.value);
+      const command = filteredCommands.at(selectedIndex.value());
       if (!command) return;
       onCommandNameAccepted(command.name);
     },
@@ -63,14 +62,13 @@ function AutocompleteOptions({
 
   return (
     <div class="absolute top-full bg-white -left-2 px-2 rounded">
-      {filteredCommands.map((c, index) => (
-        <div
-          key={c.name}
-          class={cn(index === selectedIndex.value && "bg-blue-200")}
-        >
-          {c.name}
-        </div>
-      ))}
+      <For each={filteredCommands}>
+        {(c, index) => (
+          <div class={cn(index() === selectedIndex.value() && "bg-blue-200")}>
+            {c.name}
+          </div>
+        )}
+      </For>
     </div>
   );
 }
@@ -84,17 +82,14 @@ function Autocomplete({
 }) {
   const commandContext = useCommandsContext();
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: this will lazily show commands when user types
-  const commands = useMemo(() => {
-    return commandContext.listCommands();
-  }, [value]);
+  const commands = () => commandContext.listCommands();
 
-  const ghostText = useMemo(() => {
+  const ghostText = () => {
     if (value.trim() === "") {
       return "";
     }
 
-    const matchingCommand = commands.find((suggestion) =>
+    const matchingCommand = commands().find((suggestion) =>
       suggestion.name.startsWith(value),
     );
 
@@ -103,7 +98,7 @@ function Autocomplete({
     }
 
     return matchingCommand?.name;
-  }, [commands, value]);
+  };
 
   const toggleShowAutocomplete = useRegisterKeybindToggle({
     keybindExpression: "Control + Space",
@@ -111,18 +106,16 @@ function Autocomplete({
     overrideInput: true,
   });
 
-  const filteredCommands = useMemo(() => {
-    return commands.filter((c) => c.name.startsWith(value));
-  }, [commands, value]);
+  const filteredCommands = () =>
+    commands().filter((c) => c.name.startsWith(value));
 
-  console.log("registering command complete");
   useRegisterKeybindCommand({
     command: "CommandComplete",
     action() {
-      if (filteredCommands.length === 1) {
-        return onValueChanged(ghostText);
+      if (filteredCommands().length === 1) {
+        return onValueChanged(ghostText());
       }
-      if (filteredCommands.length > 1) {
+      if (filteredCommands().length > 1) {
         return toggleShowAutocomplete.set(true);
       }
     },
@@ -136,25 +129,25 @@ function Autocomplete({
         <div
           class="absolute inset-0  pointer-events-none text-gray-400 whitespace-nowrap overflow-hidden"
           style={{
-            fontFamily: "inherit",
-            fontSize: "inherit",
-            lineHeight: "inherit",
+            "font-family": "inherit",
+            "font-size": "inherit",
+            "line-height": "inherit",
           }}
         >
           <span class="invisible">{value}</span>
-          <span>{ghostText.slice(value.length)}</span>
+          <span>{ghostText().slice(value.length)}</span>
         </div>
 
-        {toggleShowAutocomplete.value && (
+        <Show when={toggleShowAutocomplete.value()}>
           <AutocompleteOptions
             onClose={() => toggleShowAutocomplete.set(false)}
             onCommandNameAccepted={(commandName) => {
               onValueChanged(commandName);
               toggleShowAutocomplete.set(false);
             }}
-            filteredCommands={commands}
+            filteredCommands={commands()}
           />
-        )}
+        </Show>
 
         <input
           type="text"
@@ -162,7 +155,7 @@ function Autocomplete({
           onChange={(e) => onValueChanged(e.target.value)}
           placeholder="Type to search..."
           class="relative w-full focus:outline-none bg-transparent"
-          style={{ caretColor: "black" }}
+          style={{ "caret-color": "black" }}
         />
       </div>
     </div>
@@ -177,7 +170,7 @@ function DialogPaletteContent({
   onSelect: () => void;
 }) {
   const commandContext = useCommandsContext();
-  const [inputValue, setInputValue] = useState("");
+  const [inputValue, setInputValue] = createSignal("");
 
   useRegisterKeybindCommand({
     keybindExpression: "Escape",
@@ -191,7 +184,7 @@ function DialogPaletteContent({
   useRegisterKeybindCommand({
     keybindExpression: "Enter",
     action() {
-      commandContext.triggerCommand(inputValue);
+      commandContext.triggerCommand(inputValue());
       onSelect();
     },
     command: "CommandAccept",
@@ -203,7 +196,7 @@ function DialogPaletteContent({
       <DialogTitle class="sr-only">Command palette</DialogTitle>
       <div class="flex px-2 py-1 gap-0.5">
         <span>:</span>
-        <Autocomplete value={inputValue} onValueChanged={setInputValue} />
+        <Autocomplete value={inputValue()} onValueChanged={setInputValue} />
       </div>
     </DialogHeader>
   );
@@ -216,13 +209,11 @@ export function CommandPalette() {
   });
 
   return (
-    <Dialog modal open={toggle.value} onOpenChange={toggle.set}>
+    <Dialog modal open={toggle.value()} onOpenChange={toggle.set}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
-        forceMount
         class="flex flex-col justify-start p-0 rounded"
-        showCloseButton={false}
         aria-describedby="Command palette"
       >
         <DialogPaletteContent onClose={toggle.close} onSelect={toggle.close} />

@@ -1,11 +1,4 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
-
-type ErrorResult<T> = [Error, null] | [null, T];
+export type ErrorResult<T> = [Error, null] | [null, T];
 
 export function tryCatch<T>(fn: () => T): ErrorResult<T>;
 export function tryCatch<T>(fn: Promise<T>): Promise<ErrorResult<T>>;

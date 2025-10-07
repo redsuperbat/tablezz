@@ -1,54 +1,63 @@
-import { GripVerticalIcon } from "lucide-solid";
-import type * as React from "react";
-import * as ResizablePrimitive from "react-resizable-panels";
+import { cn } from "@/lib/cn";
+import type { DynamicProps, HandleProps, RootProps } from "@corvu/resizable";
+import ResizablePrimitive from "@corvu/resizable";
+import type { ValidComponent, VoidProps } from "solid-js";
+import { Show, splitProps } from "solid-js";
 
-import { cn } from "@/lib/utils";
+export const ResizablePanel = ResizablePrimitive.Panel;
 
-function ResizablePanelGroup({
-  class,
-  ...props
-}: React.ComponentProps<typeof ResizablePrimitive.PanelGroup>) {
-  return (
-    <ResizablePrimitive.PanelGroup
-      data-slot="resizable-panel-group"
-      class={cn(
-        "flex h-full w-full data-[panel-group-direction=vertical]:flex-col",
-        class,
-      )}
-      {...props}
-    />
-  );
-}
+type resizableProps<T extends ValidComponent = "div"> = RootProps<T> & {
+	class?: string;
+};
 
-function ResizablePanel({
-  ...props
-}: React.ComponentProps<typeof ResizablePrimitive.Panel>) {
-  return <ResizablePrimitive.Panel data-slot="resizable-panel" {...props} />;
-}
+export const Resizable = <T extends ValidComponent = "div">(
+	props: DynamicProps<T, resizableProps<T>>,
+) => {
+	const [local, rest] = splitProps(props as resizableProps, ["class"]);
 
-function ResizableHandle({
-  withHandle,
-  class,
-  ...props
-}: React.ComponentProps<typeof ResizablePrimitive.PanelResizeHandle> & {
-  withHandle?: boolean;
-}) {
-  return (
-    <ResizablePrimitive.PanelResizeHandle
-      data-slot="resizable-handle"
-      class={cn(
-        "bg-border focus-visible:ring-ring relative flex w-px items-center justify-center after:absolute after:inset-y-0 after:left-1/2 after:w-1 after:-translate-x-1/2 focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:outline-hidden data-[panel-group-direction=vertical]:h-px data-[panel-group-direction=vertical]:w-full data-[panel-group-direction=vertical]:after:left-0 data-[panel-group-direction=vertical]:after:h-1 data-[panel-group-direction=vertical]:after:w-full data-[panel-group-direction=vertical]:after:translate-x-0 data-[panel-group-direction=vertical]:after:-translate-y-1/2 [&[data-panel-group-direction=vertical]>div]:rotate-90",
-        class,
-      )}
-      {...props}
-    >
-      {withHandle && (
-        <div class="bg-border z-10 flex h-4 w-3 items-center justify-center rounded-xs border">
-          <GripVerticalIcon class="size-2.5" />
-        </div>
-      )}
-    </ResizablePrimitive.PanelResizeHandle>
-  );
-}
+	return <ResizablePrimitive class={cn("size-full", local.class)} {...rest} />;
+};
 
-export { ResizablePanelGroup, ResizablePanel, ResizableHandle };
+type resizableHandleProps<T extends ValidComponent = "button"> = VoidProps<
+	HandleProps<T> & {
+		class?: string;
+		withHandle?: boolean;
+	}
+>;
+
+export const ResizableHandle = <T extends ValidComponent = "button">(
+	props: DynamicProps<T, resizableHandleProps<T>>,
+) => {
+	const [local, rest] = splitProps(props as resizableHandleProps, [
+		"class",
+		"withHandle",
+	]);
+
+	return (
+		<ResizablePrimitive.Handle
+			class={cn(
+				"flex w-px items-center justify-center bg-border transition-shadow focus-visible:outline-none focus-visible:ring-[1.5px] focus-visible:ring-ring focus-visible:ring-offset-1 data-[orientation=vertical]:h-px data-[orientation=vertical]:w-full",
+				local.class,
+			)}
+			{...rest}
+		>
+			<Show when={local.withHandle}>
+				<div class="z-10 flex h-4 w-3 items-center justify-center rounded-sm border bg-border">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-2.5 w-2.5"
+						viewBox="0 0 15 15"
+					>
+						<path
+							fill="currentColor"
+							fill-rule="evenodd"
+							d="M5.5 4.625a1.125 1.125 0 1 0 0-2.25a1.125 1.125 0 0 0 0 2.25m4 0a1.125 1.125 0 1 0 0-2.25a1.125 1.125 0 0 0 0 2.25M10.625 7.5a1.125 1.125 0 1 1-2.25 0a1.125 1.125 0 0 1 2.25 0M5.5 8.625a1.125 1.125 0 1 0 0-2.25a1.125 1.125 0 0 0 0 2.25m5.125 2.875a1.125 1.125 0 1 1-2.25 0a1.125 1.125 0 0 1 2.25 0M5.5 12.625a1.125 1.125 0 1 0 0-2.25a1.125 1.125 0 0 0 0 2.25"
+							clip-rule="evenodd"
+						/>
+						<title>Resizable handle</title>
+					</svg>
+				</div>
+			</Show>
+		</ResizablePrimitive.Handle>
+	);
+};

@@ -1,4 +1,4 @@
-import { type PropsWithChildren, Suspense } from "react";
+import { type ParentProps, Suspense } from "solid-js";
 
 const LoadingSpinner = () => {
   return (
@@ -8,6 +8,6 @@ const LoadingSpinner = () => {
   );
 };
 
-export function SuspenseBoundary({ children }: PropsWithChildren) {
+export function SuspenseBoundary({ children }: ParentProps) {
   return <Suspense fallback={<LoadingSpinner />}>{children}</Suspense>;
 }

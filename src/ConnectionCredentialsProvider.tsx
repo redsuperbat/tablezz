@@ -1,10 +1,10 @@
 import { makePersisted } from "@solid-primitives/storage";
 import Database from "@tauri-apps/plugin-sql";
 import { createSignal, Match, type ParentProps, Switch } from "solid-js";
-import { toast } from "sonner";
 import { z } from "zod";
 import { useAppForm } from "./components/form";
-import { createSolidContext } from "./createReactContext";
+import { toast } from "./components/ui/toast";
+import { createSolidContext } from "./createSolidContext";
 
 export const [RootConnectionCredentialsProvider, , useConnectionCredentials] =
   createSolidContext(({ databaseUrlRaw }: { databaseUrlRaw: string }) => {
@@ -25,7 +25,7 @@ export function ConnectionCredentialsProvider({ children }: ParentProps) {
     createSignal<string>(),
   );
 
-  const form = useAppForm({
+  const form = useAppForm(() => ({
     defaultValues: { databaseUrl: "" },
     validators: {
       onChange: z.object({
@@ -40,7 +40,7 @@ export function ConnectionCredentialsProvider({ children }: ParentProps) {
         toast.error(error instanceof Error ? error.message : String(error));
       }
     },
-  });
+  }));
 
   return (
     <Switch>

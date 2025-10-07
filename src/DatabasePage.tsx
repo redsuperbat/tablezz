@@ -1,8 +1,8 @@
-import { useCallback } from "react";
+import { Show } from "solid-js";
 import {
+  Resizable,
   ResizableHandle,
   ResizablePanel,
-  ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { QueryHistory } from "./database/QueryHistoryProvider";
 import { useRegisterKeybindToggle } from "./keybinds/useRegisterToggleKeybind";
@@ -25,37 +25,27 @@ export function DatabasePage() {
     initialValue: false,
   });
 
-  const handleClose = useCallback(
-    () => showSqlEditor.set(false),
-    [showSqlEditor.set],
-  );
-
   return (
-    <ResizablePanelGroup
-      style={{ width: "100vw", height: "100vh" }}
-      direction="vertical"
-    >
-      {showSqlEditor.value && (
-        <>
-          <ResizablePanel defaultSize={50}>
-            <SqlEditor onClose={handleClose} />
-          </ResizablePanel>
-          <ResizableHandle />
-        </>
-      )}
+    <Resizable style={{ width: "100vw", height: "100vh" }}>
+      <Show when={showSqlEditor.value()}>
+        <ResizablePanel>
+          <SqlEditor onClose={() => showSqlEditor.set(false)} />
+        </ResizablePanel>
+        <ResizableHandle />
+      </Show>
 
-      <ResizablePanel defaultSize={50}>
-        {selectedTable && <Table tableName={selectedTable} />}
+      <ResizablePanel>
+        <Show when={selectedTable}>
+          <Table tableName={selectedTable} />
+        </Show>
       </ResizablePanel>
 
-      {showQueryHistory.value && (
-        <>
-          <ResizableHandle />
-          <ResizablePanel defaultSize={50}>
-            <QueryHistory />
-          </ResizablePanel>
-        </>
-      )}
-    </ResizablePanelGroup>
+      <Show when={showQueryHistory.value()}>
+        <ResizablePanel>
+          <QueryHistory />
+        </ResizablePanel>
+        <ResizableHandle />
+      </Show>
+    </Resizable>
   );
 }

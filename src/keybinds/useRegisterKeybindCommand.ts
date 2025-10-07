@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { onCleanup, onMount } from "solid-js";
 import type { Command } from "@/commands/Command";
 import { useCommandsContext } from "@/commands/CommandsContext";
 import type { Keybind } from "./Keybind";
@@ -10,7 +10,7 @@ export function useRegisterKeybindCommand(keybindCommand: KeybindCommand) {
   const keybindContext = useKeybindContext();
   const commandsContext = useCommandsContext();
 
-  useEffect(() => {
+  onMount(() => {
     commandsContext.registerCommand({
       action: keybindCommand.action,
       name: keybindCommand.command,
@@ -21,10 +21,10 @@ export function useRegisterKeybindCommand(keybindCommand: KeybindCommand) {
       keybindExpression: keybindCommand.keybindExpression,
       overrideInput: keybindCommand.overrideInput,
     });
+  });
 
-    return () => {
-      commandsContext.unregisterCommand(keybindCommand.command);
-      keybindContext.unregisterKeybind(keybindCommand);
-    };
-  }, [keybindCommand, keybindContext, commandsContext]);
+  onCleanup(() => {
+    commandsContext.unregisterCommand(keybindCommand.command);
+    keybindContext.unregisterKeybind(keybindCommand);
+  });
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { createSignal } from "solid-js";
 import {
   type KeybindCommand,
   useRegisterKeybindCommand,
@@ -15,7 +15,7 @@ export function useRegisterKeybindToggle({
   initialValue,
   overrideInput,
 }: RegisterToggleKeybindOption) {
-  const [show, setShow] = useState(initialValue ?? false);
+  const [show, setShow] = createSignal(initialValue ?? false);
 
   useRegisterKeybindCommand({
     command,

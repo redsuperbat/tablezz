@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { createSolidContext } from "./createReactContext";
+import { createSignal } from "solid-js";
+import { createSolidContext } from "./createSolidContext";
 
 export const [SchemaProvider, , useSchemaContext] = createSolidContext(() => {
-  const [schema, setSchema] = useState("public");
+  const [schema, setSchema] = createSignal("public");
 
-  return { schema, setSchema };
+  return { schema: schema(), setSchema };
 });

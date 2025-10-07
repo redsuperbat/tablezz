@@ -2,16 +2,16 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
-import { useEffect, useRef } from "react";
 import "@xterm/xterm/css/xterm.css";
+import { onMount } from "solid-js";
 import { useConfig } from "@/config/ConfigurationProvider";
 
 export function SqlEditor({ onClose }: { onClose: () => void }) {
-  const terminalRef = useRef<HTMLDivElement>(null);
+  let terminalRef: HTMLDivElement | undefined;
   const config = useConfig();
 
-  useEffect(() => {
-    const ref = terminalRef.current;
+  onMount(() => {
+    const ref = terminalRef;
     if (!ref) return;
 
     const term = new Terminal({ fontFamily: "Fira Code" });
@@ -85,7 +85,7 @@ export function SqlEditor({ onClose }: { onClose: () => void }) {
       exit.then((o) => o());
       term.dispose();
     };
-  }, [onClose, config]);
+  });
 
   return <div ref={terminalRef} class="w-full h-full overflow-auto" />;
 }

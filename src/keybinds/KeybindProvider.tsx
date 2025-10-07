@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { createEffect, createMemo, onMount } from "solid-js";
 import { useCommandsContext } from "@/commands/CommandsContext";
 import { useConfig } from "@/config/ConfigurationProvider";
-import { createSolidContext } from "@/createReactContext";
+import { createSolidContext } from "@/createSolidContext";
 import type { Keybind } from "./Keybind";
 import { KeybindChecker, type KeyEvent } from "./KeybindChecker";
 import { KeybindLeaderTracker } from "./KeybindLeaderTracker";
@@ -36,52 +36,43 @@ class KeybindCollection {
 export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
   const config = useConfig();
   const commandsContext = useCommandsContext();
-  const keybinds = useRef<KeybindCollection>(new KeybindCollection());
+  const keybinds = new KeybindCollection();
 
-  const leaderTracker = useMemo(
+  const leaderTracker = createMemo(
     () =>
       new KeybindLeaderTracker(
         config.get("leaderKeyTimeoutMs"),
         config.get("leaderKey"),
       ),
-    [config],
   );
 
-  const createChecker = useCallback(
-    (hotkeyExpression: string) => {
-      const tokens = new KeybindTokenizer(hotkeyExpression).tokenize();
-      const ast = new KeybindParser(tokens).parseKeyExpression();
+  const createChecker = (hotkeyExpression: string) => {
+    const tokens = new KeybindTokenizer(hotkeyExpression).tokenize();
+    const ast = new KeybindParser(tokens).parseKeyExpression();
 
-      return (e: KeyEvent) => new KeybindChecker(e, leaderTracker).check(ast);
-    },
-    [leaderTracker],
-  );
+    return (e: KeyEvent) => new KeybindChecker(e, leaderTracker()).check(ast);
+  };
 
-  const registerKeybind = useCallback(
-    (keybind: Keybind) => {
-      keybinds.current.register({
-        ...keybind,
-        check: createChecker(keybind.keybindExpression),
-      });
-    },
-    [createChecker],
-  );
+  const registerKeybind = (keybind: Keybind) =>
+    keybinds.register({
+      ...keybind,
+      check: createChecker(keybind.keybindExpression),
+    });
 
-  const unregisterKeybind = useCallback((key: Keybind) => {
-    keybinds.current.delete(key);
-  }, []);
+  const unregisterKeybind = (key: Keybind) => keybinds.delete(key);
 
-  useEffect(() => {
+  onMount(() => {
     const configurationKeybinds = Object.entries(config.get("keybindings"));
 
     for (const [keybindExpression, command] of configurationKeybinds) {
       registerKeybind({ command, keybindExpression });
     }
-  }, [config, registerKeybind]);
+  });
 
-  useEffect(() => {
+  createEffect(() => {
     function checkAndTrigger(e: KeyboardEvent) {
-      const { trackingStarted } = leaderTracker.checkLeaderAndStartTracking(e);
+      const { trackingStarted } =
+        leaderTracker().checkLeaderAndStartTracking(e);
 
       // If we started tracking the leader key we
       // do not want to check keybinds for the next event
@@ -96,7 +87,7 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
       // We reverse the keybind because we want to potentially trigger them
       // in the reverse order they were registered. If a keybind was registered
       // after another one it should take precedence
-      const reverseKeybinds = [...keybinds.current.values()].reverse();
+      const reverseKeybinds = [...keybinds.values()].reverse();
 
       for (const bind of reverseKeybinds) {
         if (!bind.check(e)) continue;
@@ -117,10 +108,10 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
 
     window.addEventListener("keydown", checkAndTrigger);
     return () => window.removeEventListener("keydown", checkAndTrigger);
-  }, [commandsContext.triggerCommand, leaderTracker]);
+  });
 
   return {
-    keybinds: () => keybinds.current,
+    keybinds: () => keybinds.values().toArray(),
     leaderTracker,
     registerKeybind,
     unregisterKeybind,

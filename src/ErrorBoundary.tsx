@@ -1,48 +1,23 @@
-import { Component, type ReactNode } from "react";
-import { toast } from "sonner";
+import { type JSX, ErrorBoundary as SolidErrorBoundary } from "solid-js";
 
 interface ErrorBoundaryProps {
-  children: ReactNode;
-  fallback?: string;
-  onError?: (error: Error) => void;
+  children: JSX.Element;
+  fallback?: (err: Error, reset: () => void) => JSX.Element;
 }
 
-interface ErrorBoundaryState {
-  error?: Error;
-}
-
-export class ErrorBoundary extends Component<
-  ErrorBoundaryProps,
-  ErrorBoundaryState
-> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { error: undefined };
-  }
-
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { error };
-  }
-
-  componentDidCatch(error: Error): void {
-    setTimeout(() => {
-      toast.error(error.message);
-    }, 10);
-  }
-
-  render(): ReactNode {
-    console.log(this.state.error);
-    if (this.state.error) {
-      return (
-        <div class="grid place-items-center w-screen h-screen">
-          <div class="flex flex-col items-center max-w-2xl">
-            <h3 class="font-bold">An unexpected error occurred</h3>
-            <span>{this.state.error.message}</span>
+export function ErrorBoundary(props: ErrorBoundaryProps) {
+  return (
+    <SolidErrorBoundary
+      fallback={(err, reset) =>
+        props.fallback?.(err, reset) ?? (
+          <div>
+            <h2>Error: {err.message}</h2>
+            <button onClick={reset}>Reset</button>
           </div>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
+        )
+      }
+    >
+      {props.children}
+    </SolidErrorBoundary>
+  );
 }

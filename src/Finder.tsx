@@ -7,12 +7,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "./components/ui/input";
+import { TextField } from "./components/ui/textfield";
 import { useRegisterKeybindCommand } from "./keybinds/useRegisterKeybindCommand";
 import { useRegisterKeybindToggle } from "./keybinds/useRegisterToggleKeybind";
+import { cn } from "./lib/cn";
 import { useIntersectionScroll } from "./lib/useIntersectionScroll";
 import { useWrapWithZero } from "./lib/useWrapWithZero";
-import { cn } from "./lib/utils";
 import { useRouter } from "./Router";
 import { useSchemaContext } from "./SchemaProvider";
 import { useSelectedTableContext } from "./SelectedTableProvider";
@@ -68,14 +68,12 @@ export function Finder() {
   });
 
   return (
-    <Dialog modal open={toggle.value} onOpenChange={toggle.set}>
+    <Dialog modal open={toggle.value()} onOpenChange={toggle.set}>
       <DialogContent
-        forceMount
         class="flex flex-col justify-start"
-        showCloseButton={false}
         aria-describedby="Command palette"
       >
-        <FinderContent onSelect={() => toggle.set(false)} items={items} />
+        <FinderContent onSelect={() => toggle.set(false)} items={items()} />
       </DialogContent>
     </Dialog>
   );
@@ -134,10 +132,10 @@ function FinderContent({
     <>
       <DialogHeader>
         <DialogTitle class="sr-only">Command palette</DialogTitle>
-        <Input
+        <TextField
           placeholder="Type something..."
-          autoFocus
-          value={searchTerm}
+          autofocus
+          value={searchTerm()}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </DialogHeader>
@@ -161,7 +159,6 @@ function SearchItem({
   selectedIndex,
   item,
   index,
-  highlightRanges,
 }: {
   selectedIndex: number;
   index: number;
