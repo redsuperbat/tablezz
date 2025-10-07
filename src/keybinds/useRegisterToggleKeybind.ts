@@ -17,14 +17,19 @@ export function useRegisterKeybindToggle({
 }: RegisterToggleKeybindOption) {
   const [show, setShow] = createSignal(initialValue ?? false);
 
+  const toggle = () => setShow((s) => !s);
+
   useRegisterKeybindCommand({
     command,
     keybindExpression,
     overrideInput,
-    action() {
-      setShow((s) => !s);
-    },
+    action: toggle,
   });
 
-  return { value: show, set: setShow, close: () => setShow(false) };
+  return {
+    value: show,
+    set: setShow,
+    close: () => setShow(false),
+    toggle,
+  };
 }

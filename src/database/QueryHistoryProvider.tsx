@@ -3,7 +3,7 @@ import { createSolidContext } from "@/createSolidContext";
 
 type QueryEntry = { query: string; createdAt: Date };
 
-export const [QueryHistoryProvider, , useQueryHistory] = createSolidContext(
+export const [QueryHistoryProvider, useQueryHistory] = createSolidContext(
   () => {
     const [entries, setEntries] = createSignal<QueryEntry[]>([]);
 
@@ -18,7 +18,7 @@ export function QueryHistory() {
 
   return (
     <div class="overflow-auto">
-      <For each={history.entries()}>
+      <For each={history?.entries()}>
         {(e) => <QueryHistoryEntry entry={e} />}
       </For>
     </div>

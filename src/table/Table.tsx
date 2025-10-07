@@ -3,13 +3,14 @@ import { useTableRows } from "@/useTableRows";
 import { TableEditorProvider } from "./TableEditorProvider";
 import { TableRow } from "./TableRow";
 
-export function Table({ tableName }: { tableName: string }) {
-  const rows = useTableRows(tableName);
+export function Table(props: { tableName: string }) {
+  const rows = useTableRows(() => props.tableName);
 
-  const structure = Object.keys(rows.data?.at(0) ?? {}).map((k) => ({
-    columnName: k,
-    dataType: "text" as const,
-  }));
+  const structure = () =>
+    Object.keys(rows.data?.at(0) ?? {}).map((k) => ({
+      columnName: k,
+      dataType: "text" as const,
+    }));
 
   return (
     <Switch>
@@ -23,7 +24,7 @@ export function Table({ tableName }: { tableName: string }) {
             <table class="border-spacing-x-4 table-auto border-collapse border border-gray-300 w-full text-sm">
               <thead>
                 <tr>
-                  <For each={structure}>
+                  <For each={structure()}>
                     {(s) => (
                       <th class="border border-gray-300 px-4 py-2">
                         {s.columnName}
@@ -39,7 +40,7 @@ export function Table({ tableName }: { tableName: string }) {
                       <TableRow
                         rowIndex={rowIndex()}
                         row={row}
-                        structure={structure}
+                        structure={structure()}
                       />
                     );
                   }}

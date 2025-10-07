@@ -9,6 +9,7 @@ export function TextField(props: {
   type: string;
   label?: string;
   placeholder?: string;
+  autofocus?: boolean;
 }) {
   const field = useFieldContext<string>();
 
@@ -17,9 +18,13 @@ export function TextField(props: {
       <TextFieldLabel>{props.label}</TextFieldLabel>
       <BaseTextField
         value={field().state.value}
-        onChange={(e) => field().handleChange(e.target.value)}
+        onInput={(e) => {
+          const target = e.target as HTMLInputElement;
+          return field().handleChange(target.value);
+        }}
         type={props.type}
         placeholder={props.placeholder}
+        autofocus={props.autofocus}
       />
     </TextFieldRoot>
   );

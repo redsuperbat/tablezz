@@ -1,4 +1,9 @@
-import { createContext, type ParentProps, useContext } from "solid-js";
+import {
+  type Accessor,
+  createContext,
+  type ParentProps,
+  useContext,
+} from "solid-js";
 import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
 import { useWrapWithZero } from "@/lib/useWrapWithZero";
 import { useSelectedTableContext } from "@/SelectedTableProvider";
@@ -6,8 +11,8 @@ import { useTableRows } from "@/useTableRows";
 import { useTableStructure } from "@/useTableStructure";
 
 interface TableEditorContext {
-  column: number;
-  row: number;
+  column: Accessor<number>;
+  row: Accessor<number>;
 }
 
 const TableEditorContext = createContext<TableEditorContext | null>(null);
@@ -51,10 +56,10 @@ export function TableEditorProvider(props: ParentProps) {
     },
   });
 
-  const context = () => ({ row: row.value(), column: column.value() });
-
   return (
-    <TableEditorContext.Provider value={context()}>
+    <TableEditorContext.Provider
+      value={{ row: row.value, column: column.value }}
+    >
       {props.children}
     </TableEditorContext.Provider>
   );

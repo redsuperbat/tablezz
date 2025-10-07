@@ -1,20 +1,20 @@
 import {
   createContext,
   createSignal,
-  type JSXElement,
+  type ParentProps,
   Show,
   useContext,
 } from "solid-js";
 import { useSelectedSchemaTables } from "./useSelectedSchemaTables";
 
 interface TableContext {
-  selectedTable: string;
+  selectedTable: () => string;
   setSelectedTable: (v: string) => void;
 }
 
 const TableContext = createContext<TableContext | null>(null);
 
-export function SelectedTableProvider(props: { children: JSXElement }) {
+export function SelectedTableProvider(props: ParentProps) {
   const [tableName, setTableName] = createSignal<string>();
   const allTables = useSelectedSchemaTables();
   const selectedTable = () => tableName() || allTables.data?.at(0)?.tableName;
@@ -23,7 +23,7 @@ export function SelectedTableProvider(props: { children: JSXElement }) {
     <Show fallback={null} when={selectedTable()}>
       <TableContext.Provider
         value={{
-          selectedTable: selectedTable() as string,
+          selectedTable: selectedTable as () => string,
           setSelectedTable: setTableName,
         }}
       >
@@ -35,8 +35,10 @@ export function SelectedTableProvider(props: { children: JSXElement }) {
 
 export function useSelectedTableContext() {
   const ctx = useContext(TableContext);
+
   if (!ctx) {
     throw new Error("no context found");
   }
+
   return ctx;
 }

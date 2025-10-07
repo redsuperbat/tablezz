@@ -35,7 +35,7 @@ export function DatabaseConnectionProvider(props: ParentProps) {
             }
 
             try {
-              queryHistory.addEntry({ query, createdAt: new Date() });
+              queryHistory?.addEntry({ query, createdAt: new Date() });
               return await databaseQuery.data?.select(query, bindValues);
             } catch (error) {
               throw new Error(String(error), { cause: error });
@@ -43,7 +43,7 @@ export function DatabaseConnectionProvider(props: ParentProps) {
           },
           async execute(query, bindValues) {
             try {
-              queryHistory.addEntry({ query, createdAt: new Date() });
+              queryHistory?.addEntry({ query, createdAt: new Date() });
               await databaseQuery.data?.execute(query, bindValues);
             } catch (error) {
               throw new Error(String(error), { cause: error });

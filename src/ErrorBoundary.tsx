@@ -13,6 +13,7 @@ export function ErrorBoundary(props: ErrorBoundaryProps) {
         props.fallback?.(err, reset) ?? (
           <div>
             <h2>Error: {err.message}</h2>
+            <pre>{err.stack}</pre>
             <Button onClick={reset}>Reset</Button>
           </div>
         )

@@ -34,7 +34,6 @@ function AutocompleteOptions({
     command: "CommandAutocompleteNext",
     keybindExpression: "Tab",
     action() {
-      console.log("incrementing");
       selectedIndex.increment();
     },
     overrideInput: true,

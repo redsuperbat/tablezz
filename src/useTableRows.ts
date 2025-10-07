@@ -4,7 +4,7 @@ import { createMemo, createSignal, onMount } from "solid-js";
 import { useDatabase } from "./database/useDatabase";
 import { useSchemaContext } from "./SchemaProvider";
 
-function useTableRowsDatabaseQuery(tableName: string) {
+function useTableRowsDatabaseQuery(tableName: () => string) {
   const { schema } = useSchemaContext();
   const [writtenFile, setWrittenFile] = createSignal<string>();
 
@@ -26,11 +26,11 @@ function useTableRowsDatabaseQuery(tableName: string) {
 
     if (file) return file;
 
-    return `SELECT * FROM ${schema}.${tableName}`;
+    return `SELECT * FROM ${schema()}.${tableName()}`;
   });
 }
 
-export function useTableRows(tableName: string) {
+export function useTableRows(tableName: () => string) {
   const database = useDatabase();
   const query = useTableRowsDatabaseQuery(tableName);
 

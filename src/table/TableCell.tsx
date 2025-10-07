@@ -3,51 +3,50 @@ import { useIntersectionScroll } from "@/lib/useIntersectionScroll";
 import type { PostgresDataType } from "@/useTableStructure";
 import { useTableEditorContext } from "./TableEditorProvider";
 
-function TableCellDataType({
-  data,
-  dataType,
-}: {
+function TableCellDataType(props: {
   data: unknown;
   dataType: PostgresDataType;
   rowIndex: number;
   columnIndex: number;
 }) {
-  switch (dataType) {
+  switch (props.dataType) {
     default:
-      return <div class={cn("truncate max-w-48")}>{String(data)}</div>;
+      return <div class={cn("truncate max-w-48")}>{String(props.data)}</div>;
   }
 }
 
-export function TableCell({
-  data,
-  dataType,
-  columnIndex,
-  rowIndex,
-}: {
+export function TableCell(props: {
   data: unknown;
   dataType: PostgresDataType;
   rowIndex: number;
   columnIndex: number;
 }) {
   const { column, row } = useTableEditorContext();
-  const isActive = column === columnIndex && row === rowIndex;
-  const { ref } = useIntersectionScroll<HTMLTableCellElement>(isActive);
+  const isActive = () =>
+    column() === props.columnIndex && row() === props.rowIndex;
+  let { ref } = useIntersectionScroll<HTMLTableCellElement>(isActive);
 
   return (
     <td
-      ref={ref}
+      ref={(r) => {
+        ref = r;
+      }}
       class={cn(
         "border text-sm border-gray-300 py-2 px-2",
-        column === columnIndex && row === rowIndex + 1 && "border-b-red-300",
-        row === rowIndex && column === columnIndex + 1 && "border-r-red-300",
-        isActive && "border-red-300 bg-red-200",
+        column() === props.columnIndex &&
+          row() === props.rowIndex + 1 &&
+          "border-b-red-300",
+        row() === props.rowIndex &&
+          column() === props.columnIndex + 1 &&
+          "border-r-red-300",
+        isActive() && "border-red-300 bg-red-200",
       )}
     >
       <TableCellDataType
-        columnIndex={columnIndex}
-        rowIndex={rowIndex}
-        data={data}
-        dataType={dataType}
+        columnIndex={props.columnIndex}
+        rowIndex={props.rowIndex}
+        data={props.data}
+        dataType={props.dataType}
       />
     </td>
   );

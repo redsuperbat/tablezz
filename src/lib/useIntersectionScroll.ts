@@ -1,7 +1,13 @@
-import { createEffect, createSignal, onCleanup, onMount } from "solid-js";
+import {
+  type Accessor,
+  createEffect,
+  createSignal,
+  onCleanup,
+  onMount,
+} from "solid-js";
 
 export function useIntersectionScroll<T extends HTMLElement = HTMLDivElement>(
-  shouldScrollIntoView: boolean = false,
+  shouldScrollIntoView: Accessor<boolean>,
 ) {
   let ref: T | undefined;
   let observer: IntersectionObserver | undefined;
@@ -21,7 +27,7 @@ export function useIntersectionScroll<T extends HTMLElement = HTMLDivElement>(
 
   createEffect(() => {
     if (!ref) return;
-    if (shouldScrollIntoView && !isInView()) {
+    if (shouldScrollIntoView() && !isInView()) {
       ref.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   });

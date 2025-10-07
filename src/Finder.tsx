@@ -1,13 +1,14 @@
-import createFuzzySearch, { type FuzzyMatches } from "@nozbe/microfuzz";
+import type { FuzzyMatches } from "@nozbe/microfuzz";
+import createFuzzySearch from "@nozbe/microfuzz";
 import { Folder, Route, Table } from "lucide-solid";
-import { createEffect, createSignal, For, type JSXElement } from "solid-js";
+import { createEffect, createMemo, For, type JSXElement } from "solid-js";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { TextField } from "./components/ui/textfield";
+import { useAppForm } from "./components/form";
 import { useRegisterKeybindCommand } from "./keybinds/useRegisterKeybindCommand";
 import { useRegisterKeybindToggle } from "./keybinds/useRegisterToggleKeybind";
 import { cn } from "./lib/cn";
@@ -67,9 +68,19 @@ export function Finder() {
     keybindExpression: "Leader + Space",
   });
 
+  useRegisterKeybindCommand({
+    command: "FinderClose",
+    action() {
+      toggle.set(false);
+    },
+    keybindExpression: "Escape",
+    overrideInput: true,
+  });
+
   return (
     <Dialog modal open={toggle.value()} onOpenChange={toggle.set}>
       <DialogContent
+        onEscapeKeyDown={(e) => e.preventDefault()}
         class="flex flex-col justify-start"
         aria-describedby="Command palette"
       >
@@ -79,18 +90,21 @@ export function Finder() {
   );
 }
 
-function FinderContent({
-  items,
-  onSelect,
-}: {
-  items: FinderItem[];
-  onSelect: () => void;
-}) {
-  const [searchTerm, setSearchTerm] = createSignal("");
+function FinderContent(props: { items: FinderItem[]; onSelect: () => void }) {
+  const form = useAppForm(() => ({
+    defaultValues: { searchTerm: "" },
+  }));
 
-  const fuzzySearch = () => createFuzzySearch(items);
+  const searchTerm = form.useStore((store) => store.values.searchTerm);
 
-  const filteredItems = () => fuzzySearch()(searchTerm());
+  const filteredItems = () => {
+    const term = searchTerm();
+    const search = createFuzzySearch<FinderItem>(props.items, {
+      key: "searchTerm",
+    });
+    const result = search(term);
+    return result;
+  };
 
   const selectedIndex = useWrapWithZero(() => filteredItems().length - 1);
 
@@ -102,9 +116,10 @@ function FinderContent({
   useRegisterKeybindCommand({
     command: "FinderSelect",
     action() {
-      filteredItems()[selectedIndex.value()]?.item.onSelect?.();
-      onSelect();
-      setSearchTerm("");
+      const item = filteredItems()[selectedIndex.value()];
+      item?.item.onSelect?.();
+      props.onSelect();
+      form.reset();
     },
     keybindExpression: "Enter",
     overrideInput: true,
@@ -132,21 +147,29 @@ function FinderContent({
     <>
       <DialogHeader>
         <DialogTitle class="sr-only">Command palette</DialogTitle>
-        <TextField
-          placeholder="Type something..."
-          autofocus
-          value={searchTerm()}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+        <form
+          class="flex min-w-sm flex-col gap-1"
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
+        >
+          <form.AppField
+            name="searchTerm"
+            children={(field) => (
+              <field.TextField type="text" placeholder="Type something..." />
+            )}
+          />
+        </form>
       </DialogHeader>
       <div class="flex flex-col h-80 overflow-y-auto">
         <For each={filteredItems()}>
-          {({ item, matches }, i) => (
+          {(result, i) => (
             <SearchItem
               index={i()}
-              item={item}
+              item={result.item}
               selectedIndex={selectedIndex.value()}
-              highlightRanges={matches}
+              highlightRanges={result.matches}
             />
           )}
         </For>
@@ -155,26 +178,24 @@ function FinderContent({
   );
 }
 
-function SearchItem({
-  selectedIndex,
-  item,
-  index,
-}: {
+function SearchItem(props: {
   selectedIndex: number;
   index: number;
   item: FinderItem;
   highlightRanges: FuzzyMatches;
 }) {
-  const isActive = selectedIndex === index;
-  const { ref } = useIntersectionScroll(isActive);
+  const isActive = createMemo(() => props.selectedIndex === props.index);
+  let { ref } = useIntersectionScroll(isActive);
 
   return (
     <div
-      ref={ref}
-      class={cn(isActive && "bg-gray-100", "p-1 rounded flex gap-1")}
+      ref={(r) => {
+        ref = r;
+      }}
+      class={cn(isActive() && "bg-gray-100", "p-1 rounded flex gap-1")}
     >
-      <span>{item.icon}</span>
-      <div>{item.searchTerm}</div>
+      <span>{props.item.icon}</span>
+      <div>{props.item.searchTerm}</div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Show } from "solid-js";
+import { createEffect, Show } from "solid-js";
 import {
   Resizable,
   ResizableHandle,
@@ -25,6 +25,10 @@ export function DatabasePage() {
     initialValue: false,
   });
 
+  createEffect(() => {
+    console.log(selectedTable());
+  });
+
   return (
     <Resizable style={{ width: "100vw", height: "100vh" }}>
       <Show when={showSqlEditor.value()}>
@@ -35,8 +39,8 @@ export function DatabasePage() {
       </Show>
 
       <ResizablePanel>
-        <Show when={selectedTable}>
-          <Table tableName={selectedTable} />
+        <Show when={selectedTable()}>
+          <Table tableName={selectedTable()} />
         </Show>
       </ResizablePanel>
 
