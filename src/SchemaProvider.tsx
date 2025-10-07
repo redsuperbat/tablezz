@@ -4,5 +4,5 @@ import { createSolidContext } from "./createSolidContext";
 export const [SchemaProvider, , useSchemaContext] = createSolidContext(() => {
   const [schema, setSchema] = createSignal("public");
 
-  return { schema: schema(), setSchema };
+  return { schema, setSchema };
 });

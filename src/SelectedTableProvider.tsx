@@ -14,7 +14,7 @@ interface TableContext {
 
 const TableContext = createContext<TableContext | null>(null);
 
-export function SelectedTableProvider({ children }: { children: JSXElement }) {
+export function SelectedTableProvider(props: { children: JSXElement }) {
   const [tableName, setTableName] = createSignal<string>();
   const allTables = useSelectedSchemaTables();
   const selectedTable = () => tableName() || allTables.data?.at(0)?.tableName;
@@ -27,7 +27,7 @@ export function SelectedTableProvider({ children }: { children: JSXElement }) {
           setSelectedTable: setTableName,
         }}
       >
-        {children}
+        {props.children}
       </TableContext.Provider>
     </Show>
   );

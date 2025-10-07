@@ -4,6 +4,7 @@ import { CommandPalette } from "./commands/CommandPalette";
 import { CommandsProvider } from "./commands/CommandsContext";
 import { ConfigurationProvider } from "./config/ConfigurationProvider";
 import { QueryHistoryProvider } from "./database/QueryHistoryProvider";
+import { DatabaseConnectionProvider } from "./database/useDatabase";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { Finder } from "./Finder";
 import { KeybindHelp } from "./keybinds/KeybindHelp";
@@ -18,24 +19,26 @@ export function App() {
     <SuspenseBoundary>
       <ErrorBoundary>
         <ConnectionCredentialsProvider>
-          <ConfigurationProvider>
-            <CommandsProvider>
-              <KeybindProvider>
-                <CommandPalette />
-                <QueryHistoryProvider>
-                  <RouteProvider>
-                    <SchemaProvider>
-                      <SelectedTableProvider>
-                        <KeybindHelp />
-                        <Finder />
-                        <Router />
-                      </SelectedTableProvider>
-                    </SchemaProvider>
-                  </RouteProvider>
-                </QueryHistoryProvider>
-              </KeybindProvider>
-            </CommandsProvider>
-          </ConfigurationProvider>
+          <DatabaseConnectionProvider>
+            <ConfigurationProvider>
+              <CommandsProvider>
+                <KeybindProvider>
+                  <CommandPalette />
+                  <QueryHistoryProvider>
+                    <RouteProvider>
+                      <SchemaProvider>
+                        <SelectedTableProvider>
+                          <KeybindHelp />
+                          <Finder />
+                          <Router />
+                        </SelectedTableProvider>
+                      </SchemaProvider>
+                    </RouteProvider>
+                  </QueryHistoryProvider>
+                </KeybindProvider>
+              </CommandsProvider>
+            </ConfigurationProvider>
+          </DatabaseConnectionProvider>
         </ConnectionCredentialsProvider>
       </ErrorBoundary>
       <Toaster />

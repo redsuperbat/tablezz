@@ -16,13 +16,13 @@ export function useCommandsContext() {
   const ctx = useContext(CommandsContext);
 
   if (!ctx) {
-    throw new Error("bad");
+    throw new Error("Commands context was not found");
   }
 
   return ctx;
 }
 
-export function CommandsProvider({ children }: ParentProps) {
+export function CommandsProvider(props: ParentProps) {
   const commands = new Map<string, Command>();
 
   const unregisterCommand = (command: string) => commands.delete(command);
@@ -46,7 +46,7 @@ export function CommandsProvider({ children }: ParentProps) {
         isCommand,
       }}
     >
-      {children}
+      {props.children}
     </CommandsContext.Provider>
   );
 }

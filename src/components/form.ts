@@ -1,6 +1,6 @@
 import { createFormHook, createFormHookContexts } from "@tanstack/solid-form";
 import { SubmitButton } from "./SubmitButton";
-import { TextField } from "./ui/textfield";
+import { TextField } from "./TextField";
 
 const { fieldContext, formContext, useFieldContext } = createFormHookContexts();
 

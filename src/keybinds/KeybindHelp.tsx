@@ -9,10 +9,10 @@ import { cn } from "@/lib/cn";
 import { useKeybindContext } from "./KeybindProvider";
 import { useRegisterKeybindToggle } from "./useRegisterToggleKeybind";
 
-function Code({ children }: ParentProps) {
+function Code(props: ParentProps) {
   return (
     <pre class="ml-auto bg-gray-200 rounded px-1 w-fit">
-      <code>{children}</code>
+      <code>{props.children}</code>
     </pre>
   );
 }

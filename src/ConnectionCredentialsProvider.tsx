@@ -20,9 +20,10 @@ export const [RootConnectionCredentialsProvider, , useConnectionCredentials] =
     return { databaseUrlRaw, database };
   });
 
-export function ConnectionCredentialsProvider({ children }: ParentProps) {
+export function ConnectionCredentialsProvider(props: ParentProps) {
   const [databaseUrlRaw, setDatabaseUrlRaw] = makePersisted(
     createSignal<string>(),
+    { name: "databaseurl" },
   );
 
   const form = useAppForm(() => ({
@@ -48,7 +49,7 @@ export function ConnectionCredentialsProvider({ children }: ParentProps) {
         <RootConnectionCredentialsProvider
           databaseUrlRaw={databaseUrlRaw() as string}
         >
-          {children}
+          {props.children}
         </RootConnectionCredentialsProvider>
       </Match>
       <Match when={!databaseUrlRaw()}>

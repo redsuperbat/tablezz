@@ -25,7 +25,7 @@ export function createSolidContext<
   function useContextOrThrow() {
     const ctx = useContext();
     if (!ctx) {
-      throw new Error("No parent context found");
+      throw new Error(`No parent context found${useValue.toString()}`);
     }
     return ctx;
   }

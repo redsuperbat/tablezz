@@ -8,7 +8,7 @@ import { useConfig } from "@/config/ConfigurationProvider";
 
 export function SqlEditor({ onClose }: { onClose: () => void }) {
   let terminalRef: HTMLDivElement | undefined;
-  const config = useConfig();
+  const { config } = useConfig();
 
   onMount(() => {
     const ref = terminalRef;
@@ -58,7 +58,7 @@ export function SqlEditor({ onClose }: { onClose: () => void }) {
         cols: term.cols,
         rows: term.rows,
         initialContent: "",
-        editor: config.get("editor"),
+        editor: config.editor,
       });
     });
 

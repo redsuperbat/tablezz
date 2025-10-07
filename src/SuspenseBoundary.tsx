@@ -8,6 +8,6 @@ const LoadingSpinner = () => {
   );
 };
 
-export function SuspenseBoundary({ children }: ParentProps) {
-  return <Suspense fallback={<LoadingSpinner />}>{children}</Suspense>;
+export function SuspenseBoundary(props: ParentProps) {
+  return <Suspense fallback={<LoadingSpinner />}>{props.children}</Suspense>;
 }

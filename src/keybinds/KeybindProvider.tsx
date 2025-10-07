@@ -34,16 +34,13 @@ class KeybindCollection {
 }
 
 export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
-  const config = useConfig();
+  const { config } = useConfig();
   const commandsContext = useCommandsContext();
   const keybinds = new KeybindCollection();
 
   const leaderTracker = createMemo(
     () =>
-      new KeybindLeaderTracker(
-        config.get("leaderKeyTimeoutMs"),
-        config.get("leaderKey"),
-      ),
+      new KeybindLeaderTracker(config?.leaderKeyTimeoutMs, config?.leaderKey),
   );
 
   const createChecker = (hotkeyExpression: string) => {
@@ -62,7 +59,7 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
   const unregisterKeybind = (key: Keybind) => keybinds.delete(key);
 
   onMount(() => {
-    const configurationKeybinds = Object.entries(config.get("keybindings"));
+    const configurationKeybinds = Object.entries(config.keybindings || {});
 
     for (const [keybindExpression, command] of configurationKeybinds) {
       registerKeybind({ command, keybindExpression });

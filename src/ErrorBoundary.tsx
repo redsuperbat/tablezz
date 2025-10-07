@@ -1,4 +1,5 @@
 import { type JSX, ErrorBoundary as SolidErrorBoundary } from "solid-js";
+import { Button } from "./components/ui/button";
 
 interface ErrorBoundaryProps {
   children: JSX.Element;
@@ -8,11 +9,11 @@ interface ErrorBoundaryProps {
 export function ErrorBoundary(props: ErrorBoundaryProps) {
   return (
     <SolidErrorBoundary
-      fallback={(err, reset) =>
+      fallback={(err: Error, reset) =>
         props.fallback?.(err, reset) ?? (
           <div>
             <h2>Error: {err.message}</h2>
-            <button onClick={reset}>Reset</button>
+            <Button onClick={reset}>Reset</Button>
           </div>
         )
       }

@@ -11,10 +11,10 @@ export function useSelectedSchemaTables() {
         `
 SELECT table_name as "tableName"
 FROM information_schema.tables
-WHERE table_schema = '${schema}'
+WHERE table_schema = '${schema()}'
 AND table_type = 'BASE TABLE';
 `,
       ),
-    queryKey: ["schema", schema],
+    queryKey: ["schema", schema()],
   }));
 }
