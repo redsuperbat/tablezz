@@ -5,9 +5,9 @@ import { CommandsProvider } from "./commands/CommandsContext";
 import { ConfigurationProvider } from "./config/ConfigurationProvider";
 import { QueryHistoryProvider } from "./database/QueryHistoryProvider";
 import { DatabaseConnectionProvider } from "./database/useDatabase";
-import { Finder } from "./Finder";
 import { KeybindHelp } from "./keybinds/KeybindHelp";
 import { KeybindProvider } from "./keybinds/KeybindProvider";
+import { Picker } from "./Picker";
 import { RouteProvider, Router } from "./Router";
 import { SchemaProvider } from "./SchemaProvider";
 import { SelectedTableProvider } from "./SelectedTableProvider";
@@ -27,7 +27,7 @@ export function App() {
                     <SchemaProvider>
                       <SelectedTableProvider>
                         <KeybindHelp />
-                        <Finder />
+                        <Picker />
                         <Router />
                       </SelectedTableProvider>
                     </SchemaProvider>

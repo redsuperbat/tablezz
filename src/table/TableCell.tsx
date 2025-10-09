@@ -24,13 +24,11 @@ export function TableCell(props: {
   const { column, row } = useTableEditorContext();
   const isActive = () =>
     column() === props.columnIndex && row() === props.rowIndex;
-  let { ref } = useIntersectionScroll<HTMLTableCellElement>(isActive);
+  const ref = useIntersectionScroll<HTMLTableCellElement>(isActive);
 
   return (
     <td
-      ref={(r) => {
-        ref = r;
-      }}
+      ref={ref}
       class={cn(
         "border text-sm border-gray-300 py-2 px-2",
         column() === props.columnIndex &&

@@ -32,5 +32,7 @@ export function useIntersectionScroll<T extends HTMLElement = HTMLDivElement>(
     }
   });
 
-  return { ref };
+  return (r: T) => {
+    ref = r;
+  };
 }

@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/cn";
 import { useKeybindContext } from "./KeybindProvider";
+import { useRegisterKeybindCommand } from "./useRegisterKeybindCommand";
 import { useRegisterKeybindToggle } from "./useRegisterToggleKeybind";
 
 function Code(props: ParentProps) {
@@ -24,6 +25,13 @@ export function KeybindHelp() {
     overrideInput: true,
   });
 
+  useRegisterKeybindCommand({
+    keybindExpression: "Escape",
+    command: "KeybindHelpClose",
+    action: toggle.close,
+    overrideInput: true,
+  });
+
   const binds = useKeybindContext();
 
   const sortedBinds = () =>
@@ -33,6 +41,7 @@ export function KeybindHelp() {
     <Dialog open={toggle.value()} onOpenChange={toggle.set}>
       <DialogContent
         aria-describedby="Keybinds"
+        onEscapeKeyDown={(e) => e.preventDefault()}
         class="sm:max-w-fit flex flex-col justify-start overflow-y-auto"
       >
         <DialogHeader>

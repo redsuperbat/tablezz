@@ -26,7 +26,7 @@ interface FinderItem {
   searchTerm: string;
 }
 
-export function Finder() {
+export function Picker() {
   const { setSelectedTable } = useSelectedTableContext();
   const { routes, navigateTo } = useRouter();
   const selectedSchema = useSelectedSchemaTables();
@@ -185,13 +185,11 @@ function SearchItem(props: {
   highlightRanges: FuzzyMatches;
 }) {
   const isActive = createMemo(() => props.selectedIndex === props.index);
-  let { ref } = useIntersectionScroll(isActive);
+  const ref = useIntersectionScroll(isActive);
 
   return (
     <div
-      ref={(r) => {
-        ref = r;
-      }}
+      ref={ref}
       class={cn(isActive() && "bg-gray-100", "p-1 rounded flex gap-1")}
     >
       <span>{props.item.icon}</span>

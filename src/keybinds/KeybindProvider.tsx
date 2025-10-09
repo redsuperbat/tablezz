@@ -1,4 +1,4 @@
-import { createEffect, createMemo, onMount } from "solid-js";
+import { createMemo, onMount } from "solid-js";
 import { useCommandsContext } from "@/commands/CommandsContext";
 import { useConfig } from "@/config/ConfigurationProvider";
 import { createSolidContext } from "@/createSolidContext";
@@ -66,7 +66,7 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
     }
   });
 
-  createEffect(() => {
+  onMount(() => {
     function checkAndTrigger(e: KeyboardEvent) {
       const { trackingStarted } =
         leaderTracker().checkLeaderAndStartTracking(e);
