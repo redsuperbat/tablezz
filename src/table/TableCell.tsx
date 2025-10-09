@@ -11,7 +11,7 @@ function TableCellDataType(props: {
 }) {
   switch (props.dataType) {
     default:
-      return <div class={cn("truncate max-w-48")}>{String(props.data)}</div>;
+      return <div class={cn("max-w-48 truncate")}>{String(props.data)}</div>;
   }
 }
 
@@ -30,7 +30,7 @@ export function TableCell(props: {
     <td
       ref={ref}
       class={cn(
-        "border text-sm border-gray-300 py-2 px-2",
+        "border border-gray-300 px-2 py-2 text-sm",
         column() === props.columnIndex &&
           row() === props.rowIndex + 1 &&
           "border-b-red-300",

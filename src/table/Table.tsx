@@ -20,8 +20,8 @@ export function Table(props: { tableName: string }) {
 
       <Match when={rows.data}>
         <TableEditorProvider>
-          <div class="overflow-scroll h-full font-normal text-start">
-            <table class="border-spacing-x-4 table-auto border-collapse border border-gray-300 w-full text-sm">
+          <div class="h-full overflow-scroll text-start font-normal">
+            <table class="w-full table-auto border-collapse border-spacing-x-4 border border-gray-300 text-sm">
               <thead>
                 <tr>
                   <For each={structure()}>

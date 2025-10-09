@@ -53,7 +53,7 @@ export function ConnectionCredentialsProvider(props: ParentProps) {
         </RootConnectionCredentialsProvider>
       </Match>
       <Match when={!databaseUrlRaw()}>
-        <div class="h-screen w-screen grid place-items-center">
+        <div class="grid h-screen w-screen place-items-center">
           <form
             class="flex min-w-sm flex-col gap-1"
             onSubmit={(e) => {

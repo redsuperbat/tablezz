@@ -81,7 +81,7 @@ export function Picker() {
     <Dialog modal open={toggle.value()} onOpenChange={toggle.set}>
       <DialogContent
         onEscapeKeyDown={(e) => e.preventDefault()}
-        class="flex flex-col justify-start"
+        class="flex flex-col justify-start bg-white"
         aria-describedby="Command palette"
       >
         <FinderContent onSelect={() => toggle.set(false)} items={items()} />
@@ -162,7 +162,7 @@ function FinderContent(props: { items: FinderItem[]; onSelect: () => void }) {
           />
         </form>
       </DialogHeader>
-      <div class="flex flex-col h-80 overflow-y-auto">
+      <div class="flex h-80 flex-col overflow-y-auto">
         <For each={filteredItems()}>
           {(result, i) => (
             <SearchItem
@@ -190,7 +190,7 @@ function SearchItem(props: {
   return (
     <div
       ref={ref}
-      class={cn(isActive() && "bg-gray-100", "p-1 rounded flex gap-1")}
+      class={cn(isActive() && "bg-gray-100", "flex gap-1 rounded p-1")}
     >
       <span>{props.item.icon}</span>
       <div>{props.item.searchTerm}</div>

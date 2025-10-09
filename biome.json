@@ -20,6 +20,9 @@
         "noChildrenProp": "off",
         "noUnusedVariables": "off",
         "noUnusedFunctionParameters": "off"
+      },
+      "nursery": {
+        "useSortedClasses": "error"
       }
     }
   },

@@ -12,7 +12,7 @@ import { useRegisterKeybindToggle } from "./useRegisterToggleKeybind";
 
 function Code(props: ParentProps) {
   return (
-    <pre class="ml-auto bg-gray-200 rounded px-1 w-fit">
+    <pre class="ml-auto w-fit rounded bg-gray-200 px-1">
       <code>{props.children}</code>
     </pre>
   );
@@ -42,7 +42,7 @@ export function KeybindHelp() {
       <DialogContent
         aria-describedby="Keybinds"
         onEscapeKeyDown={(e) => e.preventDefault()}
-        class="sm:max-w-fit flex flex-col justify-start overflow-y-auto"
+        class="flex flex-col justify-start overflow-y-auto sm:max-w-fit"
       >
         <DialogHeader>
           <DialogTitle>Keybind help</DialogTitle>

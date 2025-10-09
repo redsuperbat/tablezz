@@ -60,7 +60,7 @@ function AutocompleteOptions({
   });
 
   return (
-    <div class="absolute top-full bg-white -left-2 px-2 rounded">
+    <div class="-left-2 absolute top-full rounded bg-white px-2">
       <For each={filteredCommands}>
         {(c, index) => (
           <div class={cn(index() === selectedIndex.value() && "bg-blue-200")}>
@@ -126,7 +126,7 @@ function Autocomplete({
     <div class="relative w-full max-w-md">
       <div class="relative">
         <div
-          class="absolute inset-0  pointer-events-none text-gray-400 whitespace-nowrap overflow-hidden"
+          class="pointer-events-none absolute inset-0 overflow-hidden whitespace-nowrap text-gray-400"
           style={{
             "font-family": "inherit",
             "font-size": "inherit",
@@ -153,7 +153,7 @@ function Autocomplete({
           value={value}
           onChange={(e) => onValueChanged(e.target.value)}
           placeholder="Type to search..."
-          class="relative w-full focus:outline-none bg-transparent"
+          class="relative w-full bg-transparent focus:outline-none"
           style={{ "caret-color": "black" }}
         />
       </div>
@@ -193,7 +193,7 @@ function DialogPaletteContent({
   return (
     <DialogHeader>
       <DialogTitle class="sr-only">Command palette</DialogTitle>
-      <div class="flex px-2 py-1 gap-0.5">
+      <div class="flex gap-0.5 px-2 py-1">
         <span>:</span>
         <Autocomplete value={inputValue()} onValueChanged={setInputValue} />
       </div>
@@ -212,7 +212,7 @@ export function CommandPalette() {
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
-        class="flex flex-col justify-start p-0 rounded"
+        class="flex flex-col justify-start rounded bg-white p-0"
         aria-describedby="Command palette"
       >
         <DialogPaletteContent onClose={toggle.close} onSelect={toggle.close} />
