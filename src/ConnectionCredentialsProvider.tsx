@@ -46,11 +46,11 @@ export function ConnectionCredentialsProvider(props: ParentProps) {
   return (
     <Switch>
       <Match when={databaseUrlRaw()}>
-        <RootConnectionCredentialsProvider
-          databaseUrlRaw={databaseUrlRaw() as string}
-        >
-          {props.children}
-        </RootConnectionCredentialsProvider>
+        {(url) => (
+          <RootConnectionCredentialsProvider databaseUrlRaw={url()}>
+            {props.children}
+          </RootConnectionCredentialsProvider>
+        )}
       </Match>
       <Match when={!databaseUrlRaw()}>
         <div class="grid h-screen w-screen place-items-center">

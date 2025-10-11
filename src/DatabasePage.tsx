@@ -39,9 +39,7 @@ export function DatabasePage() {
       </Show>
 
       <ResizablePanel>
-        <Show when={selectedTable()}>
-          <Table tableName={selectedTable() as string} />
-        </Show>
+        <Table tableName={selectedTable()} />
       </ResizablePanel>
 
       <Show when={showQueryHistory.value()}>

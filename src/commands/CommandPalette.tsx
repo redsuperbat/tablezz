@@ -12,21 +12,19 @@ import { useWrapWithZero } from "@/lib/useWrapWithZero";
 import type { Command } from "./Command";
 import { useCommandsContext } from "./CommandsContext";
 
-function AutocompleteOptions({
-  filteredCommands,
-  onCommandNameAccepted,
-  onClose,
-}: {
+function AutocompleteOptions(props: {
   filteredCommands: Command[];
   onCommandNameAccepted: (commandName: string) => void;
   onClose: () => void;
 }) {
-  const selectedIndex = useWrapWithZero(() => filteredCommands.length - 1);
+  const selectedIndex = useWrapWithZero(
+    () => props.filteredCommands.length - 1,
+  );
 
   useRegisterKeybindCommand({
     command: "CommandAutocompleteHide",
     keybindExpression: "Escape",
-    action: onClose,
+    action: props.onClose,
     overrideInput: true,
   });
 
@@ -52,16 +50,16 @@ function AutocompleteOptions({
     command: "CommandAutocompleteAccept",
     keybindExpression: "Enter",
     action() {
-      const command = filteredCommands.at(selectedIndex.value());
+      const command = props.filteredCommands.at(selectedIndex.value());
       if (!command) return;
-      onCommandNameAccepted(command.name);
+      props.onCommandNameAccepted(command.name);
     },
     overrideInput: true,
   });
 
   return (
     <div class="-left-2 absolute top-full rounded bg-white px-2">
-      <For each={filteredCommands}>
+      <For each={props.filteredCommands}>
         {(c, index) => (
           <div class={cn(index() === selectedIndex.value() && "bg-blue-200")}>
             {c.name}
@@ -72,10 +70,7 @@ function AutocompleteOptions({
   );
 }
 
-function Autocomplete({
-  value,
-  onValueChanged,
-}: {
+function Autocomplete(props: {
   value: string;
   onValueChanged: (v: string) => void;
 }) {
@@ -84,12 +79,12 @@ function Autocomplete({
   const commands = () => commandContext.listCommands();
 
   const ghostText = () => {
-    if (value.trim() === "") {
+    if (props.value.trim() === "") {
       return "";
     }
 
     const matchingCommand = commands().find((suggestion) =>
-      suggestion.name.startsWith(value),
+      suggestion.name.startsWith(props.value),
     );
 
     if (!matchingCommand) {
@@ -106,13 +101,13 @@ function Autocomplete({
   });
 
   const filteredCommands = () =>
-    commands().filter((c) => c.name.startsWith(value));
+    commands().filter((c) => c.name.startsWith(props.value));
 
   useRegisterKeybindCommand({
     command: "CommandComplete",
     action() {
       if (filteredCommands().length === 1) {
-        return onValueChanged(ghostText());
+        return props.onValueChanged(ghostText());
       }
       if (filteredCommands().length > 1) {
         return toggleShowAutocomplete.set(true);
@@ -133,25 +128,26 @@ function Autocomplete({
             "line-height": "inherit",
           }}
         >
-          <span class="invisible">{value}</span>
-          <span>{ghostText().slice(value.length)}</span>
+          <span class="invisible">{props.value}</span>
+
+          <span>{ghostText().slice(props.value.length)}</span>
         </div>
 
         <Show when={toggleShowAutocomplete.value()}>
           <AutocompleteOptions
             onClose={() => toggleShowAutocomplete.set(false)}
             onCommandNameAccepted={(commandName) => {
-              onValueChanged(commandName);
+              props.onValueChanged(commandName);
               toggleShowAutocomplete.set(false);
             }}
-            filteredCommands={commands()}
+            filteredCommands={filteredCommands()}
           />
         </Show>
 
         <input
           type="text"
-          value={value}
-          onChange={(e) => onValueChanged(e.target.value)}
+          value={props.value}
+          onInput={(e) => props.onValueChanged(e.target.value)}
           placeholder="Type to search..."
           class="relative w-full bg-transparent focus:outline-none"
           style={{ "caret-color": "black" }}
@@ -161,10 +157,7 @@ function Autocomplete({
   );
 }
 
-function DialogPaletteContent({
-  onSelect,
-  onClose,
-}: {
+function DialogPaletteContent(props: {
   onClose: () => void;
   onSelect: () => void;
 }) {
@@ -174,7 +167,7 @@ function DialogPaletteContent({
   useRegisterKeybindCommand({
     keybindExpression: "Escape",
     action() {
-      onClose();
+      props.onClose();
     },
     command: "CommandAccept",
     overrideInput: true,
@@ -184,7 +177,7 @@ function DialogPaletteContent({
     keybindExpression: "Enter",
     action() {
       commandContext.triggerCommand(inputValue());
-      onSelect();
+      props.onSelect();
     },
     command: "CommandAccept",
     overrideInput: true,
