@@ -37,6 +37,6 @@ export function useTableRows(tableName: () => string) {
   return useQuery(() => ({
     queryFn: () => database.select<Record<string, unknown>[]>(query()),
 
-    queryKey: ["table-content", query],
+    queryKey: ["table-content", query(), tableName()],
   }));
 }

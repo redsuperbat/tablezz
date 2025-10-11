@@ -40,7 +40,7 @@ export function DatabasePage() {
 
       <ResizablePanel>
         <Show when={selectedTable()}>
-          <Table tableName={selectedTable()} />
+          <Table tableName={selectedTable() as string} />
         </Show>
       </ResizablePanel>
 

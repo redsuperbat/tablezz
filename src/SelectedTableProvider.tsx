@@ -21,14 +21,13 @@ export function SelectedTableProvider(props: ParentProps) {
 
   return (
     <Show fallback={null} when={selectedTable()}>
-      <TableContext.Provider
-        value={{
-          selectedTable: selectedTable as () => string,
-          setSelectedTable: setTableName,
-        }}
-      >
-        {props.children}
-      </TableContext.Provider>
+      {(selectedTable) => (
+        <TableContext.Provider
+          value={{ selectedTable, setSelectedTable: setTableName }}
+        >
+          {props.children}
+        </TableContext.Provider>
+      )}
     </Show>
   );
 }

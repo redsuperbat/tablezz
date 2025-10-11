@@ -19,10 +19,14 @@ const TableEditorContext = createContext<TableEditorContext | null>(null);
 
 export function TableEditorProvider(props: ParentProps) {
   const { selectedTable } = useSelectedTableContext();
-  const columnLength = useTableStructure(selectedTable).data?.length ?? 0;
-  const rowLength = useTableRows(selectedTable).data?.length ?? 0;
-  const row = useWrapWithZero(() => rowLength - 1);
-  const column = useWrapWithZero(() => columnLength - 1);
+  const tableStructure = useTableStructure(selectedTable);
+  const rows = useTableRows(selectedTable);
+
+  const columnLength = () => tableStructure.data?.length ?? 0;
+  const rowLength = () => rows.data?.length ?? 0;
+
+  const row = useWrapWithZero(() => rowLength() - 1);
+  const column = useWrapWithZero(() => columnLength() - 1);
 
   useRegisterKeybindCommand({
     command: "MoveCellRight",
