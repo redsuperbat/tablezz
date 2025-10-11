@@ -1,4 +1,4 @@
-import type { FuzzyMatches } from "@nozbe/microfuzz";
+import type { FuzzyMatches, FuzzyResult } from "@nozbe/microfuzz";
 import createFuzzySearch from "@nozbe/microfuzz";
 import { Folder, Route, Table } from "lucide-solid";
 import { createEffect, createMemo, For, type JSXElement } from "solid-js";
@@ -70,9 +70,7 @@ export function Picker() {
 
   useRegisterKeybindCommand({
     command: "FinderClose",
-    action() {
-      toggle.set(false);
-    },
+    action: toggle.close,
     keybindExpression: "Escape",
     overrideInput: true,
   });
@@ -97,11 +95,17 @@ function FinderContent(props: { items: FinderItem[]; onSelect: () => void }) {
 
   const searchTerm = form.useStore((store) => store.values.searchTerm);
 
-  const filteredItems = () => {
+  const filteredItems = (): FuzzyResult<FinderItem>[] => {
     const term = searchTerm();
+
+    if (!term) {
+      return props.items.map((i) => ({ item: i, matches: [], score: 0 }));
+    }
+
     const search = createFuzzySearch<FinderItem>(props.items, {
       key: "searchTerm",
     });
+
     const result = search(term);
     return result;
   };
