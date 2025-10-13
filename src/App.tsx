@@ -17,12 +17,12 @@ export function App() {
   return (
     <SuspenseBoundary>
       <ConnectionCredentialsProvider>
-        <DatabaseConnectionProvider>
-          <ConfigurationProvider>
-            <CommandsProvider>
-              <KeybindProvider>
-                <CommandPalette />
-                <QueryHistoryProvider>
+        <QueryHistoryProvider>
+          <DatabaseConnectionProvider>
+            <ConfigurationProvider>
+              <CommandsProvider>
+                <KeybindProvider>
+                  <CommandPalette />
                   <RouteProvider>
                     <SchemaProvider>
                       <SelectedTableProvider>
@@ -32,11 +32,11 @@ export function App() {
                       </SelectedTableProvider>
                     </SchemaProvider>
                   </RouteProvider>
-                </QueryHistoryProvider>
-              </KeybindProvider>
-            </CommandsProvider>
-          </ConfigurationProvider>
-        </DatabaseConnectionProvider>
+                </KeybindProvider>
+              </CommandsProvider>
+            </ConfigurationProvider>
+          </DatabaseConnectionProvider>
+        </QueryHistoryProvider>
       </ConnectionCredentialsProvider>
       <Toaster />
     </SuspenseBoundary>

@@ -68,13 +68,6 @@ export function Picker() {
     keybindExpression: "Leader + Space",
   });
 
-  useRegisterKeybindCommand({
-    command: "FinderClose",
-    action: toggle.close,
-    keybindExpression: "Escape",
-    overrideInput: true,
-  });
-
   return (
     <Dialog modal open={toggle.value()} onOpenChange={toggle.set}>
       <DialogContent
@@ -82,16 +75,23 @@ export function Picker() {
         class="flex flex-col justify-start bg-white"
         aria-describedby="Command palette"
       >
-        <FinderContent onSelect={() => toggle.set(false)} items={items()} />
+        <PickerContent onSelect={() => toggle.set(false)} items={items()} />
       </DialogContent>
     </Dialog>
   );
 }
 
-function FinderContent(props: { items: FinderItem[]; onSelect: () => void }) {
+function PickerContent(props: { items: FinderItem[]; onSelect: () => void }) {
   const form = useAppForm(() => ({
     defaultValues: { searchTerm: "" },
   }));
+
+  useRegisterKeybindCommand({
+    command: "PickerClose",
+    action: props.onSelect,
+    keybindExpression: "Escape",
+    overrideInput: true,
+  });
 
   const searchTerm = form.useStore((store) => store.values.searchTerm);
 

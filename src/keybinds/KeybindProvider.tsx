@@ -81,6 +81,8 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement;
 
+      console.log(e.target);
+
       // We reverse the keybind because we want to potentially trigger them
       // in the reverse order they were registered. If a keybind was registered
       // after another one it should take precedence

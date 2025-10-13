@@ -1,55 +1,90 @@
-import { For, Match, Switch } from "solid-js";
-import { useTableRows } from "@/useTableRows";
-import { TableEditorProvider } from "./TableEditorProvider";
-import { TableRow } from "./TableRow";
+import {
+  type ColumnDef,
+  createSolidTable,
+  flexRender,
+  getCoreRowModel,
+} from "@tanstack/solid-table";
+import { For } from "solid-js";
+import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
+import { TableCell } from "./TableCell";
 
-export function Table(props: { tableName: string }) {
-  const rows = useTableRows(() => props.tableName);
+export function Table(props: { rows: Record<string, unknown>[] }) {
+  let ref: HTMLTableElement | undefined;
+
+  useRegisterKeybindCommand({
+    command: "FocusTable",
+    keybindExpression: "Control + j",
+    overrideInput: true,
+    action() {
+      setTimeout(() => {
+        ref?.focus();
+      }, 100);
+    },
+  });
 
   const structure = () =>
-    Object.keys(rows.data?.at(0) ?? {}).map((k) => ({
+    Object.keys(props.rows.at(0) ?? {}).map((k) => ({
       columnName: k,
       dataType: "text" as const,
     }));
 
-  return (
-    <Switch>
-      <Match when={rows.isError}>
-        <div>{rows.error?.message}</div>
-      </Match>
+  const columns: () => ColumnDef<Record<string, unknown>>[] = () =>
+    structure().map((s) => ({
+      accessorKey: s.columnName,
+      cell: (props) => (
+        <TableCell
+          columnIndex={props.column.getIndex()}
+          data={props.getValue()}
+          dataType={s.dataType}
+          rowIndex={props.row.index}
+        />
+      ),
+    }));
 
-      <Match when={rows.data}>
-        <TableEditorProvider>
-          <div class="h-full overflow-scroll text-start font-normal">
-            <table class="w-full table-auto border-collapse border-spacing-x-4 border border-gray-300 text-sm">
-              <thead>
-                <tr>
-                  <For each={structure()}>
-                    {(s) => (
-                      <th class="border border-gray-300 px-4 py-2">
-                        {s.columnName}
-                      </th>
-                    )}
-                  </For>
-                </tr>
-              </thead>
-              <tbody>
-                <For each={rows.data}>
-                  {(row, rowIndex) => {
-                    return (
-                      <TableRow
-                        rowIndex={rowIndex()}
-                        row={row}
-                        structure={structure()}
-                      />
-                    );
-                  }}
+  const table = () =>
+    createSolidTable({
+      columns: columns(),
+      get data() {
+        return props.rows ?? [];
+      },
+      getCoreRowModel: getCoreRowModel(),
+    });
+
+  return (
+    <div class="overflow-auto">
+      <table ref={ref}>
+        <thead>
+          <For each={table().getHeaderGroups()}>
+            {(headerGroup) => (
+              <tr>
+                <For each={headerGroup.headers}>
+                  {(header) => (
+                    <th class="sticky top-0">
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
+                    </th>
+                  )}
                 </For>
-              </tbody>
-            </table>
-          </div>
-        </TableEditorProvider>
-      </Match>
-    </Switch>
+              </tr>
+            )}
+          </For>
+        </thead>
+        <tbody>
+          <For each={table().getRowModel().rows}>
+            {(row) => (
+              <tr>
+                <For each={row.getVisibleCells()}>
+                  {(cell) =>
+                    flexRender(cell.column.columnDef.cell, cell.getContext())
+                  }
+                </For>
+              </tr>
+            )}
+          </For>
+        </tbody>
+      </table>
+    </div>
   );
 }

@@ -20,6 +20,7 @@
     "@tailwindcss/vite": "^4.1.13",
     "@tanstack/solid-form": "^1.23.6",
     "@tanstack/solid-query": "^5.90.3",
+    "@tanstack/solid-table": "^8.21.3",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-fs": "~2.4.2",
     "@tauri-apps/plugin-opener": "^2",

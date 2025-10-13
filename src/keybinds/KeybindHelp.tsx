@@ -28,8 +28,9 @@ export function KeybindHelp() {
   useRegisterKeybindCommand({
     keybindExpression: "Escape",
     command: "KeybindHelpClose",
-    action: toggle.close,
-    overrideInput: true,
+    action() {
+      toggle.close();
+    },
   });
 
   const binds = useKeybindContext();
@@ -42,7 +43,7 @@ export function KeybindHelp() {
       <DialogContent
         aria-describedby="Keybinds"
         onEscapeKeyDown={(e) => e.preventDefault()}
-        class="flex flex-col justify-start overflow-y-auto sm:max-w-fit"
+        class="flex flex-col justify-start overflow-y-auto bg-white sm:max-w-fit"
       >
         <DialogHeader>
           <DialogTitle>Keybind help</DialogTitle>

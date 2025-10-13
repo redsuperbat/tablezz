@@ -6,9 +6,6 @@ import {
 } from "solid-js";
 import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
 import { useWrapWithZero } from "@/lib/useWrapWithZero";
-import { useSelectedTableContext } from "@/SelectedTableProvider";
-import { useTableRows } from "@/useTableRows";
-import { useTableStructure } from "@/useTableStructure";
 
 interface TableEditorContext {
   column: Accessor<number>;
@@ -17,13 +14,9 @@ interface TableEditorContext {
 
 const TableEditorContext = createContext<TableEditorContext | null>(null);
 
-export function TableEditorProvider(props: ParentProps) {
-  const { selectedTable } = useSelectedTableContext();
-  const tableStructure = useTableStructure(selectedTable);
-  const rows = useTableRows(selectedTable);
-
-  const columnLength = () => tableStructure.data?.length ?? 0;
-  const rowLength = () => rows.data?.length ?? 0;
+export function TableEditorProvider(props: ParentProps<{ rows: unknown[] }>) {
+  const columnLength = () => Object.keys(props.rows.at(0) ?? {}).length;
+  const rowLength = () => props.rows.length ?? 0;
 
   const row = useWrapWithZero(() => rowLength() - 1);
   const column = useWrapWithZero(() => columnLength() - 1);

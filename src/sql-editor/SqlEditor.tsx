@@ -5,18 +5,32 @@ import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import { onMount } from "solid-js";
 import { useConfig } from "@/config/ConfigurationProvider";
+import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
+import { useRouter } from "@/Router";
 
-export function SqlEditor({ onClose }: { onClose: () => void }) {
-  let terminalRef: HTMLDivElement | undefined;
+export function SqlEditor() {
   const { config } = useConfig();
+  const { navigateTo } = useRouter();
+
+  let terminalRef: HTMLDivElement | undefined;
+  const term = new Terminal({ fontFamily: "Fira Code" });
+  const fitAddon = new FitAddon();
+  term.loadAddon(fitAddon);
+
+  useRegisterKeybindCommand({
+    command: "FocusSqlEditor",
+    keybindExpression: "Control + ArrowUp",
+    action() {
+      setInterval(() => {
+        term.focus();
+      }, 100);
+    },
+  });
 
   onMount(() => {
     const ref = terminalRef;
     if (!ref) return;
 
-    const term = new Terminal({ fontFamily: "Fira Code" });
-    const fitAddon = new FitAddon();
-    term.loadAddon(fitAddon);
     term.open(ref);
 
     function resizeTerm() {
@@ -60,6 +74,8 @@ export function SqlEditor({ onClose }: { onClose: () => void }) {
         initialContent: "",
         editor: config.editor,
       });
+
+      term.focus();
     });
 
     term.onData((data) => invoke("write_to_pty", { data }));
@@ -74,9 +90,9 @@ export function SqlEditor({ onClose }: { onClose: () => void }) {
       term.write(data);
     });
 
-    const exit = listen("pty-exit", onClose);
-
-    term.focus();
+    const exit = listen("pty-exit", () => {
+      navigateTo("table");
+    });
 
     return () => {
       window.removeEventListener("resize", resizeTerm);
@@ -87,5 +103,5 @@ export function SqlEditor({ onClose }: { onClose: () => void }) {
     };
   });
 
-  return <div ref={terminalRef} class="h-full w-full overflow-auto" />;
+  return <div ref={terminalRef} class="h-full w-full" />;
 }

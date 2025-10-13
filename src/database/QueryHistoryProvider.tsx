@@ -3,7 +3,7 @@ import { createSolidContext } from "@/createSolidContext";
 
 type QueryEntry = { query: string; createdAt: Date };
 
-export const [QueryHistoryProvider, useQueryHistory] = createSolidContext(
+export const [QueryHistoryProvider, , useQueryHistory] = createSolidContext(
   () => {
     const [entries, setEntries] = createSignal<QueryEntry[]>([]);
 
@@ -25,11 +25,11 @@ export function QueryHistory() {
   );
 }
 
-function QueryHistoryEntry({ entry }: { entry: QueryEntry }) {
+function QueryHistoryEntry(props: { entry: QueryEntry }) {
   return (
     <div class="flex gap-1">
-      <span>{entry.createdAt.toLocaleTimeString()}</span>
-      <span>{entry.query}</span>
+      <span>{props.entry.createdAt.toLocaleTimeString()}</span>
+      <span>{props.entry.query}</span>
     </div>
   );
 }
