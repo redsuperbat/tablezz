@@ -5,11 +5,33 @@ import {
   getCoreRowModel,
 } from "@tanstack/solid-table";
 import { For } from "solid-js";
+import { toast } from "@/components/ui/toast";
 import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
 import { TableCell } from "./TableCell";
+import { useTableEditorContext } from "./TableEditorProvider";
 
 export function Table(props: { rows: Record<string, unknown>[] }) {
   let ref: HTMLTableElement | undefined;
+  const { column, row } = useTableEditorContext();
+
+  const structure = () =>
+    Object.keys(props.rows.at(0) ?? {}).map((k) => ({
+      columnName: k,
+      dataType: "text" as const,
+    }));
+
+  useRegisterKeybindCommand({
+    command: "YankSelection",
+    keybindExpression: "y",
+    action() {
+      const key = structure().at(column())?.columnName;
+      if (!key) return;
+      const data = props.rows.at(row())?.[key];
+      if (!data) return;
+      navigator.clipboard.writeText(String(data));
+      toast.show("Copied to clipboard");
+    },
+  });
 
   useRegisterKeybindCommand({
     command: "FocusTable",
@@ -21,12 +43,6 @@ export function Table(props: { rows: Record<string, unknown>[] }) {
       }, 100);
     },
   });
-
-  const structure = () =>
-    Object.keys(props.rows.at(0) ?? {}).map((k) => ({
-      columnName: k,
-      dataType: "text" as const,
-    }));
 
   const columns: () => ColumnDef<Record<string, unknown>>[] = () =>
     structure().map((s) => ({
