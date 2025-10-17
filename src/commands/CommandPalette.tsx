@@ -32,6 +32,12 @@ function AutocompleteOptions(props: {
     command: "CommandAutocompleteNext",
     keybindExpression: "Tab",
     action() {
+      // If it's a single command we just select it
+      if (props.filteredCommands.length === 1) {
+        const commandName = props.filteredCommands.at(0)?.name;
+        if (!commandName) return;
+        return props.onCommandNameAccepted(commandName);
+      }
       selectedIndex.increment();
     },
     overrideInput: true,
