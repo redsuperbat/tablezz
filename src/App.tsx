@@ -5,6 +5,7 @@ import { CommandsProvider } from "./commands/CommandsContext";
 import { ConfigurationProvider } from "./config/ConfigurationProvider";
 import { QueryHistoryProvider } from "./database/QueryHistoryProvider";
 import { DatabaseConnectionProvider } from "./database/useDatabase";
+import { FocusInputKeybind } from "./FocusInputKeybind";
 import { KeybindHelp } from "./keybinds/KeybindHelp";
 import { KeybindProvider } from "./keybinds/KeybindProvider";
 import { Picker } from "./Picker";
@@ -16,28 +17,29 @@ import { SuspenseBoundary } from "./SuspenseBoundary";
 export function App() {
   return (
     <SuspenseBoundary>
-      <ConnectionCredentialsProvider>
-        <QueryHistoryProvider>
-          <DatabaseConnectionProvider>
-            <ConfigurationProvider>
-              <CommandsProvider>
-                <KeybindProvider>
-                  <CommandPalette />
+      <CommandsProvider>
+        <ConfigurationProvider>
+          <KeybindProvider>
+            <CommandPalette />
+            <FocusInputKeybind />
+            <KeybindHelp />
+            <ConnectionCredentialsProvider>
+              <QueryHistoryProvider>
+                <DatabaseConnectionProvider>
                   <RouteProvider>
                     <SchemaProvider>
                       <SelectedTableProvider>
-                        <KeybindHelp />
                         <Picker />
                         <Router />
                       </SelectedTableProvider>
                     </SchemaProvider>
                   </RouteProvider>
-                </KeybindProvider>
-              </CommandsProvider>
-            </ConfigurationProvider>
-          </DatabaseConnectionProvider>
-        </QueryHistoryProvider>
-      </ConnectionCredentialsProvider>
+                </DatabaseConnectionProvider>
+              </QueryHistoryProvider>
+            </ConnectionCredentialsProvider>
+          </KeybindProvider>
+        </ConfigurationProvider>
+      </CommandsProvider>
       <Toaster />
     </SuspenseBoundary>
   );

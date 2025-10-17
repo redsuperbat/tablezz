@@ -1,6 +1,12 @@
 import { useQuery } from "@tanstack/solid-query";
 import Database from "@tauri-apps/plugin-sql";
-import { createContext, type ParentProps, Show, useContext } from "solid-js";
+import {
+  createContext,
+  Match,
+  type ParentProps,
+  Switch,
+  useContext,
+} from "solid-js";
 import { useConnectionCredentials } from "@/ConnectionCredentialsProvider";
 import { useQueryHistory } from "./QueryHistoryProvider";
 
@@ -12,48 +18,56 @@ interface DatabaseConnectionContext {
 const DatabaseConnectionContext =
   createContext<DatabaseConnectionContext | null>(null);
 
+function wrapWithError<T>(promise: Promise<T>): Promise<T> {
+  return promise.catch((error) => {
+    throw new Error(String(error), { cause: error });
+  });
+}
+
+function Center(props: ParentProps) {
+  return (
+    <div class="grid h-screen w-screen place-items-center">
+      {props.children}
+    </div>
+  );
+}
+
 export function DatabaseConnectionProvider(props: ParentProps) {
   const queryHistory = useQueryHistory();
   const { databaseUrlRaw } = useConnectionCredentials();
 
   const databaseQuery = useQuery(() => ({
-    queryFn: () =>
-      Database.load(databaseUrlRaw).catch((e) => {
-        // For some reason the tauri sql sdk throws strings 🤷
-        throw new Error(String(e), { cause: e });
-      }),
+    queryFn: () => wrapWithError(Database.load(databaseUrlRaw)),
     queryKey: ["database", databaseUrlRaw],
   }));
 
   return (
-    <Show when={databaseQuery.data} fallback={"Loading..."}>
-      <DatabaseConnectionContext.Provider
-        value={{
-          async select(query, bindValues) {
-            if (!databaseQuery.data) {
-              throw new Error("Internal tablezz error");
-            }
-
-            try {
-              queryHistory?.addEntry({ query, createdAt: new Date() });
-              return await databaseQuery.data?.select(query, bindValues);
-            } catch (error) {
-              throw new Error(String(error), { cause: error });
-            }
-          },
-          async execute(query, bindValues) {
-            try {
-              queryHistory?.addEntry({ query, createdAt: new Date() });
-              await databaseQuery.data?.execute(query, bindValues);
-            } catch (error) {
-              throw new Error(String(error), { cause: error });
-            }
-          },
-        }}
-      >
-        {props.children}
-      </DatabaseConnectionContext.Provider>
-    </Show>
+    <Switch>
+      <Match when={databaseQuery.isPending}>
+        <Center>Connecting to database...</Center>
+      </Match>
+      <Match when={databaseQuery.error}>
+        {(error) => <Center>{error().message}</Center>}
+      </Match>
+      <Match when={databaseQuery.data}>
+        {(database) => (
+          <DatabaseConnectionContext.Provider
+            value={{
+              async select(query, bindValues) {
+                queryHistory?.addEntry({ query, createdAt: new Date() });
+                return wrapWithError(database().select(query, bindValues));
+              },
+              async execute(query, bindValues) {
+                queryHistory?.addEntry({ query, createdAt: new Date() });
+                await wrapWithError(database().execute(query, bindValues));
+              },
+            }}
+          >
+            {props.children}
+          </DatabaseConnectionContext.Provider>
+        )}
+      </Match>
+    </Switch>
   );
 }
 

@@ -1,7 +1,7 @@
 import { createContext, type ParentProps, useContext } from "solid-js";
 import type { Command } from "./Command";
 
-interface RegisterCommand extends Command {}
+export interface RegisterCommand extends Command {}
 
 interface CommandsContext {
   registerCommand(command: RegisterCommand): void;
