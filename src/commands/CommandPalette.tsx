@@ -1,4 +1,11 @@
-import { createSignal, For, Show } from "solid-js";
+import {
+  type Accessor,
+  createEffect,
+  createSignal,
+  For,
+  on,
+  Show,
+} from "solid-js";
 import {
   Dialog,
   DialogContent,
@@ -8,9 +15,17 @@ import {
 import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
 import { useRegisterKeybindToggle } from "@/keybinds/useRegisterToggleKeybind";
 import { cn } from "@/lib/cn";
+import { useIntersectionScroll } from "@/lib/useIntersectionScroll";
 import { useWrapWithZero } from "@/lib/useWrapWithZero";
 import type { Command } from "./Command";
 import { useCommandsContext } from "./CommandsContext";
+
+function createWatcher<T>(
+  accessor: Accessor<T>,
+  callback: (prev: T, next: T | undefined) => void,
+) {
+  createEffect(on(accessor, (prev, next) => callback(prev, next)));
+}
 
 function AutocompleteOptions(props: {
   filteredCommands: Command[];
@@ -19,6 +34,14 @@ function AutocompleteOptions(props: {
 }) {
   const selectedIndex = useWrapWithZero(
     () => props.filteredCommands.length - 1,
+  );
+
+  createWatcher(
+    () => props.filteredCommands,
+    (prev, next) => {
+      if (prev.length === next?.length) return;
+      selectedIndex.reset();
+    },
   );
 
   useRegisterKeybindCommand({
@@ -45,10 +68,8 @@ function AutocompleteOptions(props: {
 
   useRegisterKeybindCommand({
     command: "CommandCompletePrev",
-    action() {
-      selectedIndex.decrement();
-    },
-    keybindExpression: "Shift + Tab",
+    action: selectedIndex.decrement,
+    keybindExpression: "Control + Tab",
     overrideInput: true,
   });
 
@@ -64,14 +85,31 @@ function AutocompleteOptions(props: {
   });
 
   return (
-    <div class="-left-2 absolute top-full rounded bg-white px-2">
+    <div class="-left-2 absolute top-full max-h-52 overflow-y-auto rounded bg-white px-2">
       <For each={props.filteredCommands}>
         {(c, index) => (
-          <div class={cn(index() === selectedIndex.value() && "bg-blue-200")}>
-            {c.name}
-          </div>
+          <AutocompleteOption
+            index={index()}
+            selectedIndex={selectedIndex.value()}
+            commandName={c.name}
+          />
         )}
       </For>
+    </div>
+  );
+}
+
+function AutocompleteOption(props: {
+  index: number;
+  selectedIndex: number;
+  commandName: string;
+}) {
+  const isActive = () => props.index === props.selectedIndex;
+  const ref = useIntersectionScroll(isActive);
+
+  return (
+    <div ref={ref} class={cn(isActive() && "bg-blue-200")}>
+      {props.commandName}
     </div>
   );
 }
