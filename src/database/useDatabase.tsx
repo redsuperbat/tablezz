@@ -18,10 +18,12 @@ interface DatabaseConnectionContext {
 const DatabaseConnectionContext =
   createContext<DatabaseConnectionContext | null>(null);
 
-function wrapWithError<T>(promise: Promise<T>): Promise<T> {
-  return promise.catch((error) => {
+async function wrapWithError<T>(promise: Promise<T>): Promise<T> {
+  try {
+    return await promise;
+  } catch (error) {
     throw new Error(String(error), { cause: error });
-  });
+  }
 }
 
 function Center(props: ParentProps) {
@@ -34,11 +36,11 @@ function Center(props: ParentProps) {
 
 export function DatabaseConnectionProvider(props: ParentProps) {
   const queryHistory = useQueryHistory();
-  const { databaseUrlRaw } = useConnectionCredentials();
+  const { url } = useConnectionCredentials();
 
   const databaseQuery = useQuery(() => ({
-    queryFn: () => wrapWithError(Database.load(databaseUrlRaw)),
-    queryKey: ["database", databaseUrlRaw],
+    queryFn: () => wrapWithError(Database.load(url())),
+    queryKey: ["database", url()],
   }));
 
   return (

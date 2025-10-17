@@ -22,7 +22,6 @@ export function KeybindHelp() {
   const toggle = useRegisterKeybindToggle({
     keybindExpression: "? | (Control + ?)",
     command: "KeybindHelpOpen",
-    overrideInput: true,
   });
 
   useRegisterKeybindCommand({

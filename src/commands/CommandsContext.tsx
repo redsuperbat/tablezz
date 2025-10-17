@@ -11,7 +11,7 @@ import { message } from "./Messages";
 interface CommandsContext {
   registerCommand<const T extends ZodType[]>(command: Command<T>): void;
   unregisterCommand(name: string): void;
-  triggerCommand(name: string, ...args: unknown[]): void;
+  triggerCommand(name: string, ...args: string[]): void;
   listCommands(): Command[];
 }
 
@@ -46,7 +46,7 @@ export function CommandsProvider(props: ParentProps) {
     });
   }
 
-  function triggerCommand(name: string, ...args: unknown[]) {
+  function triggerCommand(name: string, ...args: string[]) {
     const command = commands().get(name);
     if (!command) {
       return;
@@ -61,7 +61,7 @@ export function CommandsProvider(props: ParentProps) {
         return;
       }
 
-      parsedArgs.push(arg);
+      parsedArgs.push(arg.data);
     }
 
     command.action(...parsedArgs);
