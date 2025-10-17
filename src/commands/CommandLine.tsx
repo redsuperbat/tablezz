@@ -68,7 +68,7 @@ function AutocompleteOptions(props: {
   });
 
   return (
-    <div class="-left-2 absolute bottom-full max-h-52 overflow-y-auto rounded bg-white px-2">
+    <div class="-left-2 absolute bottom-full flex max-h-52 flex-col-reverse overflow-y-auto rounded bg-white px-2">
       <For each={props.filteredCommands}>
         {(c, index) => (
           <AutocompleteOption
@@ -182,7 +182,7 @@ function Autocomplete(props: {
           type="text"
           value={props.value}
           onInput={(e) => props.onValueChanged(e.target.value)}
-          placeholder="Type to search..."
+          placeholder='Type a command name or press "Tab"'
           autofocus
           class="relative w-full bg-transparent focus:outline-none"
           style={{ "caret-color": "black" }}
@@ -239,7 +239,7 @@ export function CommandLine() {
   });
 
   return (
-    <div class="absolute bottom-0 left-0">
+    <div class="absolute bottom-0 left-0 w-screen">
       <Switch fallback={<Messages />}>
         <Match when={toggle.value()}>
           <CommandLineContent onClose={toggle.close} onSelect={toggle.close} />
