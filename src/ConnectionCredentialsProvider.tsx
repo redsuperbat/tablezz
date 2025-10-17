@@ -1,5 +1,4 @@
 import { makePersisted } from "@solid-primitives/storage";
-import Database from "@tauri-apps/plugin-sql";
 import {
   type Accessor,
   createSignal,
@@ -8,9 +7,7 @@ import {
   Switch,
 } from "solid-js";
 import { z } from "zod";
-import { message } from "./commands/Messages";
 import { useRegisterCommand } from "./commands/useRegisterCommand";
-import { useAppForm } from "./components/form";
 import { createSolidContext } from "./createSolidContext";
 
 export const [RootConnectionCredentialsProvider, , useConnectionCredentials] =
@@ -57,23 +54,6 @@ export function ConnectionCredentialsProvider(props: ParentProps) {
     },
   });
 
-  const form = useAppForm(() => ({
-    defaultValues: { databaseUrl: "" },
-    validators: {
-      onChange: z.object({
-        databaseUrl: z.url(),
-      }),
-    },
-    onSubmit: async ({ value }) => {
-      try {
-        await Database.load(value.databaseUrl);
-        setDatabaseUrlRaw(value.databaseUrl);
-      } catch (error) {
-        message.error(error instanceof Error ? error.message : String(error));
-      }
-    },
-  }));
-
   return (
     <Switch>
       <Match when={databaseUrlRaw()}>
@@ -85,26 +65,9 @@ export function ConnectionCredentialsProvider(props: ParentProps) {
       </Match>
       <Match when={!databaseUrlRaw()}>
         <div class="grid h-screen w-screen place-items-center">
-          <form
-            class="flex min-w-sm flex-col gap-1"
-            onSubmit={(e) => {
-              e.preventDefault();
-              form.handleSubmit();
-            }}
-          >
-            <form.AppField
-              name="databaseUrl"
-              children={(field) => (
-                <field.TextField
-                  type="url"
-                  autofocus
-                  autocomplete="url"
-                  placeholder="postgres://ai:slop@localhost:1337/vibin"
-                />
-              )}
-            />
-            <form.SubmitButton children="Submit" />
-          </form>
+          <pre>
+            <code>Press ":" then type DatabaseUrlAdd &lt;url&gt;</code>
+          </pre>
         </div>
       </Match>
     </Switch>
