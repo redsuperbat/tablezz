@@ -5,7 +5,7 @@ import {
   useContext,
 } from "solid-js";
 import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
-import { useWrapWithZero } from "@/lib/useWrapWithZero";
+import { createCounterWithWrap } from "@/lib/useWrapWithZero";
 
 interface TableEditorContext {
   column: Accessor<number>;
@@ -18,8 +18,8 @@ export function TableEditorProvider(props: ParentProps<{ rows: unknown[] }>) {
   const columnLength = () => Object.keys(props.rows.at(0) ?? {}).length;
   const rowLength = () => props.rows.length ?? 0;
 
-  const row = useWrapWithZero(() => rowLength() - 1);
-  const column = useWrapWithZero(() => columnLength() - 1);
+  const row = createCounterWithWrap(() => rowLength() - 1);
+  const column = createCounterWithWrap(() => columnLength() - 1);
 
   useRegisterKeybindCommand({
     command: "MoveCellRight",

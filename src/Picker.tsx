@@ -13,7 +13,7 @@ import { useRegisterKeybindCommand } from "./keybinds/useRegisterKeybindCommand"
 import { useRegisterKeybindToggle } from "./keybinds/useRegisterToggleKeybind";
 import { cn } from "./lib/cn";
 import { useIntersectionScroll } from "./lib/useIntersectionScroll";
-import { useWrapWithZero } from "./lib/useWrapWithZero";
+import { createCounterWithWrap } from "./lib/useWrapWithZero";
 import { useRouter } from "./Router";
 import { useSchemaContext } from "./SchemaProvider";
 import { useSelectedTableContext } from "./SelectedTableProvider";
@@ -110,7 +110,7 @@ function PickerContent(props: { items: FinderItem[]; onSelect: () => void }) {
     return result;
   };
 
-  const selectedIndex = useWrapWithZero(() => filteredItems().length - 1);
+  const selectedIndex = createCounterWithWrap(() => filteredItems().length - 1);
 
   createEffect(() => {
     searchTerm();

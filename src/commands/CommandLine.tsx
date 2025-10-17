@@ -1,20 +1,30 @@
-import { createSignal, For, Match, onMount, Show, Switch } from "solid-js";
+import { makePersisted } from "@solid-primitives/storage";
+import {
+  createSignal,
+  For,
+  Match,
+  onMount,
+  type Setter,
+  Show,
+  Switch,
+} from "solid-js";
 import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
 import { useRegisterKeybindToggle } from "@/keybinds/useRegisterToggleKeybind";
 import { cn } from "@/lib/cn";
 import { useIntersectionScroll } from "@/lib/useIntersectionScroll";
-import { useWrapWithZero } from "@/lib/useWrapWithZero";
+import { createCounterWithWrap } from "@/lib/useWrapWithZero";
 import type { Command } from "./Command";
 import { useCommandsContext } from "./CommandsContext";
 import { createWatcher } from "./createWatcher";
 import { Messages, message } from "./Messages";
+import { useRegisterCommand } from "./useRegisterCommand";
 
 function AutocompleteOptions(props: {
   filteredCommands: Command[];
   onCommandNameAccepted: (commandName: string) => void;
   onClose: () => void;
 }) {
-  const selectedIndex = useWrapWithZero(
+  const selectedIndex = createCounterWithWrap(
     () => props.filteredCommands.length - 1,
   );
 
@@ -109,7 +119,7 @@ function Autocomplete(props: {
     input?.focus();
   });
 
-  const commands = () => commandContext.listCommands();
+  const commands = () => commandContext.allCommands();
 
   const ghostText = () => {
     if (props.value.trim() === "") {
@@ -193,10 +203,15 @@ function Autocomplete(props: {
 }
 
 function CommandLineContent(props: {
+  commandHistory: () => string[];
+  setCommandHistory: Setter<string[]>;
   onClose: () => void;
   onSelect: () => void;
 }) {
   const commandContext = useCommandsContext();
+  const historyIndex = createCounterWithWrap(
+    () => props.commandHistory().length - 1,
+  );
   const [inputValue, setInputValue] = createSignal("");
 
   useRegisterKeybindCommand({
@@ -206,15 +221,41 @@ function CommandLineContent(props: {
     overrideInput: true,
   });
 
+  useRegisterCommand({
+    name: "CommandLineClearHistory",
+    action() {
+      props.setCommandHistory([]);
+    },
+  });
+
+  useRegisterKeybindCommand({
+    keybindExpression: "ArrowUp",
+    command: "CommandLinePreviousCommand",
+    overrideInput: true,
+    action() {
+      const history = props.commandHistory().at(historyIndex.value());
+      if (!history) {
+        return;
+      }
+      setInputValue(history);
+      historyIndex.increment();
+    },
+  });
+
   useRegisterKeybindCommand({
     keybindExpression: "Enter",
     action() {
-      if (inputValue().trim().length === 0) {
+      const command = inputValue().trim();
+      if (command.length === 0) {
         return props.onClose();
       }
 
-      const [commandName, ...args] = inputValue().trim().split(" ");
+      const [commandName, ...args] = command.split(" ");
       if (!commandName) return;
+
+      props.setCommandHistory((prev) => {
+        return [...prev, command];
+      });
 
       commandContext.triggerCommand(commandName, ...args);
       props.onSelect();
@@ -232,6 +273,11 @@ function CommandLineContent(props: {
 }
 
 export function CommandLine() {
+  const [commandHistory, setCommandHistory] = makePersisted(
+    createSignal<string[]>([]),
+    { name: "commandHistory" },
+  );
+
   const toggle = useRegisterKeybindToggle({
     keybindExpression: ":",
     command: "CommandLineActivate",
@@ -247,7 +293,12 @@ export function CommandLine() {
     <div class="absolute bottom-0 left-0 w-screen">
       <Switch fallback={<Messages />}>
         <Match when={toggle.value()}>
-          <CommandLineContent onClose={toggle.close} onSelect={toggle.close} />
+          <CommandLineContent
+            commandHistory={commandHistory}
+            setCommandHistory={setCommandHistory}
+            onClose={toggle.close}
+            onSelect={toggle.close}
+          />
         </Match>
       </Switch>
     </div>

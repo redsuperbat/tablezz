@@ -12,7 +12,7 @@ interface CommandsContext {
   registerCommand<const T extends ZodType[]>(command: Command<T>): void;
   unregisterCommand(name: string): void;
   triggerCommand(name: string, ...args: string[]): void;
-  listCommands(): Command[];
+  allCommands(): Command[];
 }
 
 const CommandsContext = createContext<CommandsContext | null>(null);
@@ -67,14 +67,14 @@ export function CommandsProvider(props: ParentProps) {
     command.action(...parsedArgs);
   }
 
-  function listCommands() {
+  function allCommands() {
     return commands().values().toArray();
   }
 
   return (
     <CommandsContext.Provider
       value={{
-        listCommands,
+        allCommands,
         triggerCommand,
         registerCommand,
         unregisterCommand,
