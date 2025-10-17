@@ -1,6 +1,5 @@
-import { Toaster } from "@/components/ui/toast";
 import { ConnectionCredentialsProvider } from "./ConnectionCredentialsProvider";
-import { CommandPalette } from "./commands/CommandPalette";
+import { CommandLine } from "./commands/CommandLine";
 import { CommandsProvider } from "./commands/CommandsContext";
 import { ConfigurationProvider } from "./config/ConfigurationProvider";
 import { QueryHistoryProvider } from "./database/QueryHistoryProvider";
@@ -20,9 +19,9 @@ export function App() {
       <CommandsProvider>
         <ConfigurationProvider>
           <KeybindProvider>
-            <CommandPalette />
             <FocusInputKeybind />
             <KeybindHelp />
+
             <ConnectionCredentialsProvider>
               <QueryHistoryProvider>
                 <DatabaseConnectionProvider>
@@ -37,10 +36,11 @@ export function App() {
                 </DatabaseConnectionProvider>
               </QueryHistoryProvider>
             </ConnectionCredentialsProvider>
+
+            <CommandLine />
           </KeybindProvider>
         </ConfigurationProvider>
       </CommandsProvider>
-      <Toaster />
     </SuspenseBoundary>
   );
 }

@@ -2,9 +2,9 @@ import { makePersisted } from "@solid-primitives/storage";
 import Database from "@tauri-apps/plugin-sql";
 import { createSignal, Match, type ParentProps, Switch } from "solid-js";
 import { z } from "zod";
+import { message } from "./commands/Messages";
 import { useRegisterCommand } from "./commands/useRegisterCommand";
 import { useAppForm } from "./components/form";
-import { toast } from "./components/ui/toast";
 import { createSolidContext } from "./createSolidContext";
 
 export const [RootConnectionCredentialsProvider, , useConnectionCredentials] =
@@ -46,7 +46,7 @@ export function ConnectionCredentialsProvider(props: ParentProps) {
         await Database.load(value.databaseUrl);
         setDatabaseUrlRaw(value.databaseUrl);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : String(error));
+        message.error(error instanceof Error ? error.message : String(error));
       }
     },
   }));

@@ -1,17 +1,4 @@
-import {
-  type Accessor,
-  createEffect,
-  createSignal,
-  For,
-  on,
-  Show,
-} from "solid-js";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { createSignal, For, Match, onMount, Show, Switch } from "solid-js";
 import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
 import { useRegisterKeybindToggle } from "@/keybinds/useRegisterToggleKeybind";
 import { cn } from "@/lib/cn";
@@ -19,13 +6,8 @@ import { useIntersectionScroll } from "@/lib/useIntersectionScroll";
 import { useWrapWithZero } from "@/lib/useWrapWithZero";
 import type { Command } from "./Command";
 import { useCommandsContext } from "./CommandsContext";
-
-function createWatcher<T>(
-  accessor: Accessor<T>,
-  callback: (prev: T, next: T | undefined) => void,
-) {
-  createEffect(on(accessor, (prev, next) => callback(prev, next)));
-}
+import { createWatcher } from "./createWatcher";
+import { Messages, message } from "./Messages";
 
 function AutocompleteOptions(props: {
   filteredCommands: Command[];
@@ -38,8 +20,8 @@ function AutocompleteOptions(props: {
 
   createWatcher(
     () => props.filteredCommands,
-    (prev, next) => {
-      if (prev.length === next?.length) return;
+    ({ next, prev }) => {
+      if (prev?.length === next.length) return;
       selectedIndex.reset();
     },
   );
@@ -61,6 +43,7 @@ function AutocompleteOptions(props: {
         if (!commandName) return;
         return props.onCommandNameAccepted(commandName);
       }
+
       selectedIndex.increment();
     },
     overrideInput: true,
@@ -85,7 +68,7 @@ function AutocompleteOptions(props: {
   });
 
   return (
-    <div class="-left-2 absolute top-full max-h-52 overflow-y-auto rounded bg-white px-2">
+    <div class="-left-2 absolute bottom-full max-h-52 overflow-y-auto rounded bg-white px-2">
       <For each={props.filteredCommands}>
         {(c, index) => (
           <AutocompleteOption
@@ -119,6 +102,12 @@ function Autocomplete(props: {
   onValueChanged: (v: string) => void;
 }) {
   const commandContext = useCommandsContext();
+  let input: HTMLInputElement | undefined;
+
+  onMount(() => {
+    // Autofocus is flaky after first mount, this works well though
+    input?.focus();
+  });
 
   const commands = () => commandContext.listCommands();
 
@@ -189,10 +178,12 @@ function Autocomplete(props: {
         </Show>
 
         <input
+          ref={input}
           type="text"
           value={props.value}
           onInput={(e) => props.onValueChanged(e.target.value)}
           placeholder="Type to search..."
+          autofocus
           class="relative w-full bg-transparent focus:outline-none"
           style={{ "caret-color": "black" }}
         />
@@ -201,7 +192,7 @@ function Autocomplete(props: {
   );
 }
 
-function DialogPaletteContent(props: {
+function CommandLineContent(props: {
   onClose: () => void;
   onSelect: () => void;
 }) {
@@ -228,32 +219,32 @@ function DialogPaletteContent(props: {
   });
 
   return (
-    <DialogHeader>
-      <DialogTitle class="sr-only">Command palette</DialogTitle>
-      <div class="flex gap-0.5 px-2 py-1">
-        <span>:</span>
-        <Autocomplete value={inputValue()} onValueChanged={setInputValue} />
-      </div>
-    </DialogHeader>
+    <div class="flex gap-0.5 px-2 py-1">
+      <span>:</span>
+      <Autocomplete value={inputValue()} onValueChanged={setInputValue} />
+    </div>
   );
 }
 
-export function CommandPalette() {
+export function CommandLine() {
   const toggle = useRegisterKeybindToggle({
     keybindExpression: ":",
-    command: "CommandPaletteOpen",
+    command: "CommandLineActivate",
+  });
+
+  createWatcher(toggle.value, ({ next }) => {
+    if (next) {
+      message.clear();
+    }
   });
 
   return (
-    <Dialog modal open={toggle.value()} onOpenChange={toggle.set}>
-      <DialogContent
-        onInteractOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
-        class="flex flex-col justify-start rounded bg-white p-0"
-        aria-describedby="Command palette"
-      >
-        <DialogPaletteContent onClose={toggle.close} onSelect={toggle.close} />
-      </DialogContent>
-    </Dialog>
+    <div class="absolute bottom-0 left-0">
+      <Switch fallback={<Messages />}>
+        <Match when={toggle.value()}>
+          <CommandLineContent onClose={toggle.close} onSelect={toggle.close} />
+        </Match>
+      </Switch>
+    </div>
   );
 }

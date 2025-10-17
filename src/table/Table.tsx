@@ -5,7 +5,7 @@ import {
   getCoreRowModel,
 } from "@tanstack/solid-table";
 import { For } from "solid-js";
-import { toast } from "@/components/ui/toast";
+import { message } from "@/commands/Messages";
 import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
 import { TableCell } from "./TableCell";
 import { useTableEditorContext } from "./TableEditorProvider";
@@ -29,7 +29,7 @@ export function Table(props: { rows: Record<string, unknown>[] }) {
       const data = props.rows.at(row())?.[key];
       if (!data) return;
       navigator.clipboard.writeText(String(data));
-      toast.show("Copied to clipboard");
+      message.info("Copied to clipboard");
     },
   });
 

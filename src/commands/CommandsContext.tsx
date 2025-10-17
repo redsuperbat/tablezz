@@ -1,4 +1,9 @@
-import { createContext, type ParentProps, useContext } from "solid-js";
+import {
+  createContext,
+  createSignal,
+  type ParentProps,
+  useContext,
+} from "solid-js";
 import type { Command } from "./Command";
 
 export interface RegisterCommand extends Command {}
@@ -22,16 +27,25 @@ export function useCommandsContext() {
 }
 
 export function CommandsProvider(props: ParentProps) {
-  const commands = new Map<string, Command>();
+  const [commands, setCommands] = createSignal(new Map<string, Command>());
 
-  const unregisterCommand = (command: string) => commands.delete(command);
+  const unregisterCommand = (command: string) =>
+    setCommands((prev) => {
+      const newMap = new Map(prev);
+      newMap.delete(command);
+      return newMap;
+    });
 
   const registerCommand = (command: RegisterCommand) =>
-    commands.set(command.name, command);
+    setCommands((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(command.name, command);
+      return newMap;
+    });
 
-  const triggerCommand = (name: string) => commands.get(name)?.action();
+  const triggerCommand = (name: string) => commands().get(name)?.action();
 
-  const listCommands = () => [...commands.values()];
+  const listCommands = () => commands().values().toArray();
 
   return (
     <CommandsContext.Provider
