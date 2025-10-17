@@ -11,8 +11,8 @@ import {
 import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
 import { useRegisterKeybindToggle } from "@/keybinds/useRegisterToggleKeybind";
 import { cn } from "@/lib/cn";
+import { createCounterWithWrap } from "@/lib/createCounterWithWrap";
 import { useIntersectionScroll } from "@/lib/useIntersectionScroll";
-import { createCounterWithWrap } from "@/lib/useWrapWithZero";
 import type { Command } from "./Command";
 import { useCommandsContext } from "./CommandsContext";
 import { createWatcher } from "./createWatcher";

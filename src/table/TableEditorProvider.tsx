@@ -5,7 +5,7 @@ import {
   useContext,
 } from "solid-js";
 import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
-import { createCounterWithWrap } from "@/lib/useWrapWithZero";
+import { createCounterWithWrap } from "@/lib/createCounterWithWrap";
 
 interface TableEditorContext {
   column: Accessor<number>;
