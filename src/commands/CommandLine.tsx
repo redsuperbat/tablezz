@@ -201,17 +201,22 @@ function CommandLineContent(props: {
 
   useRegisterKeybindCommand({
     keybindExpression: "Escape",
-    action() {
-      props.onClose();
-    },
-    command: "CommandAccept",
+    command: "CommandLineClose",
+    action: props.onClose,
     overrideInput: true,
   });
 
   useRegisterKeybindCommand({
     keybindExpression: "Enter",
     action() {
-      commandContext.triggerCommand(inputValue());
+      if (inputValue().trim().length === 0) {
+        return props.onClose();
+      }
+
+      const [commandName, ...args] = inputValue().trim().split(" ");
+      if (!commandName) return;
+
+      commandContext.triggerCommand(commandName, ...args);
       props.onSelect();
     },
     command: "CommandAccept",

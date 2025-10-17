@@ -4,16 +4,17 @@ import {
   type ParentProps,
   useContext,
 } from "solid-js";
+import { type ZodType, z } from "zod";
 import type { Command } from "./Command";
-
-export interface RegisterCommand extends Command {}
+import { message } from "./Messages";
 
 interface CommandsContext {
-  registerCommand(command: RegisterCommand): void;
+  registerCommand<const T extends ZodType[]>(command: Command<T>): void;
   unregisterCommand(name: string): void;
-  triggerCommand(name: string): void;
+  triggerCommand(name: string, ...args: unknown[]): void;
   listCommands(): Command[];
 }
+
 const CommandsContext = createContext<CommandsContext | null>(null);
 
 export function useCommandsContext() {
@@ -29,23 +30,46 @@ export function useCommandsContext() {
 export function CommandsProvider(props: ParentProps) {
   const [commands, setCommands] = createSignal(new Map<string, Command>());
 
-  const unregisterCommand = (command: string) =>
-    setCommands((prev) => {
+  function unregisterCommand(command: string) {
+    return setCommands((prev) => {
       const newMap = new Map(prev);
       newMap.delete(command);
       return newMap;
     });
+  }
 
-  const registerCommand = (command: RegisterCommand) =>
-    setCommands((prev) => {
+  function registerCommand<const T extends ZodType[]>(command: Command<T>) {
+    return setCommands((prev) => {
       const newMap = new Map(prev);
-      newMap.set(command.name, command);
+      newMap.set(command.name, command as Command);
       return newMap;
     });
+  }
 
-  const triggerCommand = (name: string) => commands().get(name)?.action();
+  function triggerCommand(name: string, ...args: unknown[]) {
+    const command = commands().get(name);
+    if (!command) {
+      return;
+    }
 
-  const listCommands = () => commands().values().toArray();
+    const parsedArgs = [];
+    for (const [index, schema] of (command.actionArgs ?? []).entries()) {
+      const arg = schema.safeParse(args[index]);
+
+      if (!arg.success) {
+        message.error(z.treeifyError(arg.error).errors.join(", "));
+        return;
+      }
+
+      parsedArgs.push(arg);
+    }
+
+    command.action(...parsedArgs);
+  }
+
+  function listCommands() {
+    return commands().values().toArray();
+  }
 
   return (
     <CommandsContext.Provider

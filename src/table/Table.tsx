@@ -27,7 +27,7 @@ export function Table(props: { rows: Record<string, unknown>[] }) {
       const key = structure().at(column())?.columnName;
       if (!key) return;
       const data = props.rows.at(row())?.[key];
-      if (!data) return;
+      if (data === undefined) return;
       navigator.clipboard.writeText(String(data));
       message.info("Copied to clipboard");
     },
@@ -46,7 +46,11 @@ export function Table(props: { rows: Record<string, unknown>[] }) {
 
   const columns: () => ColumnDef<Record<string, unknown>>[] = () =>
     structure().map((s) => ({
+      id: s.columnName,
       accessorKey: s.columnName,
+      header(props) {
+        return <div class="px-1">{props.header.id}</div>;
+      },
       cell: (props) => (
         <TableCell
           columnIndex={props.column.getIndex()}

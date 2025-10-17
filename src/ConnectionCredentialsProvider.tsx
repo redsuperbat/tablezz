@@ -28,6 +28,14 @@ export function ConnectionCredentialsProvider(props: ParentProps) {
   );
 
   useRegisterCommand({
+    name: "AddDatabaseUrl",
+    actionArgs: [z.url()],
+    action(url) {
+      setDatabaseUrlRaw(url);
+    },
+  });
+
+  useRegisterCommand({
     name: "ClearDatabaseUrl",
     action() {
       setDatabaseUrlRaw(undefined);
