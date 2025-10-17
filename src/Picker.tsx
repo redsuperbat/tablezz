@@ -2,6 +2,7 @@ import type { FuzzyMatches, FuzzyResult } from "@nozbe/microfuzz";
 import createFuzzySearch from "@nozbe/microfuzz";
 import { Folder, Route, Table } from "lucide-solid";
 import { createEffect, createMemo, For, type JSXElement } from "solid-js";
+import z from "zod";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +21,7 @@ import { useSelectedTableContext } from "./SelectedTableProvider";
 import { useSelectedDatabaseSchemas } from "./useSelectedDatabaseSchemas";
 import { useSelectedSchemaTables } from "./useSelectedSchemaTables";
 
-interface FinderItem {
+interface PickerItem {
   icon: JSXElement;
   onSelect(): void;
   searchTerm: string;
@@ -37,7 +38,7 @@ export function Picker() {
 
   const schemas = () => selectedSchemas.data ?? [];
 
-  const items = (): FinderItem[] => {
+  const items = (): PickerItem[] => {
     return [
       ...tables().map((t) => ({
         icon: <Table />,
@@ -64,8 +65,9 @@ export function Picker() {
   };
 
   const toggle = useRegisterKeybindToggle({
-    command: "FinderOpen",
+    command: "PickerOpen",
     keybindExpression: "Leader + Space",
+    actionArgs: [z.enum(["keybinds"]).optional()],
   });
 
   return (
@@ -81,7 +83,7 @@ export function Picker() {
   );
 }
 
-function PickerContent(props: { items: FinderItem[]; onSelect: () => void }) {
+function PickerContent(props: { items: PickerItem[]; onSelect: () => void }) {
   const form = useAppForm(() => ({
     defaultValues: { searchTerm: "" },
   }));
@@ -95,14 +97,14 @@ function PickerContent(props: { items: FinderItem[]; onSelect: () => void }) {
 
   const searchTerm = form.useStore((store) => store.values.searchTerm);
 
-  const filteredItems = (): FuzzyResult<FinderItem>[] => {
+  const filteredItems = (): FuzzyResult<PickerItem>[] => {
     const term = searchTerm();
 
     if (!term) {
       return props.items.map((i) => ({ item: i, matches: [], score: 0 }));
     }
 
-    const search = createFuzzySearch<FinderItem>(props.items, {
+    const search = createFuzzySearch<PickerItem>(props.items, {
       key: "searchTerm",
     });
 
@@ -118,7 +120,7 @@ function PickerContent(props: { items: FinderItem[]; onSelect: () => void }) {
   });
 
   useRegisterKeybindCommand({
-    command: "FinderSelect",
+    command: "PickerSelect",
     action() {
       const item = filteredItems()[selectedIndex.value()];
       item?.item.onSelect?.();
@@ -130,7 +132,7 @@ function PickerContent(props: { items: FinderItem[]; onSelect: () => void }) {
   });
 
   useRegisterKeybindCommand({
-    command: "FinderSelectPrev",
+    command: "PickerSelectPrev",
     keybindExpression: "(Control + k) | ArrowUp",
     overrideInput: true,
     action() {
@@ -139,7 +141,7 @@ function PickerContent(props: { items: FinderItem[]; onSelect: () => void }) {
   });
 
   useRegisterKeybindCommand({
-    command: "FinderSelectNext",
+    command: "PickerSelectNext",
     keybindExpression: "(Control + j) | ArrowDown",
     overrideInput: true,
     action() {
@@ -185,7 +187,7 @@ function PickerContent(props: { items: FinderItem[]; onSelect: () => void }) {
 function SearchItem(props: {
   selectedIndex: number;
   index: number;
-  item: FinderItem;
+  item: PickerItem;
   highlightRanges: FuzzyMatches;
 }) {
   const isActive = createMemo(() => props.selectedIndex === props.index);

@@ -11,7 +11,7 @@ import { message } from "./Messages";
 interface CommandsContext {
   registerCommand<const T extends ZodType[]>(command: Command<T>): void;
   unregisterCommand(name: string): void;
-  triggerCommand(name: string, ...args: string[]): void;
+  triggerCommand(commandExpression: string): void;
   allCommands(): Command[];
 }
 
@@ -46,11 +46,12 @@ export function CommandsProvider(props: ParentProps) {
     });
   }
 
-  function triggerCommand(name: string, ...args: string[]) {
+  function triggerCommand(commandExpression: string) {
+    const [name, ...args] = commandExpression.split(" ");
+    if (!name) return;
+
     const command = commands().get(name);
-    if (!command) {
-      return;
-    }
+    if (!command) return;
 
     const parsedArgs = [];
     for (const [index, schema] of (command.actionArgs ?? []).entries()) {

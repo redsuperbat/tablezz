@@ -249,14 +249,11 @@ function CommandLineContent(props: {
         return props.onClose();
       }
 
-      const [commandName, ...args] = command.split(" ");
-      if (!commandName) return;
-
       props.setCommandHistory((prev) => {
         return [command, ...prev];
       });
 
-      commandContext.triggerCommand(commandName, ...args);
+      commandContext.triggerCommand(command);
       props.onSelect();
     },
     command: "CommandAccept",
