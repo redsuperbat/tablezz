@@ -1,12 +1,34 @@
 import { useRegisterKeybindCommand } from "./keybinds/useRegisterKeybindCommand";
 
+const elements = ["input", "textarea"] as const;
+
+function onFirstFind(
+  cb: (el: { blur: () => void; focus: () => void }) => void,
+) {
+  for (const tag of elements) {
+    const el = document.querySelector(tag);
+    if (!el) continue;
+    return cb(el);
+  }
+}
+
 export function FocusInputKeybind() {
   useRegisterKeybindCommand({
-    command: "EnterInputMode",
+    command: "InputModeExit",
+    keybindExpression: "Escape",
+    action() {
+      onFirstFind((e) => e.blur());
+    },
+    overrideInput: true,
+  });
+
+  useRegisterKeybindCommand({
+    command: "InputModeEnter",
     keybindExpression: "i",
     action() {
-      document.querySelector("input")?.focus();
+      onFirstFind((e) => e.focus());
     },
   });
+
   return null;
 }

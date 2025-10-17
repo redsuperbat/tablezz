@@ -8,7 +8,6 @@ interface CommandsContext {
   unregisterCommand(name: string): void;
   triggerCommand(name: string): void;
   listCommands(): Command[];
-  isCommand(name: string): void;
 }
 const CommandsContext = createContext<CommandsContext | null>(null);
 
@@ -30,8 +29,6 @@ export function CommandsProvider(props: ParentProps) {
   const registerCommand = (command: RegisterCommand) =>
     commands.set(command.name, command);
 
-  const isCommand = (name: string) => commands.has(name);
-
   const triggerCommand = (name: string) => commands.get(name)?.action();
 
   const listCommands = () => [...commands.values()];
@@ -43,7 +40,6 @@ export function CommandsProvider(props: ParentProps) {
         triggerCommand,
         registerCommand,
         unregisterCommand,
-        isCommand,
       }}
     >
       {props.children}

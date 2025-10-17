@@ -10,6 +10,7 @@ export function TextField(props: {
   label?: string;
   placeholder?: string;
   autofocus?: boolean;
+  autocomplete?: string;
 }) {
   const field = useFieldContext<string>();
 
@@ -24,6 +25,7 @@ export function TextField(props: {
         }}
         type={props.type}
         placeholder={props.placeholder}
+        autocomplete={props.autocomplete}
         autofocus={props.autofocus}
       />
     </TextFieldRoot>

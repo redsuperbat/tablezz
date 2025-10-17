@@ -74,6 +74,8 @@ export function ConnectionCredentialsProvider(props: ParentProps) {
               children={(field) => (
                 <field.TextField
                   type="url"
+                  autofocus
+                  autocomplete="url"
                   placeholder="postgres://ai:slop@localhost:1337/vibin"
                 />
               )}
