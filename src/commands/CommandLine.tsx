@@ -230,15 +230,14 @@ function CommandLineContent(props: {
 
   useRegisterKeybindCommand({
     keybindExpression: "ArrowUp",
-    command: "CommandLinePreviousCommand",
+    command: "CommandLinePreviousHistory",
     overrideInput: true,
     action() {
       const history = props.commandHistory().at(historyIndex.value());
-      if (!history) {
-        return;
-      }
-      setInputValue(history);
       historyIndex.increment();
+
+      if (!history) return;
+      setInputValue(history);
     },
   });
 
@@ -254,7 +253,7 @@ function CommandLineContent(props: {
       if (!commandName) return;
 
       props.setCommandHistory((prev) => {
-        return [...prev, command];
+        return [command, ...prev];
       });
 
       commandContext.triggerCommand(commandName, ...args);
