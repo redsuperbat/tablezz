@@ -1,3 +1,3 @@
 # Tablezz
 
-Postgres table viewer
+Postgres table viewer, keyboard centric
