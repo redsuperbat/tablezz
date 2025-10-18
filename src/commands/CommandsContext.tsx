@@ -1,4 +1,5 @@
 import {
+  type Accessor,
   createContext,
   createSignal,
   type ParentProps,
@@ -13,6 +14,8 @@ interface CommandsContext {
   unregisterCommand(command: string): void;
   triggerCommand(commandExpression: string): void;
   allCommands(): Command[];
+  addCommandLineSuffix(suffix: string): void;
+  commandLineSuffix: Accessor<string | undefined>;
 }
 
 const CommandsContext = createContext<CommandsContext | null>(null);
@@ -29,6 +32,7 @@ export function useCommandsContext() {
 
 export function CommandsProvider(props: ParentProps) {
   const [commands, setCommands] = createSignal(new Map<string, Command>());
+  const [suffix, setSuffix] = createSignal<string>();
 
   function unregisterCommand(command: string) {
     return setCommands((prev) => {
@@ -86,6 +90,8 @@ export function CommandsProvider(props: ParentProps) {
         triggerCommand,
         registerCommand,
         unregisterCommand,
+        addCommandLineSuffix: setSuffix,
+        commandLineSuffix: suffix,
       }}
     >
       {props.children}

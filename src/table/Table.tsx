@@ -5,26 +5,32 @@ import {
   getCoreRowModel,
 } from "@tanstack/solid-table";
 import { For } from "solid-js";
+import { useCommandsContext } from "@/commands/CommandsContext";
+import { createWatcher } from "@/commands/createWatcher";
 import { message } from "@/commands/Messages";
 import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
+import type { PostgresDataType } from "@/useTableStructure";
 import { TableCell } from "./TableCell";
 import { useTableEditorContext } from "./TableEditorProvider";
 
-export function Table(props: { rows: Record<string, unknown>[] }) {
+export function Table(props: {
+  rows: Record<string, unknown>[];
+  structure: { columnName: string; dataType: PostgresDataType }[];
+}) {
   let ref: HTMLTableElement | undefined;
   const { column, row } = useTableEditorContext();
+  const commandContext = useCommandsContext();
 
-  const structure = () =>
-    Object.keys(props.rows.at(0) ?? {}).map((k) => ({
-      columnName: k,
-      dataType: "text" as const,
-    }));
+  createWatcher(
+    () => props.rows,
+    ({ next }) => commandContext.addCommandLineSuffix(`Rows: ${next.length}`),
+  );
 
   useRegisterKeybindCommand({
     command: "YankSelection",
     keybindExpression: "y",
     action() {
-      const key = structure().at(column())?.columnName;
+      const key = props.structure.at(column())?.columnName;
       if (!key) return;
       const data = props.rows.at(row())?.[key];
       if (data === undefined) return;
@@ -45,7 +51,7 @@ export function Table(props: { rows: Record<string, unknown>[] }) {
   });
 
   const columns: () => ColumnDef<Record<string, unknown>>[] = () =>
-    structure().map((s) => ({
+    props.structure.map((s) => ({
       id: s.columnName,
       accessorKey: s.columnName,
       header(props) {
@@ -71,7 +77,7 @@ export function Table(props: { rows: Record<string, unknown>[] }) {
     });
 
   return (
-    <div class="overflow-auto">
+    <div class="overflow-y-auto">
       <table ref={ref}>
         <thead>
           <For each={table().getHeaderGroups()}>

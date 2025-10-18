@@ -38,6 +38,12 @@ function useTableRowsDatabaseQuery() {
 export function EditorPage() {
   const rows = useTableRowsDatabaseQuery();
 
+  const structure = () =>
+    Object.keys(rows.data?.at(0) ?? {}).map((k) => ({
+      columnName: k,
+      dataType: "text" as const,
+    }));
+
   return (
     <div class="grid grid-rows-2">
       <SqlEditor />
@@ -46,7 +52,7 @@ export function EditorPage() {
         <Match when={rows.data}>
           {(rows) => (
             <TableEditorProvider rows={rows()}>
-              <Table rows={rows()} />
+              <Table rows={rows()} structure={structure()} />
             </TableEditorProvider>
           )}
         </Match>

@@ -5,6 +5,7 @@ import { useSelectedTableContext } from "./SelectedTableProvider";
 import { Table } from "./table/Table";
 import { TableEditorProvider } from "./table/TableEditorProvider";
 import { useTableRows } from "./useTableRows";
+import { useTableStructure } from "./useTableStructure";
 
 export function TablePage() {
   const { selectedTable } = useSelectedTableContext();
@@ -22,13 +23,12 @@ export function TablePage() {
       .join(" ");
 
   const rows = useTableRows(selectedTable);
+  const structure = useTableStructure(selectedTable);
 
   return (
     <div
+      class="grid h-full overflow-hidden"
       style={{
-        width: "100vw",
-        height: "100vh",
-        display: "grid",
         "grid-template-rows": gridTemplateRows(),
       }}
     >
@@ -37,7 +37,13 @@ export function TablePage() {
         <Match when={rows.data}>
           {(rows) => (
             <TableEditorProvider rows={rows()}>
-              <Table rows={rows()} />
+              <Table
+                rows={rows()}
+                structure={(structure.data ?? []).map((d) => ({
+                  columnName: d.column_name,
+                  dataType: d.data_type,
+                }))}
+              />
             </TableEditorProvider>
           )}
         </Match>

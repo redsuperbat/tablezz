@@ -13,13 +13,17 @@ function wrapWithZero(value: number, max: number): number {
 export function createCounterWithWrap(max: Accessor<number>) {
   const [value, setValue] = createSignal(0);
 
-  const increment = () => setValue((v) => wrapWithZero(v + 1, max()));
+  const increment = (offset: number = 1) =>
+    setValue((v) => wrapWithZero(v + offset, max()));
 
-  const decrement = () => setValue((v) => wrapWithZero(v - 1, max()));
+  const decrement = (offset: number = 1) =>
+    setValue((v) => wrapWithZero(v - offset, max()));
 
   const reset = () => setValue(0);
 
-  return { increment, decrement, value, reset };
+  const maximum = () => setValue(max());
+
+  return { increment, decrement, value, reset, maximum };
 }
 
 export function createCounterWithBoundaries({

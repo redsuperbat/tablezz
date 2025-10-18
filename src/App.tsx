@@ -19,25 +19,30 @@ export function App() {
       <CommandsProvider>
         <ConfigurationProvider>
           <KeybindProvider>
-            <FocusInputKeybind />
-            <KeybindHelp />
+            <div
+              class="grid h-screen"
+              style={{ "grid-template-rows": "1fr auto" }}
+            >
+              <FocusInputKeybind />
+              <KeybindHelp />
 
-            <ConnectionCredentialsProvider>
-              <QueryHistoryProvider>
-                <DatabaseConnectionProvider>
-                  <RouteProvider>
-                    <SchemaProvider>
-                      <SelectedTableProvider>
-                        <Picker />
-                        <Router />
-                      </SelectedTableProvider>
-                    </SchemaProvider>
-                  </RouteProvider>
-                </DatabaseConnectionProvider>
-              </QueryHistoryProvider>
-            </ConnectionCredentialsProvider>
+              <ConnectionCredentialsProvider>
+                <QueryHistoryProvider>
+                  <DatabaseConnectionProvider>
+                    <RouteProvider>
+                      <SchemaProvider>
+                        <SelectedTableProvider>
+                          <Picker />
+                          <Router />
+                        </SelectedTableProvider>
+                      </SchemaProvider>
+                    </RouteProvider>
+                  </DatabaseConnectionProvider>
+                </QueryHistoryProvider>
+              </ConnectionCredentialsProvider>
 
-            <CommandLine />
+              <CommandLine />
+            </div>
           </KeybindProvider>
         </ConfigurationProvider>
       </CommandsProvider>

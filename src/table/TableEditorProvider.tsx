@@ -18,8 +18,37 @@ export function TableEditorProvider(props: ParentProps<{ rows: unknown[] }>) {
   const columnLength = () => Object.keys(props.rows.at(0) ?? {}).length;
   const rowLength = () => props.rows.length ?? 0;
 
+  const visibleRows = 10;
   const row = createCounterWithWrap(() => rowLength() - 1);
   const column = createCounterWithWrap(() => columnLength() - 1);
+
+  useRegisterKeybindCommand({
+    command: "MoveToTop",
+    keybindExpression: "G",
+    action: row.maximum,
+  });
+
+  useRegisterKeybindCommand({
+    command: "MoveDownHalf",
+    keybindExpression: "Control + d",
+    action() {
+      row.increment(visibleRows);
+    },
+  });
+
+  useRegisterKeybindCommand({
+    command: "MoveUpHalf",
+    keybindExpression: "Control + u",
+    action() {
+      row.decrement(visibleRows);
+    },
+  });
+
+  useRegisterKeybindCommand({
+    command: "MoveToBottom",
+    keybindExpression: "g",
+    action: row.reset,
+  });
 
   useRegisterKeybindCommand({
     command: "MoveCellRight",

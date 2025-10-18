@@ -64,7 +64,9 @@ function AutocompleteOptions(props: {
 
   useRegisterKeybindCommand({
     command: "CommandCompletePrev",
-    action: selectedIndex.decrement,
+    action() {
+      selectedIndex.decrement();
+    },
     keybindExpression: "Control + Tab",
     overrideInput: true,
   });
@@ -290,7 +292,7 @@ function CommandLineContent(props: {
   });
 
   return (
-    <div class="flex gap-0.5 px-2 py-1">
+    <div class="flex gap-0.5">
       <span>:</span>
       <Autocomplete value={inputValue()} onValueChanged={setInputValue} />
     </div>
@@ -298,6 +300,7 @@ function CommandLineContent(props: {
 }
 
 export function CommandLine() {
+  const commandContext = useCommandsContext();
   const [commandHistory, setCommandHistoryArray] = makePersisted(
     createSignal<string[]>([]),
     { name: "commandHistory" },
@@ -319,17 +322,25 @@ export function CommandLine() {
   });
 
   return (
-    <div class="absolute bottom-0 left-0 w-screen">
-      <Switch fallback={<Messages />}>
-        <Match when={toggle.value()}>
-          <CommandLineContent
-            commandHistory={commandHistory}
-            setCommandHistory={setCommandHistory}
-            onClose={toggle.close}
-            onSelect={toggle.close}
-          />
-        </Match>
-      </Switch>
+    <div class="h-8 w-screen border-gray-300 border-t bg-white shadow-[0_-2px_4px_-1px_rgba(0,0,0,0.06)]">
+      <div
+        class="grid px-2 py-1"
+        style={{ "grid-template-columns": "1fr auto" }}
+      >
+        <Switch fallback={<Messages />}>
+          <Match when={toggle.value()}>
+            <CommandLineContent
+              commandHistory={commandHistory}
+              setCommandHistory={setCommandHistory}
+              onClose={toggle.close}
+              onSelect={toggle.close}
+            />
+          </Match>
+        </Switch>
+        <span class="grid place-content-center">
+          {commandContext.commandLineSuffix()}
+        </span>
+      </div>
     </div>
   );
 }
