@@ -8,6 +8,7 @@ import {
 import { type ZodType, z } from "zod";
 import type { Command } from "./Command";
 import { message } from "./Messages";
+import { parseCommand } from "./parseCommand";
 
 interface CommandsContext {
   registerCommand<const T extends ZodType[]>(command: Command<T>): void;
@@ -51,13 +52,14 @@ export function CommandsProvider(props: ParentProps) {
   }
 
   function triggerCommand(commandExpression: string) {
-    const [name, ...args] = commandExpression.split(" ");
-    if (!name) return;
+    const { commandName, args } = parseCommand(commandExpression);
 
-    const command = commands().get(name);
+    if (!commandName) return;
+
+    const command = commands().get(commandName);
 
     if (!command) {
-      return message.error(`Invalid command ${name}`);
+      return message.error(`Invalid command ${commandName}`);
     }
 
     const parsedArgs = [];
