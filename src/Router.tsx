@@ -1,7 +1,6 @@
 import { createSignal, Match, Switch } from "solid-js";
 import { createSolidContext } from "./createSolidContext";
 import { EditorPage } from "./EditorPage";
-import { useRegisterKeybindCommand } from "./keybinds/useRegisterKeybindCommand";
 import { TablePage } from "./TablePage";
 
 export const [RouteProvider, , useRouter] = createSolidContext(() => {
@@ -13,15 +12,7 @@ export const [RouteProvider, , useRouter] = createSolidContext(() => {
 });
 
 export function Router() {
-  const { route, navigateTo } = useRouter();
-
-  useRegisterKeybindCommand({
-    command: "ToggleSqlEditor",
-    keybindExpression: "Leader + s",
-    action() {
-      navigateTo("editor");
-    },
-  });
+  const { route } = useRouter();
 
   return (
     <Switch>
