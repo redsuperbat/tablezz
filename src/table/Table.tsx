@@ -4,7 +4,8 @@ import {
   flexRender,
   getCoreRowModel,
 } from "@tanstack/solid-table";
-import { For } from "solid-js";
+import { createSignal, For } from "solid-js";
+import z from "zod";
 import { useCommandsContext } from "@/commands/CommandsContext";
 import { createWatcher } from "@/commands/createWatcher";
 import { message } from "@/commands/Messages";
@@ -19,6 +20,10 @@ export function Table(props: {
 }) {
   let ref: HTMLTableElement | undefined;
   const { column, row } = useTableEditorContext();
+  const [openedCell, setOpenedCell] = createSignal<{
+    row: number;
+    column: number;
+  }>();
   const commandContext = useCommandsContext();
 
   createWatcher(
@@ -27,12 +32,23 @@ export function Table(props: {
   );
 
   useRegisterKeybindCommand({
-    command: "YankSelection",
+    command: "SelectionCopyToClipboard",
     keybindExpression: "y",
-    action() {
-      const key = props.structure.at(column())?.columnName;
+    actionArgs: [
+      z.coerce
+        .number()
+        .default(() => column())
+        .meta({ title: "<column>" }),
+
+      z.coerce
+        .number()
+        .default(() => row())
+        .meta({ title: "<row>" }),
+    ],
+    action(column, row) {
+      const key = props.structure.at(column)?.columnName;
       if (!key) return;
-      const data = props.rows.at(row())?.[key];
+      const data = props.rows.at(row)?.[key];
       if (data === undefined) return;
       navigator.clipboard.writeText(String(data));
       message.info("Copied to clipboard");
@@ -40,13 +56,21 @@ export function Table(props: {
   });
 
   useRegisterKeybindCommand({
-    command: "FocusTable",
-    keybindExpression: "Control + j",
-    overrideInput: true,
-    action() {
-      setTimeout(() => {
-        ref?.focus();
-      }, 100);
+    command: "SelectionOpen",
+    keybindExpression: "K",
+    actionArgs: [
+      z.coerce
+        .number()
+        .default(() => column())
+        .meta({ title: "<column>" }),
+
+      z.coerce
+        .number()
+        .default(() => row())
+        .meta({ title: "<row>" }),
+    ],
+    action(column, row) {
+      setOpenedCell({ column, row });
     },
   });
 
@@ -60,6 +84,7 @@ export function Table(props: {
       cell: (props) => (
         <TableCell
           columnIndex={props.column.getIndex()}
+          openedCell={openedCell()}
           data={props.getValue()}
           dataType={s.dataType}
           rowIndex={props.row.index}

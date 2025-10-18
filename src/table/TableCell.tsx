@@ -1,3 +1,8 @@
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/cn";
 import { useIntersectionScroll } from "@/lib/useIntersectionScroll";
 import type { PostgresDataType } from "@/useTableStructure";
@@ -20,11 +25,16 @@ export function TableCell(props: {
   dataType: PostgresDataType;
   rowIndex: number;
   columnIndex: number;
+  openedCell?: { column: number; row: number };
 }) {
   const { column, row } = useTableEditorContext();
   const isActive = () =>
     column() === props.columnIndex && row() === props.rowIndex;
   const ref = useIntersectionScroll<HTMLTableCellElement>(isActive);
+  const isOpened = () =>
+    props.openedCell?.column === props.columnIndex &&
+    props.openedCell.row === props.rowIndex &&
+    isActive();
 
   return (
     <td
@@ -40,12 +50,17 @@ export function TableCell(props: {
         isActive() && "border-red-300 bg-red-200",
       )}
     >
-      <TableCellDataType
-        columnIndex={props.columnIndex}
-        rowIndex={props.rowIndex}
-        data={props.data}
-        dataType={props.dataType}
-      />
+      <Popover placement="bottom" open={isOpened()}>
+        <PopoverTrigger>
+          <TableCellDataType
+            columnIndex={props.columnIndex}
+            rowIndex={props.rowIndex}
+            data={props.data}
+            dataType={props.dataType}
+          />
+        </PopoverTrigger>
+        <PopoverContent class="bg-white">{String(props.data)}</PopoverContent>
+      </Popover>
     </td>
   );
 }
