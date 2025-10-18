@@ -11,6 +11,7 @@ import { Picker } from "./Picker";
 import { RouteProvider, Router } from "./Router";
 import { SchemaProvider } from "./SchemaProvider";
 import { SelectedTableProvider } from "./SelectedTableProvider";
+import { SqlCommandKeybind } from "./SqlCommandKeybind";
 import { SuspenseBoundary } from "./SuspenseBoundary";
 
 export function App() {
@@ -29,6 +30,7 @@ export function App() {
               <ConnectionCredentialsProvider>
                 <QueryHistoryProvider>
                   <DatabaseConnectionProvider>
+                    <SqlCommandKeybind />
                     <RouteProvider>
                       <SchemaProvider>
                         <SelectedTableProvider>

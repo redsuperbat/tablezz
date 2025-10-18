@@ -59,7 +59,9 @@ export function TableCell(props: {
             dataType={props.dataType}
           />
         </PopoverTrigger>
-        <PopoverContent class="bg-white">{String(props.data)}</PopoverContent>
+        <PopoverContent class="break-all bg-white">
+          {String(props.data)}
+        </PopoverContent>
       </Popover>
     </td>
   );
