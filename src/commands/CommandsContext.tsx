@@ -41,7 +41,7 @@ export function CommandsProvider(props: ParentProps) {
   function registerCommand<const T extends ZodType[]>(command: Command<T>) {
     return setCommands((prev) => {
       const newMap = new Map(prev);
-      newMap.set(command.name, command as Command);
+      newMap.set(command.command, command as Command);
       return newMap;
     });
   }

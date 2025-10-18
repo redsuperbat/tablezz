@@ -8,7 +8,7 @@ import {
 import { cn } from "@/lib/cn";
 import { useKeybindContext } from "./KeybindProvider";
 import { useRegisterKeybindCommand } from "./useRegisterKeybindCommand";
-import { useRegisterKeybindToggle } from "./useRegisterToggleKeybind";
+import { useRegisterKeybindToggle } from "./useRegisterKeybindToggle";
 
 function Code(props: ParentProps) {
   return (

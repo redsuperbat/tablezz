@@ -5,7 +5,7 @@ type InferParsedSchemas<T extends ZodType[]> = {
 };
 
 export interface Command<T extends ZodType[] = ZodType<unknown>[]> {
-  name: string;
+  command: string;
   description?: string;
   actionArgs?: T;
   action: (...args: InferParsedSchemas<T>) => void;

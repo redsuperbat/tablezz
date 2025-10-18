@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/dialog";
 import { useAppForm } from "./components/form";
 import { useRegisterKeybindCommand } from "./keybinds/useRegisterKeybindCommand";
-import { useRegisterKeybindToggle } from "./keybinds/useRegisterToggleKeybind";
 import { cn } from "./lib/cn";
 import { createCounterWithWrap } from "./lib/createCounterWithWrap";
 import { useIntersectionScroll } from "./lib/useIntersectionScroll";
@@ -64,10 +63,11 @@ export function Picker() {
     ];
   };
 
-  const toggle = useRegisterKeybindToggle({
-    command: "PickerOpen",
+  useRegisterKeybindCommand({
+    command: "PickerOpen all",
     keybindExpression: "Leader + Space",
-    actionArgs: [z.enum(["keybinds"]).optional()],
+    actionArgs: [z.enum(["keybinds", "schemas", "tables"])],
+    action(type) {},
   });
 
   return (

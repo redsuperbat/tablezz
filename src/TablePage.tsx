@@ -1,6 +1,6 @@
 import { Match, Show, Switch } from "solid-js";
 import { QueryHistory } from "./database/QueryHistoryProvider";
-import { useRegisterKeybindToggle } from "./keybinds/useRegisterToggleKeybind";
+import { useRegisterKeybindToggle } from "./keybinds/useRegisterKeybindToggle";
 import { useSelectedTableContext } from "./SelectedTableProvider";
 import { Table } from "./table/Table";
 import { TableEditorProvider } from "./table/TableEditorProvider";

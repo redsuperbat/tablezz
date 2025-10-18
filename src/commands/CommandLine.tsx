@@ -9,7 +9,7 @@ import {
   Switch,
 } from "solid-js";
 import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
-import { useRegisterKeybindToggle } from "@/keybinds/useRegisterToggleKeybind";
+import { useRegisterKeybindToggle } from "@/keybinds/useRegisterKeybindToggle";
 import { cn } from "@/lib/cn";
 import { createCounterWithWrap } from "@/lib/createCounterWithWrap";
 import { useIntersectionScroll } from "@/lib/useIntersectionScroll";
@@ -49,7 +49,7 @@ function AutocompleteOptions(props: {
     action() {
       // If it's a single command we just select it
       if (props.filteredCommands.length === 1) {
-        const commandName = props.filteredCommands.at(0)?.name;
+        const commandName = props.filteredCommands.at(0)?.command;
         if (!commandName) return;
         return props.onCommandNameAccepted(commandName);
       }
@@ -72,7 +72,7 @@ function AutocompleteOptions(props: {
     action() {
       const command = props.filteredCommands.at(selectedIndex.value());
       if (!command) return;
-      props.onCommandNameAccepted(command.name);
+      props.onCommandNameAccepted(command.command);
     },
     overrideInput: true,
   });
@@ -84,7 +84,7 @@ function AutocompleteOptions(props: {
           <AutocompleteOption
             index={index()}
             selectedIndex={selectedIndex.value()}
-            commandName={c.name}
+            commandName={c.command}
           />
         )}
       </For>
@@ -127,14 +127,14 @@ function Autocomplete(props: {
     }
 
     const matchingCommand = commands().find((suggestion) =>
-      suggestion.name.startsWith(props.value),
+      suggestion.command.startsWith(props.value),
     );
 
     if (!matchingCommand) {
       return "";
     }
 
-    return matchingCommand?.name;
+    return matchingCommand?.command;
   };
 
   const toggleShowAutocomplete = useRegisterKeybindToggle({
@@ -144,7 +144,7 @@ function Autocomplete(props: {
   });
 
   const filteredCommands = () =>
-    commands().filter((c) => c.name.startsWith(props.value));
+    commands().filter((c) => c.command.startsWith(props.value));
 
   useRegisterKeybindCommand({
     command: "CommandComplete",
@@ -222,7 +222,7 @@ function CommandLineContent(props: {
   });
 
   useRegisterCommand({
-    name: "CommandLineClearHistory",
+    command: "CommandLineClearHistory",
     action() {
       props.setCommandHistory([]);
     },

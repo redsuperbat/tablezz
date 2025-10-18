@@ -1,19 +1,26 @@
 import { onCleanup, onMount } from "solid-js";
+import type { ZodType } from "zod";
 import type { Command } from "@/commands/Command";
 import { useCommandsContext } from "@/commands/CommandsContext";
 import type { Keybind } from "./Keybind";
 import { useKeybindContext } from "./KeybindProvider";
 
-export interface KeybindCommand extends Omit<Command, "name">, Keybind {}
+export interface KeybindCommand<T extends ZodType[] = []>
+  extends Omit<Command<T>, "name">,
+    Keybind {}
 
-export function useRegisterKeybindCommand(keybindCommand: KeybindCommand) {
+export function useRegisterKeybindCommand<const T extends ZodType[]>(
+  keybindCommand: KeybindCommand<T>,
+) {
   const keybindContext = useKeybindContext();
   const commandsContext = useCommandsContext();
 
   onMount(() => {
     commandsContext.registerCommand({
       action: keybindCommand.action,
-      name: keybindCommand.command,
+      command: keybindCommand.command,
+      actionArgs: keybindCommand.actionArgs,
+      description: keybindCommand.description,
     });
 
     keybindContext.registerKeybind({
