@@ -11,7 +11,10 @@ import {
 import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
 import { useRegisterKeybindToggle } from "@/keybinds/useRegisterKeybindToggle";
 import { cn } from "@/lib/cn";
-import { createCounterWithWrap } from "@/lib/createCounterWithWrap";
+import {
+  createCounterWithBoundaries,
+  createCounterWithWrap,
+} from "@/lib/createCounterWithWrap";
 import { useIntersectionScroll } from "@/lib/useIntersectionScroll";
 import type { Command } from "./Command";
 import { useCommandsContext } from "./CommandsContext";
@@ -123,15 +126,15 @@ function Autocomplete(props: {
 
   const ghostText = () => {
     if (props.value.trim() === "") {
-      return "";
+      return;
     }
 
-    const matchingCommand = commands().find((suggestion) =>
-      suggestion.command.startsWith(props.value),
+    const matchingCommand = commands().find((cmd) =>
+      cmd.command.startsWith(props.value.trim()),
     );
 
     if (!matchingCommand) {
-      return "";
+      return;
     }
 
     const maybeSchemaTypes = matchingCommand.actionArgs
@@ -140,7 +143,10 @@ function Autocomplete(props: {
 
     const schemaTypes = maybeSchemaTypes ? ` ${maybeSchemaTypes}` : "";
 
-    return `${matchingCommand.command}${schemaTypes}`;
+    return {
+      show: `${matchingCommand.command}${schemaTypes}`,
+      fill: matchingCommand.command,
+    };
   };
 
   const toggleShowAutocomplete = useRegisterKeybindToggle({
@@ -156,7 +162,7 @@ function Autocomplete(props: {
     command: "CommandComplete",
     action() {
       if (filteredCommands().length === 1) {
-        return props.onValueChanged(ghostText());
+        return props.onValueChanged(ghostText()?.fill ?? "");
       }
       if (filteredCommands().length > 1) {
         return toggleShowAutocomplete.set(true);
@@ -179,7 +185,7 @@ function Autocomplete(props: {
         >
           <span class="invisible">{props.value}</span>
 
-          <span>{ghostText().slice(props.value.length)}</span>
+          <span>{ghostText()?.show.slice(props.value.length)}</span>
         </div>
 
         <Show when={toggleShowAutocomplete.value()}>
@@ -215,9 +221,11 @@ function CommandLineContent(props: {
   onSelect: () => void;
 }) {
   const commandContext = useCommandsContext();
-  const historyIndex = createCounterWithWrap(
-    () => props.commandHistory().length - 1,
-  );
+  const historyIndex = createCounterWithBoundaries({
+    initialValue: -1,
+    min: 0,
+    max: () => props.commandHistory().length - 1,
+  });
   const [inputValue, setInputValue] = createSignal("");
 
   useRegisterKeybindCommand({
@@ -235,14 +243,29 @@ function CommandLineContent(props: {
   });
 
   useRegisterKeybindCommand({
+    keybindExpression: "ArrowDown",
+    command: "CommandLineNextHistory",
+    overrideInput: true,
+    action() {
+      historyIndex.decrement();
+
+      const history = props.commandHistory().at(historyIndex.value());
+      if (!history) return;
+
+      setInputValue(history);
+    },
+  });
+
+  useRegisterKeybindCommand({
     keybindExpression: "ArrowUp",
     command: "CommandLinePreviousHistory",
     overrideInput: true,
     action() {
-      const history = props.commandHistory().at(historyIndex.value());
       historyIndex.increment();
 
+      const history = props.commandHistory().at(historyIndex.value());
       if (!history) return;
+
       setInputValue(history);
     },
   });
