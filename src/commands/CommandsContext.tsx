@@ -51,16 +51,21 @@ export function CommandsProvider(props: ParentProps) {
     if (!name) return;
 
     const command = commands().get(name);
-    if (!command) return;
+
+    if (!command) {
+      return message.error(`Invalid command ${name}`);
+    }
 
     const parsedArgs = [];
     for (const [index, schema] of (command.actionArgs ?? []).entries()) {
       const arg = schema.safeParse(args[index]);
 
       if (!arg.success) {
-        message.error(
-          `${z.treeifyError(arg.error).errors.join(", ")} at index "${index}"`,
-        );
+        const argTitle = schema.meta()?.title;
+        const help = argTitle
+          ? ` for argument ${argTitle}`
+          : ` at index "${index}"`;
+        message.error(`${z.treeifyError(arg.error).errors.join(", ")}${help}`);
         return;
       }
 

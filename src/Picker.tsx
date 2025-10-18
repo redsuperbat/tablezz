@@ -38,7 +38,12 @@ export function Picker() {
   const pickerType = useRegisterKeybindValue({
     command: "PickerOpen",
     keybindExpression: "Leader + Space",
-    actionArgs: [z.enum(["keybinds", "schemas", "tables"]).default("tables")],
+    actionArgs: [
+      z
+        .enum(["keybinds", "schemas", "tables"])
+        .default("tables")
+        .meta({ title: "<type>" }),
+    ],
   });
 
   const tables = () => selectedSchema.data ?? [];

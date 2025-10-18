@@ -3,9 +3,8 @@ import { listen } from "@tauri-apps/api/event";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
-import { onMount } from "solid-js";
+import { onCleanup, onMount } from "solid-js";
 import { useConfig } from "@/config/ConfigurationProvider";
-import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
 import { useRouter } from "@/Router";
 
 export function SqlEditor() {
@@ -15,55 +14,46 @@ export function SqlEditor() {
   let terminalRef: HTMLDivElement | undefined;
   const term = new Terminal({ fontFamily: "Fira Code" });
   const fitAddon = new FitAddon();
+  const disposables = new Set<() => void>();
+
   term.loadAddon(fitAddon);
 
-  useRegisterKeybindCommand({
-    command: "FocusSqlEditor",
-    keybindExpression: "Control + ArrowUp",
-    action() {
-      setInterval(() => {
-        term.focus();
-      }, 100);
-    },
-  });
+  function resizeTerm() {
+    fitAddon.fit();
+
+    const ref = terminalRef;
+    if (!ref) return;
+
+    const xtermScreen = ref.querySelector(".xterm-screen");
+    if (!xtermScreen) return;
+
+    const charWidth = xtermScreen.clientWidth / term.cols;
+    const charHeight = xtermScreen.clientHeight / term.rows;
+
+    const terminalWidth = term.cols * charWidth;
+    const terminalHeight = term.rows * charHeight;
+
+    const containerWidth = ref.clientWidth;
+    const containerHeight = ref.clientHeight;
+
+    const paddingRight = Math.floor((containerWidth - terminalWidth) / 2);
+    const paddingLeft = Math.ceil((containerWidth - terminalWidth) / 2);
+    const paddingTop = Math.floor((containerHeight - terminalHeight) / 2);
+    const paddingBottom = Math.ceil((containerHeight - terminalHeight) / 2);
+
+    ref.style.paddingRight = `${paddingRight}px`;
+    ref.style.paddingLeft = `${paddingLeft}px`;
+    ref.style.paddingTop = `${paddingTop}px`;
+    ref.style.paddingBottom = `${paddingBottom}px`;
+  }
+
+  const resizeObserver = new ResizeObserver(resizeTerm);
 
   onMount(() => {
     const ref = terminalRef;
     if (!ref) return;
 
     term.open(ref);
-
-    function resizeTerm() {
-      fitAddon.fit();
-      if (!ref) {
-        return;
-      }
-
-      const xtermScreen = ref.querySelector(".xterm-screen");
-
-      if (!xtermScreen) {
-        return;
-      }
-
-      const charWidth = xtermScreen.clientWidth / term.cols;
-      const charHeight = xtermScreen.clientHeight / term.rows;
-
-      const terminalWidth = term.cols * charWidth;
-      const terminalHeight = term.rows * charHeight;
-
-      const containerWidth = ref.clientWidth;
-      const containerHeight = ref.clientHeight;
-
-      const paddingRight = Math.floor((containerWidth - terminalWidth) / 2);
-      const paddingLeft = Math.ceil((containerWidth - terminalWidth) / 2);
-      const paddingTop = Math.floor((containerHeight - terminalHeight) / 2);
-      const paddingBottom = Math.ceil((containerHeight - terminalHeight) / 2);
-
-      ref.style.paddingRight = `${paddingRight}px`;
-      ref.style.paddingLeft = `${paddingLeft}px`;
-      ref.style.paddingTop = `${paddingTop}px`;
-      ref.style.paddingBottom = `${paddingBottom}px`;
-    }
 
     requestAnimationFrame(() => {
       resizeTerm();
@@ -82,25 +72,29 @@ export function SqlEditor() {
     term.onResize(({ cols, rows }) => invoke("resize_pty", { cols, rows }));
 
     window.addEventListener("resize", resizeTerm);
-    const resizeObserver = new ResizeObserver(resizeTerm);
     resizeObserver.observe(ref);
 
-    const output = listen("pty-output", (event) => {
+    listen("pty-output", (event) => {
       const data = String(event.payload);
       term.write(data);
-    });
+    }).then((o) => disposables.add(o));
 
-    const exit = listen("pty-exit", () => {
+    listen("pty-exit", () => {
       navigateTo("table");
-    });
+    }).then((o) => disposables.add(o));
 
-    return () => {
-      window.removeEventListener("resize", resizeTerm);
-      resizeObserver.disconnect();
-      output.then((o) => o());
-      exit.then((o) => o());
-      term.dispose();
-    };
+    return () => {};
+  });
+
+  onCleanup(() => {
+    window.removeEventListener("resize", resizeTerm);
+    resizeObserver.disconnect();
+    term.dispose();
+
+    // Dispose all disposables
+    disposables.forEach((o) => {
+      o();
+    });
   });
 
   return <div ref={terminalRef} class="h-full w-full" />;

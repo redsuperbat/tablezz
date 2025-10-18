@@ -134,7 +134,13 @@ function Autocomplete(props: {
       return "";
     }
 
-    return matchingCommand?.command;
+    const maybeSchemaTypes = matchingCommand.actionArgs
+      ?.map((s) => s.meta()?.title)
+      .join(" ");
+
+    const schemaTypes = maybeSchemaTypes ? ` ${maybeSchemaTypes}` : "";
+
+    return `${matchingCommand.command}${schemaTypes}`;
   };
 
   const toggleShowAutocomplete = useRegisterKeybindToggle({
@@ -161,7 +167,7 @@ function Autocomplete(props: {
   });
 
   return (
-    <div class="relative w-full max-w-md">
+    <div class="relative w-full">
       <div class="relative">
         <div
           class="pointer-events-none absolute inset-0 overflow-hidden whitespace-nowrap text-gray-400"
@@ -269,10 +275,14 @@ function CommandLineContent(props: {
 }
 
 export function CommandLine() {
-  const [commandHistory, setCommandHistory] = makePersisted(
+  const [commandHistory, setCommandHistoryArray] = makePersisted(
     createSignal<string[]>([]),
     { name: "commandHistory" },
   );
+
+  const setCommandHistory = (cb: (commands: string[]) => string[]) => {
+    setCommandHistoryArray([...new Set(cb(commandHistory()))]);
+  };
 
   const toggle = useRegisterKeybindToggle({
     keybindExpression: ":",

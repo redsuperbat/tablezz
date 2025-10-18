@@ -41,7 +41,7 @@ export function ConnectionCredentialsProvider(props: ParentProps) {
 
   useRegisterCommand({
     command: "DatabaseUrlAdd",
-    actionArgs: [z.url()],
+    actionArgs: [z.url().meta({ title: "<url>" })],
     action(url) {
       setDatabaseUrlRaw(url);
     },
