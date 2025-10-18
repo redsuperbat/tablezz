@@ -6,7 +6,7 @@ import { useSchemaContext } from "./SchemaProvider";
 function useTableRowsDatabaseQuery(tableName: () => string) {
   const { schema } = useSchemaContext();
 
-  return createMemo(() => `SELECT * FROM ${schema()}.${tableName()}`);
+  return createMemo(() => `SELECT * FROM "${schema()}"."${tableName()}"`);
 }
 
 export function useTableRows(tableName: () => string) {
