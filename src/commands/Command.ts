@@ -1,6 +1,6 @@
 import type { ZodType } from "zod";
 
-type InferParsedSchemas<T extends ZodType[]> = {
+export type InferParsedSchemas<T extends ZodType[]> = {
   [K in keyof T]: T[K] extends ZodType<infer U> ? U : never;
 };
 

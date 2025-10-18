@@ -10,7 +10,7 @@ import { message } from "./Messages";
 
 interface CommandsContext {
   registerCommand<const T extends ZodType[]>(command: Command<T>): void;
-  unregisterCommand(name: string): void;
+  unregisterCommand(command: string): void;
   triggerCommand(commandExpression: string): void;
   allCommands(): Command[];
 }
@@ -58,7 +58,9 @@ export function CommandsProvider(props: ParentProps) {
       const arg = schema.safeParse(args[index]);
 
       if (!arg.success) {
-        message.error(z.treeifyError(arg.error).errors.join(", "));
+        message.error(
+          `${z.treeifyError(arg.error).errors.join(", ")} at index "${index}"`,
+        );
         return;
       }
 

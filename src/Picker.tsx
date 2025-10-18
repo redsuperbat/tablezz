@@ -1,7 +1,7 @@
 import type { FuzzyMatches, FuzzyResult } from "@nozbe/microfuzz";
 import createFuzzySearch from "@nozbe/microfuzz";
-import { Folder, Route, Table } from "lucide-solid";
-import { createEffect, createMemo, For, type JSXElement } from "solid-js";
+import { Folder, Key, Table } from "lucide-solid";
+import { createMemo, For, type JSXElement } from "solid-js";
 import z from "zod";
 import {
   Dialog,
@@ -9,12 +9,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { createWatcher } from "./commands/createWatcher";
 import { useAppForm } from "./components/form";
+import { useKeybindContext } from "./keybinds/KeybindProvider";
 import { useRegisterKeybindCommand } from "./keybinds/useRegisterKeybindCommand";
+import { useRegisterKeybindValue } from "./keybinds/useRegisterKeybindValue";
 import { cn } from "./lib/cn";
 import { createCounterWithWrap } from "./lib/createCounterWithWrap";
 import { useIntersectionScroll } from "./lib/useIntersectionScroll";
-import { useRouter } from "./Router";
 import { useSchemaContext } from "./SchemaProvider";
 import { useSelectedTableContext } from "./SelectedTableProvider";
 import { useSelectedDatabaseSchemas } from "./useSelectedDatabaseSchemas";
@@ -28,56 +30,64 @@ interface PickerItem {
 
 export function Picker() {
   const { setSelectedTable } = useSelectedTableContext();
-  const { routes, navigateTo } = useRouter();
   const selectedSchema = useSelectedSchemaTables();
   const selectedSchemas = useSelectedDatabaseSchemas();
   const { setSchema } = useSchemaContext();
+
+  const keybindContext = useKeybindContext();
+  const pickerType = useRegisterKeybindValue({
+    command: "PickerOpen",
+    keybindExpression: "Leader + Space",
+    actionArgs: [z.enum(["keybinds", "schemas", "tables"]).default("tables")],
+  });
 
   const tables = () => selectedSchema.data ?? [];
 
   const schemas = () => selectedSchemas.data ?? [];
 
   const items = (): PickerItem[] => {
-    return [
-      ...tables().map((t) => ({
-        icon: <Table />,
-        searchTerm: t.tableName,
-        onSelect() {
-          setSelectedTable(t.tableName);
-        },
-      })),
-      ...schemas().map((s) => ({
-        icon: <Folder />,
-        searchTerm: s.schemaName,
-        onSelect() {
-          setSchema(s.schemaName);
-        },
-      })),
-      ...routes.map((r) => ({
-        icon: <Route />,
-        searchTerm: r,
-        onSelect() {
-          navigateTo(r);
-        },
-      })),
-    ];
+    const type = pickerType.value();
+    if (!type) return [];
+
+    switch (type[0]) {
+      case "keybinds":
+        return keybindContext.keybinds().map((k) => ({
+          icon: <Key />,
+          onSelect() {},
+          searchTerm: `${k.keybindExpression} -> ${k.command}`,
+        }));
+
+      case "schemas":
+        return schemas().map((s) => ({
+          icon: <Folder />,
+          searchTerm: s.schemaName,
+          onSelect() {
+            setSchema(s.schemaName);
+          },
+        }));
+
+      case "tables":
+        return tables().map((t) => ({
+          icon: <Table />,
+          searchTerm: t.tableName,
+          onSelect() {
+            setSelectedTable(t.tableName);
+          },
+        }));
+    }
   };
 
-  useRegisterKeybindCommand({
-    command: "PickerOpen all",
-    keybindExpression: "Leader + Space",
-    actionArgs: [z.enum(["keybinds", "schemas", "tables"])],
-    action(type) {},
-  });
-
   return (
-    <Dialog modal open={toggle.value()} onOpenChange={toggle.set}>
+    <Dialog modal open={!!pickerType.value()}>
       <DialogContent
         onEscapeKeyDown={(e) => e.preventDefault()}
         class="flex flex-col justify-start bg-white"
         aria-describedby="Command palette"
       >
-        <PickerContent onSelect={() => toggle.set(false)} items={items()} />
+        <PickerContent
+          onSelect={() => pickerType.set(undefined)}
+          items={items()}
+        />
       </DialogContent>
     </Dialog>
   );
@@ -114,10 +124,8 @@ function PickerContent(props: { items: PickerItem[]; onSelect: () => void }) {
 
   const selectedIndex = createCounterWithWrap(() => filteredItems().length - 1);
 
-  createEffect(() => {
-    searchTerm();
-    selectedIndex.reset();
-  });
+  // we want to reset the selected index when the search term changes
+  createWatcher(searchTerm, selectedIndex.reset);
 
   useRegisterKeybindCommand({
     command: "PickerSelect",
