@@ -82,8 +82,6 @@ export function SqlEditor() {
     listen("pty-exit", () => {
       navigateTo("table");
     }).then((o) => disposables.add(o));
-
-    return () => {};
   });
 
   onCleanup(() => {

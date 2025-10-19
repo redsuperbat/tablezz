@@ -49,7 +49,10 @@ export class KeybindChecker {
       case "ctrl":
         return this.#event.ctrlKey && this.check(n.right);
       case "leader": {
-        return this.#leaderTracker.isActive && this.check(n.right);
+        // It's important we check leader key last since we clear
+        // the leader key when checked if it's active
+        // This is not a great design but works well for now
+        return this.check(n.right) && this.#leaderTracker.isActive();
       }
     }
 

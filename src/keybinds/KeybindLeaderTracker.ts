@@ -2,10 +2,11 @@ import type { KeybindExpression } from "./Keybind";
 import type { KeyEvent } from "./KeybindChecker";
 
 export class KeybindLeaderTracker {
-  #isLeaderActive?: ReturnType<typeof setTimeout>;
-  #isActive = false;
   readonly #expirationTime: number;
   readonly #leaderKey: string;
+
+  #isLeaderActive?: ReturnType<typeof setTimeout>;
+  #isActive = false;
 
   constructor(expirationTime: number, leaderKey: KeybindExpression) {
     this.#expirationTime = expirationTime;
@@ -31,8 +32,16 @@ export class KeybindLeaderTracker {
     this.#isActive = false;
   }
 
-  get isActive() {
-    return this.#isActive;
+  isActive() {
+    const active = this.#isActive;
+
+    // If the leader key is active when it's checked it resets
+    // for subsequent leader key presses
+    if (active) {
+      this.#clear();
+    }
+
+    return active;
   }
 
   checkLeaderAndStartTracking(e: KeyEvent): { trackingStarted: boolean } {

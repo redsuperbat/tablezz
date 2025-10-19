@@ -59,7 +59,7 @@ export function TableCell(props: {
             dataType={props.dataType}
           />
         </PopoverTrigger>
-        <PopoverContent class="break-all bg-white">
+        <PopoverContent class="break-words bg-white">
           {String(props.data)}
         </PopoverContent>
       </Popover>
