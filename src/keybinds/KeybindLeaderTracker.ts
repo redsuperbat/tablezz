@@ -3,7 +3,7 @@ import type { KeyEvent } from "./KeybindChecker";
 
 export class KeybindLeaderTracker {
   #isLeaderActive?: ReturnType<typeof setTimeout>;
-  #expired = false;
+  #isActive = false;
   readonly #expirationTime: number;
   readonly #leaderKey: string;
 
@@ -13,7 +13,7 @@ export class KeybindLeaderTracker {
   }
 
   #track(): void {
-    this.#expired = false;
+    this.#isActive = true;
     clearTimeout(this.#isLeaderActive);
 
     this.#isLeaderActive = setTimeout(() => {
@@ -28,11 +28,11 @@ export class KeybindLeaderTracker {
   #clear() {
     clearTimeout(this.#isLeaderActive);
     this.#isLeaderActive = undefined;
-    this.#expired = true;
+    this.#isActive = false;
   }
 
   get isActive() {
-    return !this.#expired;
+    return this.#isActive;
   }
 
   checkLeaderAndStartTracking(e: KeyEvent): { trackingStarted: boolean } {
