@@ -7,8 +7,10 @@ import { KeybindChecker, type KeyEvent } from "./KeybindChecker";
 import { KeybindParser } from "./KeybindParser";
 import { KeybindTokenizer } from "./KeybindTokenizer";
 
+type CheckFn = (e: KeyEvent) => boolean;
+
 interface RegisteredKeybind extends Keybind {
-  check: ((e: KeyEvent) => boolean)[];
+  check: CheckFn[];
 }
 
 export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
@@ -59,46 +61,50 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
       // after another one it should take precedence
       const reverseKeybinds = [...keybinds().values()].reverse();
 
-      const noKeybindFound = reverseKeybinds.every(
-        (k) => k.check[i] === undefined,
+      const keybindsToCheck = reverseKeybinds.filter(
+        (k) => k.check[i] !== undefined,
       );
 
-      if (noKeybindFound) {
+      if (!keybindsToCheck.length) {
         i = 0;
+        return;
       }
 
       const isInvalidTarget =
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement;
 
-      for (const bind of reverseKeybinds) {
+      let keybindHit = false;
+
+      for (const bind of keybindsToCheck) {
         // If the target element is an input element we skip triggering
         // the keybind. Unless the keybind specifically override it
         if (isInvalidTarget && !bind.overrideInput) continue;
 
-        const checker = bind.check[i];
+        // This was checked above
+        const checker = bind.check[i] as CheckFn;
 
-        if (!checker) {
-          continue;
+        if (checker(e)) {
+          keybindHit = true;
+
+          if (bind.check.length === i + 1) {
+            e.preventDefault();
+            e.stopPropagation();
+            commandsContext.triggerCommand(bind.command);
+            // Reset checker index if we trigger a binding
+            i = 0;
+            return;
+          }
         }
-
-        if (!checker(e)) {
-          continue;
-        }
-
-        e.preventDefault();
-        e.stopPropagation();
-        commandsContext.triggerCommand(bind.command);
-        // Reset checker index if we trigger a binding
-        i = 0;
-
-        // Only trigger a single binding.
-        // We cannot map a single keybind to trigger multiple things
-        break;
       }
 
-      // Increment the checker index when we did not hit any keybinds
-      i += 1;
+      // If no keybind was hit during the check we just reset again
+      if (!keybindHit) {
+        i = 0;
+      } else {
+        // Increment the checker index when we did not hit any keybinds
+        i += 1;
+      }
     }
 
     window.addEventListener("keydown", checkAndTrigger);

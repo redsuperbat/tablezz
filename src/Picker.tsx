@@ -37,7 +37,7 @@ export function Picker() {
   const keybindContext = useKeybindContext();
   const pickerType = useRegisterKeybindValue({
     command: "PickerOpen",
-    keybindExpression: "Leader + Space",
+    keybindExpression: "Leader > Space",
     actionArgs: [
       z
         .enum(["keybinds", "schemas", "tables"])

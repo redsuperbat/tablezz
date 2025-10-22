@@ -12,7 +12,7 @@ export function TablePage() {
 
   const showQueryHistory = useRegisterKeybindToggle({
     command: "ToggleQueryHistory",
-    keybindExpression: "Leader + q",
+    keybindExpression: "Leader > q",
     initialValue: false,
   });
 

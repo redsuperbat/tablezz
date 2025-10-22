@@ -1,6 +1,5 @@
 import { describe, expect, test } from "vitest";
 import { KeybindChecker, type KeyEvent } from "./KeybindChecker.ts";
-import { KeybindLeaderTracker } from "./KeybindLeaderTracker.ts";
 import { KeybindParser } from "./KeybindParser.ts";
 import { KeybindTokenizer } from "./KeybindTokenizer";
 
@@ -12,7 +11,9 @@ const check = ({
   event: Partial<KeyEvent> & { key: string };
 }): boolean => {
   const tokenizer = new KeybindTokenizer(expr);
+
   const parser = new KeybindParser(tokenizer.tokenize());
+
   const checker = new KeybindChecker(
     {
       altKey: false,
@@ -21,10 +22,11 @@ const check = ({
       code: "",
       ...event,
     },
-    new KeybindLeaderTracker(1000, "Space"),
+    "Space",
   );
   const expression = parser.parseKeyExpression();
-  return checker.check(expression);
+
+  return expression.every((e) => checker.check(e));
 };
 
 describe("KeybindChecker", () => {
@@ -34,13 +36,5 @@ describe("KeybindChecker", () => {
       event: { key: "k", ctrlKey: true },
     });
     expect(result).toBe(true);
-  });
-
-  test("leader key", () => {
-    const result = check({
-      event: { key: "Space" },
-      expr: "Leader + Space",
-    });
-    expect(result).toBe(false);
   });
 });
