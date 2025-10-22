@@ -38,9 +38,7 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
 
   const unregisterKeybind = (keybind: Keybind) => {
     setKeybinds((keys) => {
-      return keys.filter(
-        (k) => k.keybindExpression !== keybind.keybindExpression,
-      );
+      return keys.filter((k) => k.command !== keybind.command);
     });
   };
 
