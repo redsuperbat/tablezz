@@ -16,11 +16,6 @@ export interface MetaNode {
   range: Range;
 }
 
-export interface ShiftNode {
-  kind: "shift";
-  range: Range;
-}
-
 export interface AltNode {
   kind: "alt";
   range: Range;
@@ -33,38 +28,35 @@ export interface CtrlNode {
 
 export interface OrNode {
   kind: "or";
-  left: KeyExpression;
-  right: KeyExpression;
+  left: KeybindNode;
+  right: KeybindNode;
   range: Range;
 }
+
+export type ModifierNode = MetaNode | AltNode | CtrlNode;
 
 export interface CombinationNode {
   kind: "combination";
-  left: KeyExpression;
-  right: KeyExpression;
+  left: ModifierNode;
+  right: KeybindNode;
   range: Range;
 }
 
-export type ModifierNode =
-  | MetaNode
-  | ShiftNode
-  | AltNode
-  | CtrlNode
-  | LeaderNode;
+export type KeybindNode = KeyNode | OrNode | CombinationNode | LeaderNode;
 
-export type KeyExpression = KeyNode | OrNode | CombinationNode | ModifierNode;
+export type KeyExpression = KeybindNode[];
 
 export class KeybindParser {
   #tokens: Token[];
-  #pos: number;
+  #tokenIndex: number;
 
   constructor(tokens: Token[]) {
     this.#tokens = tokens;
-    this.#pos = 0;
+    this.#tokenIndex = 0;
   }
 
   #peek(): Token | undefined {
-    return this.#tokens[this.#pos];
+    return this.#tokens[this.#tokenIndex];
   }
 
   #assertPeek<T extends TokenKind>(
@@ -86,7 +78,7 @@ export class KeybindParser {
 
   #assertNext<T extends TokenKind>(...expected: T[]) {
     const token = this.#assertPeek(...expected);
-    this.#pos++;
+    this.#tokenIndex++;
     return token;
   }
 
@@ -99,9 +91,10 @@ export class KeybindParser {
     return this.#assertNext("meta", "alt", "ctrl");
   }
 
-  #parseCombination(left: KeyExpression): CombinationNode {
+  #parseCombination(): CombinationNode {
+    const left = this.#parseModifier();
     this.#assertNext("plus");
-    const right = this.parseKeyExpression();
+    const right = this.#parseKeybind();
     return {
       left,
       right,
@@ -110,7 +103,7 @@ export class KeybindParser {
     };
   }
 
-  #parseLeafNode() {
+  #parseLeafNode(): KeybindNode {
     const next = this.#assertPeek(
       "meta",
       "alt",
@@ -128,15 +121,15 @@ export class KeybindParser {
       case "ctrl":
       case "meta":
       case "alt":
-        return this.#parseModifier();
+        return this.#parseCombination();
       case "open-paren":
         return this.#parseParenthesized();
     }
   }
 
-  #parseParenthesized(): KeyExpression {
+  #parseParenthesized(): KeybindNode {
     const openParen = this.#assertNext("open-paren");
-    const innerExpression = this.parseKeyExpression();
+    const innerExpression = this.#parseKeybind();
     const closeParen = this.#assertNext("closed-paren");
 
     return {
@@ -150,24 +143,16 @@ export class KeybindParser {
     return { kind, range };
   }
 
-  parseKeyExpression(): KeyExpression {
+  #parseKeybind(): KeybindNode {
     const leafExpression = this.#parseLeafNode();
 
     if (this.#isAtEnd()) {
       return leafExpression;
     }
 
-    // Only look for operators if we're not at a closing paren
-    let next = this.#peek();
-    if (next?.kind === "closed-paren") {
-      return leafExpression;
-    }
-
-    next = this.#assertPeek("plus", "pipe");
-
-    switch (next.kind) {
+    switch (this.#peek()?.kind) {
       case "plus":
-        return this.#parseCombination(leafExpression);
+        return this.#parseCombination();
       case "pipe":
         return this.#parseOr(leafExpression);
       default:
@@ -175,10 +160,25 @@ export class KeybindParser {
     }
   }
 
-  #parseOr(left: KeyExpression): OrNode {
+  parseKeyExpression(): KeyExpression {
+    const keybinds = [];
+
+    while (true) {
+      keybinds.push(this.#parseKeybind());
+
+      if (this.#isAtEnd()) {
+        break;
+      }
+      this.#assertNext("right-angle-bracket");
+    }
+
+    return keybinds;
+  }
+
+  #parseOr(left: KeybindNode): OrNode {
     const start = left.range.start;
     this.#assertNext("pipe");
-    const right = this.parseKeyExpression();
+    const right = this.#parseKeybind();
 
     return {
       kind: "or",

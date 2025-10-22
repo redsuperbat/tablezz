@@ -2,6 +2,7 @@ export type TokenKind =
   | "key"
   | "plus"
   | "pipe"
+  | "right-angle-bracket"
   | "open-paren"
   | "closed-paren"
   | "ctrl"
@@ -94,6 +95,11 @@ export class KeybindTokenizer {
       if (char === "\\") {
         this.#next();
         tokens.push(this.#keywordOrKey());
+        continue;
+      }
+
+      if (char === ">") {
+        tokens.push(this.#singleChar("right-angle-bracket"));
         continue;
       }
 

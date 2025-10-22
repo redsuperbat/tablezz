@@ -1,7 +1,9 @@
 import { expect, test } from "vitest";
 import { KeybindTokenizer } from "./KeybindTokenizer";
 
+const tokenize = (exp: string) => new KeybindTokenizer(exp).tokenize();
+
 test("KeybindTokenizer", () => {
-  const tokenizer = new KeybindTokenizer("(Enter + k) | (Meta + j)");
-  expect(tokenizer).toBeDefined();
+  const tokens = tokenize("Leader > (Enter + k) | (Meta + j)");
+  expect(tokens).toBeDefined();
 });
