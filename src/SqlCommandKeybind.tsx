@@ -13,9 +13,8 @@ export function SqlCommandKeybind() {
     actionArgs: [z.string().min(1).meta({ title: "<sql>" })],
     async action(sql) {
       try {
-        const result = await database.execute(sql);
+        await database.execute(sql);
         queryClient.invalidateQueries();
-        message.info(String(result));
       } catch (error) {
         message.error(String(error));
       }
