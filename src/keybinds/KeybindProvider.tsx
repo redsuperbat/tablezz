@@ -23,7 +23,8 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
     const keyExpression = new KeybindParser(tokens).parseKeyExpression();
 
     return keyExpression.map(
-      (a) => (e: KeyEvent) => new KeybindChecker(e, config.leaderKey).check(a),
+      (keybind) => (e: KeyEvent) =>
+        new KeybindChecker(e, config.leaderKey).check(keybind),
     );
   };
 

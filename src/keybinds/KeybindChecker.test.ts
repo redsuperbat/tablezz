@@ -37,4 +37,13 @@ describe("KeybindChecker", () => {
     });
     expect(result).toBe(true);
   });
+
+  test("Multi combination", () => {
+    const result = check({
+      expr: "Control + Meta + s",
+      event: { key: "s", ctrlKey: true, metaKey: true },
+    });
+
+    expect(result).toBe(true);
+  });
 });
