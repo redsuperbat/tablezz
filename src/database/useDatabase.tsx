@@ -56,11 +56,11 @@ export function DatabaseConnectionProvider(props: ParentProps) {
           <DatabaseConnectionContext.Provider
             value={{
               async select(query, bindValues) {
-                queryHistory?.addEntry({ query, createdAt: new Date() });
+                queryHistory.addEntry({ query, createdAt: new Date() });
                 return wrapWithError(database().select(query, bindValues));
               },
               async execute(query, bindValues) {
-                queryHistory?.addEntry({ query, createdAt: new Date() });
+                queryHistory.addEntry({ query, createdAt: new Date() });
                 await wrapWithError(database().execute(query, bindValues));
               },
             }}
