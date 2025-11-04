@@ -21,7 +21,7 @@ export function App() {
         <ConfigurationProvider>
           <KeybindProvider>
             <div
-              class="grid h-screen"
+              class="grid h-screen overflow-hidden"
               style={{ "grid-template-rows": "1fr auto" }}
             >
               <FocusInputKeybind />
