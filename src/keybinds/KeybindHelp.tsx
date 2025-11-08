@@ -1,67 +1,32 @@
-import { For, type ParentProps } from "solid-js";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { cn } from "@/lib/cn";
+import { For, Show } from "solid-js";
 import { useKeybindContext } from "./KeybindProvider";
-import { useRegisterKeybindCommandOnMount } from "./useRegisterKeybindCommand";
-import { useRegisterKeybindToggle } from "./useRegisterKeybindToggle";
-
-function Code(props: ParentProps) {
-  return (
-    <pre class="ml-auto w-fit rounded bg-gray-200 px-1">
-      <code>{props.children}</code>
-    </pre>
-  );
-}
 
 export function KeybindHelp() {
-  const toggle = useRegisterKeybindToggle({
-    keybindExpression: "? | (Control + ?)",
-    command: "KeybindHelpOpen",
-  });
-
-  useRegisterKeybindCommandOnMount({
-    keybindExpression: "Escape",
-    command: "KeybindHelpClose",
-    action() {
-      toggle.close();
-    },
-  });
-
   const binds = useKeybindContext();
 
-  const sortedBinds = () =>
-    binds.keybinds().sort((a, b) => a.command.localeCompare(b.command));
+  const potentialKeybinds = () => binds.potentialKeybinds();
 
   return (
-    <Dialog open={toggle.value()} onOpenChange={toggle.set}>
-      <DialogContent
-        aria-describedby="Keybinds"
-        onEscapeKeyDown={(e) => e.preventDefault()}
-        class="flex flex-col justify-start overflow-y-auto bg-white sm:max-w-fit"
-      >
-        <DialogHeader>
-          <DialogTitle>Keybind help</DialogTitle>
-        </DialogHeader>
-        <div class="flex flex-col gap-0.5">
-          <For each={sortedBinds()}>
-            {(key) => (
-              <div
-                class={cn("grid grid-cols-3 gap-3")}
-                style={{ "grid-template-columns": "1fr auto 1fr" }}
-              >
-                <Code>{key.keybindExpression}</Code>
-                <span>-&gt;</span>
-                <span>{key.command}</span>
-              </div>
-            )}
-          </For>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <div class="absolute right-0.5 bottom-0.5 border bg-white p-1">
+      <Show when={potentialKeybinds()}>
+        {(binds) => (
+          <table class="w-full font-mono text-sm">
+            <tbody>
+              <For each={binds()}>
+                {(bind) => (
+                  <tr class="border-zinc-800 [&:not(:last-child)]:border-b">
+                    <td class="whitespace-nowrap px-3 py-2 text-zinc-400">
+                      {bind.bind}
+                    </td>
+                    <td class="w-8 px-2 py-2 text-center text-zinc-500">→</td>
+                    <td class="px-3 py-2 text-zinc-500">{bind.command}</td>
+                  </tr>
+                )}
+              </For>
+            </tbody>
+          </table>
+        )}
+      </Show>
+    </div>
   );
 }

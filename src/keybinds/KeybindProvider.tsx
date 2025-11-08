@@ -4,34 +4,43 @@ import { useConfig } from "@/config/ConfigurationProvider";
 import { createSolidContext } from "@/createSolidContext";
 import type { Keybind } from "./Keybind";
 import { KeybindChecker, type KeyEvent } from "./KeybindChecker";
-import { KeybindParser } from "./KeybindParser";
+import { KeybindFormatter } from "./KeybindFormatter";
+import { KeybindParser, type KeyExpression } from "./KeybindParser";
 import { KeybindTokenizer } from "./KeybindTokenizer";
 
 type CheckFn = (e: KeyEvent) => boolean;
 
 interface RegisteredKeybind extends Keybind {
   check: CheckFn[];
+  ast: KeyExpression;
 }
 
 export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
   const { config } = useConfig();
   const commandsContext = useCommandsContext();
+  const formatter = new KeybindFormatter();
   const [keybinds, setKeybinds] = createSignal<RegisteredKeybind[]>([]);
+  const [potentialKeybinds, setPotentialKeybinds] =
+    createSignal<{ bind: string; command: string }[]>();
 
-  const createChecker = (hotkeyExpression: string) => {
-    const tokens = new KeybindTokenizer(hotkeyExpression).tokenize();
-    const keyExpression = new KeybindParser(tokens).parseKeyExpression();
+  const compileKeybind = (keyExpression: string) => {
+    const tokens = new KeybindTokenizer(keyExpression).tokenize();
+    const ast = new KeybindParser(tokens).parseKeyExpression();
 
-    return keyExpression.map(
+    const checker = ast.map(
       (keybind) => (e: KeyEvent) =>
         new KeybindChecker(e, config.leaderKey).check(keybind),
     );
+
+    return { checker, ast };
   };
 
   const registerKeybind = (keybind: Keybind) => {
+    const compilation = compileKeybind(keybind.keybindExpression);
     const registeredKeybind = {
       ...keybind,
-      check: createChecker(keybind.keybindExpression),
+      check: compilation.checker,
+      ast: compilation.ast,
     };
 
     setKeybinds((k) => [...k, registeredKeybind]);
@@ -58,7 +67,7 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
       // We reverse the keybind because we want to potentially trigger them
       // in the reverse order they were registered. If a keybind was registered
       // after another one it should take precedence
-      const reverseKeybinds = [...keybinds().values()].reverse();
+      const reverseKeybinds = [...keybinds()].reverse();
 
       const keybindsToCheck = reverseKeybinds.filter(
         (k) => k.check[i] !== undefined,
@@ -75,6 +84,8 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
 
       let keybindHit = false;
 
+      const potentialKeybinds: RegisteredKeybind[] = [];
+
       for (const bind of keybindsToCheck) {
         // If the target element is an input element we skip triggering
         // the keybind. Unless the keybind specifically override it
@@ -85,6 +96,7 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
 
         if (checker(e)) {
           keybindHit = true;
+          potentialKeybinds.push(bind);
 
           if (bind.check.length === i + 1) {
             e.preventDefault();
@@ -92,6 +104,7 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
             commandsContext.triggerCommand(bind.command);
             // Reset checker index if we trigger a binding
             i = 0;
+            setPotentialKeybinds(undefined);
             return;
           }
         }
@@ -100,9 +113,26 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
       // If no keybind was hit during the check we just reset again
       if (!keybindHit) {
         i = 0;
+        setPotentialKeybinds(undefined);
       } else {
         // Increment the checker index when we did not hit any keybinds
         i += 1;
+
+        // Grab the potential keybinds to show them for the
+        // user, we format the ast to grab the keybinds properly
+        const potentials = potentialKeybinds
+          .values()
+          .filter((k) => k.check[i] !== undefined)
+          .map((k) => ({ node: k.ast[i], command: k.command }))
+          .map((n) => ({
+            bind: formatter.format(n.node ? [n.node] : []),
+            command: n.command,
+          }))
+          .toArray();
+
+        if (potentials.length > 0) {
+          setPotentialKeybinds(potentials);
+        }
       }
     }
 
@@ -113,6 +143,7 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
   return {
     keybinds,
     registerKeybind,
+    potentialKeybinds,
     unregisterKeybind,
   };
 });

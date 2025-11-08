@@ -4,7 +4,6 @@ import { CommandsProvider } from "./commands/CommandsContext";
 import { ConfigurationProvider } from "./config/ConfigurationProvider";
 import { QueryHistoryProvider } from "./database/QueryHistoryProvider";
 import { DatabaseConnectionProvider } from "./database/useDatabase";
-import { FocusInputKeybind } from "./FocusInputKeybind";
 import { KeybindHelp } from "./keybinds/KeybindHelp";
 import { KeybindProvider } from "./keybinds/KeybindProvider";
 import { Picker } from "./Picker";
@@ -24,7 +23,6 @@ export function App() {
               class="grid h-screen overflow-hidden"
               style={{ "grid-template-rows": "1fr auto" }}
             >
-              <FocusInputKeybind />
               <KeybindHelp />
 
               <ConnectionCredentialsProvider>
