@@ -6,13 +6,12 @@ import {
 import { cn } from "@/lib/cn";
 import { useIntersectionScroll } from "@/lib/useIntersectionScroll";
 import type { PostgresDataType } from "@/useTableStructure";
-import { useTableEditorContext } from "./TableEditorProvider";
+import { type Cell, useTableEditorContext } from "./TableEditorProvider";
 
 function TableCellDataType(props: {
   data: unknown;
   dataType: PostgresDataType;
-  rowIndex: number;
-  columnIndex: number;
+  cell: Cell;
 }) {
   switch (props.dataType) {
     default:
@@ -23,25 +22,24 @@ function TableCellDataType(props: {
 export function TableCell(props: {
   data: unknown;
   dataType: PostgresDataType;
-  rowIndex: number;
-  columnIndex: number;
-  openedCell?: { column: number; row: number };
+  cell: Cell;
+  openedCell?: Cell;
 }) {
-  const { column, row, visualModePoint } = useTableEditorContext();
+  const { visualBlock, currentCell } = useTableEditorContext();
+
   const isActive = () => {
-    const point = visualModePoint();
-    if (point) {
+    const block = visualBlock();
+
+    if (block) {
+      return block.isIntersectingWith(props.cell);
     }
 
-    return column() === props.columnIndex && row() === props.rowIndex;
+    return currentCell().equals(props.cell);
   };
 
   const ref = useIntersectionScroll<HTMLTableCellElement>(isActive);
 
-  const isOpened = () =>
-    props.openedCell?.column === props.columnIndex &&
-    props.openedCell.row === props.rowIndex &&
-    isActive();
+  const isOpened = () => props.cell.equals(props.openedCell) && isActive();
 
   return (
     <td
@@ -54,8 +52,7 @@ export function TableCell(props: {
       <Popover placement="bottom" open={isOpened()}>
         <PopoverTrigger>
           <TableCellDataType
-            columnIndex={props.columnIndex}
-            rowIndex={props.rowIndex}
+            cell={props.cell}
             data={props.data}
             dataType={props.dataType}
           />

@@ -10,18 +10,15 @@ import { message } from "@/commands/Messages";
 import { useRegisterKeybindCommandOnMount } from "@/keybinds/useRegisterKeybindCommand";
 import type { PostgresDataType } from "@/useTableStructure";
 import { TableCell } from "./TableCell";
-import { useTableEditorContext } from "./TableEditorProvider";
+import { Cell, useTableEditorContext } from "./TableEditorProvider";
 
 export function Table(props: {
   rows: Record<string, unknown>[];
   structure: { columnName: string; dataType: PostgresDataType }[];
 }) {
   let ref: HTMLTableElement | undefined;
-  const { column, row } = useTableEditorContext();
-  const [openedCell, setOpenedCell] = createSignal<{
-    row: number;
-    column: number;
-  }>();
+  const { currentCell } = useTableEditorContext();
+  const [openedCell, setOpenedCell] = createSignal<Cell>();
 
   useRegisterKeybindCommandOnMount({
     command: "SelectionCopyToClipboard",
@@ -29,12 +26,12 @@ export function Table(props: {
     actionArgs: [
       z.coerce
         .number()
-        .default(() => column())
+        .default(() => currentCell().column)
         .meta({ title: "<column>" }),
 
       z.coerce
         .number()
-        .default(() => row())
+        .default(() => currentCell().row)
         .meta({ title: "<row>" }),
     ],
     action(column, row) {
@@ -53,16 +50,16 @@ export function Table(props: {
     actionArgs: [
       z.coerce
         .number()
-        .default(() => column())
+        .default(() => currentCell().column)
         .meta({ title: "<column>" }),
 
       z.coerce
         .number()
-        .default(() => row())
+        .default(() => currentCell().row)
         .meta({ title: "<row>" }),
     ],
     action(column, row) {
-      setOpenedCell({ column, row });
+      setOpenedCell(new Cell({ column, row }));
     },
   });
 
@@ -73,15 +70,21 @@ export function Table(props: {
       header(props) {
         return <div class="px-1">{props.header.id}</div>;
       },
-      cell: (props) => (
-        <TableCell
-          columnIndex={props.column.getIndex()}
-          openedCell={openedCell()}
-          data={props.getValue()}
-          dataType={s.dataType}
-          rowIndex={props.row.index}
-        />
-      ),
+      cell: (props) => {
+        const cell = new Cell({
+          column: props.column.getIndex(),
+          row: props.row.index,
+        });
+
+        return (
+          <TableCell
+            cell={cell}
+            openedCell={openedCell()}
+            data={props.getValue()}
+            dataType={s.dataType}
+          />
+        );
+      },
     }));
 
   const table = () =>

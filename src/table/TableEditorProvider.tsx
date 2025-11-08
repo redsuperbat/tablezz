@@ -12,22 +12,55 @@ import {
 import { createCounterWithBoundaries } from "@/lib/createCounterWithWrap";
 
 interface TableEditorContext {
-  column: Accessor<number>;
-  row: Accessor<number>;
-  visualModePoint: Accessor<Point | undefined>;
+  currentCell: Accessor<Cell>;
+  visualBlock: Accessor<VisualBlock | undefined>;
 }
 
 const TableEditorContext = createContext<TableEditorContext | null>(null);
 
-type Point = {
-  column: number;
-  row: number;
-};
+export class Cell {
+  readonly column: number;
+  readonly row: number;
+
+  constructor({ column, row }: { row: number; column: number }) {
+    this.column = column;
+    this.row = row;
+  }
+
+  equals(cell?: Cell) {
+    if (!cell) return false;
+    return cell.row === this.row && cell.column === this.column;
+  }
+}
+
+export class VisualBlock {
+  #start: Cell;
+  #current: Cell;
+
+  constructor(start: Cell, current: Cell) {
+    this.#start = start;
+    this.#current = current;
+  }
+
+  isIntersectingWith(cell: Cell): boolean {
+    const minRow = Math.min(this.#start.row, this.#current.row);
+    const maxRow = Math.max(this.#start.row, this.#current.row);
+    const minColumn = Math.min(this.#start.column, this.#current.column);
+    const maxColumn = Math.max(this.#start.column, this.#current.column);
+
+    return (
+      cell.row >= minRow &&
+      cell.row <= maxRow &&
+      cell.column >= minColumn &&
+      cell.column <= maxColumn
+    );
+  }
+}
 
 export function TableEditorProvider(props: ParentProps<{ rows: unknown[] }>) {
   const columnLength = () => Object.keys(props.rows.at(0) ?? {}).length;
   const rowLength = () => props.rows.length ?? 0;
-  const [visualModePoint, setVisualModePoint] = createSignal<Point>();
+  const [visualModeStartCell, setVisualModeStartCell] = createSignal<Cell>();
   const registerKeybindCommand = useRegisterKeybindCommand();
 
   const visibleRows = 10;
@@ -42,21 +75,32 @@ export function TableEditorProvider(props: ParentProps<{ rows: unknown[] }>) {
     min: 0,
   });
 
+  const currentCell = () =>
+    new Cell({ column: column.value(), row: row.value() });
+
+  const visualBlock = () => {
+    const start = visualModeStartCell();
+    if (!start) {
+      return;
+    }
+
+    return new VisualBlock(start, currentCell());
+  };
+
   useRegisterKeybindCommandOnMount({
     command: "VisualModeEnter",
     keybindExpression: "v",
     action() {
-      setVisualModePoint({
-        column: column.value(),
-        row: row.value(),
-      });
+      setVisualModeStartCell(
+        new Cell({ column: column.value(), row: row.value() }),
+      );
 
       const disposable = registerKeybindCommand({
         keybindExpression: "Escape",
         command: "VisualModeExit",
         action() {
           disposable.dispose();
-          setVisualModePoint(undefined);
+          setVisualModeStartCell(undefined);
         },
       });
     },
@@ -125,9 +169,8 @@ export function TableEditorProvider(props: ParentProps<{ rows: unknown[] }>) {
   return (
     <TableEditorContext.Provider
       value={{
-        row: row.value,
-        column: column.value,
-        visualModePoint,
+        currentCell,
+        visualBlock,
       }}
     >
       {props.children}
