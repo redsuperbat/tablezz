@@ -15,7 +15,7 @@ mod decode;
 
 use std::collections::HashMap;
 
-use crate::postgres::decode::to_json;
+use crate::postgres;
 
 #[derive(Default)]
 pub struct DbInstances(pub RwLock<HashMap<String, Pool<Postgres>>>);
@@ -143,7 +143,7 @@ pub async fn select(
         for (i, column) in row.columns().iter().enumerate() {
             let v = row.try_get_raw(i)?;
 
-            let v = to_json(v)?;
+            let v = postgres::decode::to_json(v)?;
 
             value.insert(column.name().to_string(), v);
         }
