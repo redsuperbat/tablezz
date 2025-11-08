@@ -7,7 +7,7 @@ import {
 import { createSignal, For } from "solid-js";
 import z from "zod";
 import { message } from "@/commands/Messages";
-import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
+import { useRegisterKeybindCommandOnMount } from "@/keybinds/useRegisterKeybindCommand";
 import type { PostgresDataType } from "@/useTableStructure";
 import { TableCell } from "./TableCell";
 import { useTableEditorContext } from "./TableEditorProvider";
@@ -23,7 +23,7 @@ export function Table(props: {
     column: number;
   }>();
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command: "SelectionCopyToClipboard",
     keybindExpression: "y",
     actionArgs: [
@@ -47,7 +47,7 @@ export function Table(props: {
     },
   });
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command: "SelectionOpen",
     keybindExpression: "K",
     actionArgs: [

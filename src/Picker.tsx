@@ -12,7 +12,7 @@ import {
 import { createWatcher } from "./commands/createWatcher";
 import { useAppForm } from "./components/form";
 import { useKeybindContext } from "./keybinds/KeybindProvider";
-import { useRegisterKeybindCommand } from "./keybinds/useRegisterKeybindCommand";
+import { useRegisterKeybindCommandOnMount } from "./keybinds/useRegisterKeybindCommand";
 import { useRegisterKeybindValue } from "./keybinds/useRegisterKeybindValue";
 import { cn } from "./lib/cn";
 import { createCounterWithWrap } from "./lib/createCounterWithWrap";
@@ -103,7 +103,7 @@ function PickerContent(props: { items: PickerItem[]; onSelect: () => void }) {
     defaultValues: { searchTerm: "" },
   }));
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command: "PickerClose",
     action: props.onSelect,
     keybindExpression: "Escape",
@@ -132,7 +132,7 @@ function PickerContent(props: { items: PickerItem[]; onSelect: () => void }) {
   // we want to reset the selected index when the search term changes
   createWatcher(searchTerm, selectedIndex.reset);
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command: "PickerSelect",
     action() {
       const item = filteredItems()[selectedIndex.value()];
@@ -144,7 +144,7 @@ function PickerContent(props: { items: PickerItem[]; onSelect: () => void }) {
     overrideInput: true,
   });
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command: "PickerSelectPrev",
     keybindExpression: "(Control + k) | ArrowUp",
     overrideInput: true,
@@ -153,7 +153,7 @@ function PickerContent(props: { items: PickerItem[]; onSelect: () => void }) {
     },
   });
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command: "PickerSelectNext",
     keybindExpression: "(Control + j) | ArrowDown",
     overrideInput: true,

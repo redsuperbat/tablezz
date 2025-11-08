@@ -8,7 +8,7 @@ import {
   Show,
   Switch,
 } from "solid-js";
-import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
+import { useRegisterKeybindCommandOnMount } from "@/keybinds/useRegisterKeybindCommand";
 import { useRegisterKeybindToggle } from "@/keybinds/useRegisterKeybindToggle";
 import { cn } from "@/lib/cn";
 import {
@@ -39,14 +39,14 @@ function AutocompleteOptions(props: {
     },
   );
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command: "CommandAutocompleteHide",
     keybindExpression: "Escape",
     action: props.onClose,
     overrideInput: true,
   });
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command: "CommandAutocompleteNext",
     keybindExpression: "Tab",
     action() {
@@ -62,7 +62,7 @@ function AutocompleteOptions(props: {
     overrideInput: true,
   });
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command: "CommandCompletePrev",
     action() {
       selectedIndex.decrement();
@@ -71,7 +71,7 @@ function AutocompleteOptions(props: {
     overrideInput: true,
   });
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command: "CommandAutocompleteAccept",
     keybindExpression: "Enter",
     action() {
@@ -160,7 +160,7 @@ function Autocomplete(props: {
   const filteredCommands = () =>
     commands().filter((c) => c.command.startsWith(props.value));
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command: "CommandComplete",
     action() {
       if (filteredCommands().length === 1) {
@@ -230,7 +230,7 @@ function CommandLineContent(props: {
   });
   const [inputValue, setInputValue] = createSignal("");
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     keybindExpression: "Escape",
     command: "CommandLineClose",
     action: props.onClose,
@@ -244,7 +244,7 @@ function CommandLineContent(props: {
     },
   });
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     keybindExpression: "ArrowDown",
     command: "CommandLineNextHistory",
     overrideInput: true,
@@ -258,7 +258,7 @@ function CommandLineContent(props: {
     },
   });
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     keybindExpression: "ArrowUp",
     command: "CommandLinePreviousHistory",
     overrideInput: true,
@@ -272,7 +272,7 @@ function CommandLineContent(props: {
     },
   });
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     keybindExpression: "Enter",
     action() {
       const command = inputValue().trim();

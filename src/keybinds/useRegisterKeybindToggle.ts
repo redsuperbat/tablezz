@@ -1,7 +1,7 @@
 import { createSignal } from "solid-js";
 import {
   type KeybindCommand,
-  useRegisterKeybindCommand,
+  useRegisterKeybindCommandOnMount,
 } from "./useRegisterKeybindCommand";
 
 export interface RegisterToggleKeybindOption
@@ -19,7 +19,7 @@ export function useRegisterKeybindToggle({
 
   const toggle = () => setShow((s) => !s);
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command,
     keybindExpression,
     overrideInput,

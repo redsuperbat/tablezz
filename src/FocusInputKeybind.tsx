@@ -1,4 +1,4 @@
-import { useRegisterKeybindCommand } from "./keybinds/useRegisterKeybindCommand";
+import { useRegisterKeybindCommandOnMount } from "./keybinds/useRegisterKeybindCommand";
 
 const elements = ["input", "textarea"] as const;
 
@@ -13,7 +13,7 @@ function onFirstFind(
 }
 
 export function FocusInputKeybind() {
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command: "InputModeExit",
     keybindExpression: "Escape",
     action() {
@@ -22,7 +22,7 @@ export function FocusInputKeybind() {
     overrideInput: true,
   });
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command: "InputModeEnter",
     keybindExpression: "i",
     action() {

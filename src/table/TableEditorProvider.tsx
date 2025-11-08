@@ -1,22 +1,30 @@
 import {
   type Accessor,
   createContext,
+  createSignal,
   type ParentProps,
   useContext,
 } from "solid-js";
-import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
+import { useRegisterKeybindCommandOnMount } from "@/keybinds/useRegisterKeybindCommand";
 import { createCounterWithBoundaries } from "@/lib/createCounterWithWrap";
 
 interface TableEditorContext {
   column: Accessor<number>;
   row: Accessor<number>;
+  visualModePoint: Accessor<Point | undefined>;
 }
 
 const TableEditorContext = createContext<TableEditorContext | null>(null);
 
+type Point = {
+  column: number;
+  row: number;
+};
+
 export function TableEditorProvider(props: ParentProps<{ rows: unknown[] }>) {
   const columnLength = () => Object.keys(props.rows.at(0) ?? {}).length;
   const rowLength = () => props.rows.length ?? 0;
+  const [visualModePoint, setVisualModePoint] = createSignal<Point>();
 
   const visibleRows = 10;
 
@@ -30,13 +38,24 @@ export function TableEditorProvider(props: ParentProps<{ rows: unknown[] }>) {
     min: 0,
   });
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
+    command: "VisualMode",
+    keybindExpression: "v",
+    action() {
+      setVisualModePoint({
+        column: column.value(),
+        row: row.value(),
+      });
+    },
+  });
+
+  useRegisterKeybindCommandOnMount({
     command: "MoveToTop",
     keybindExpression: "G",
     action: row.setToMax,
   });
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command: "MoveDownHalf",
     keybindExpression: "Control + d",
     action() {
@@ -44,7 +63,7 @@ export function TableEditorProvider(props: ParentProps<{ rows: unknown[] }>) {
     },
   });
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command: "MoveUpHalf",
     keybindExpression: "Control + u",
     action() {
@@ -52,13 +71,13 @@ export function TableEditorProvider(props: ParentProps<{ rows: unknown[] }>) {
     },
   });
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command: "MoveToBottom",
     keybindExpression: "g",
     action: row.reset,
   });
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command: "MoveCellRight",
     keybindExpression: "l",
     action() {
@@ -66,7 +85,7 @@ export function TableEditorProvider(props: ParentProps<{ rows: unknown[] }>) {
     },
   });
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command: "MoveCellLeft",
     keybindExpression: "h",
     action() {
@@ -74,7 +93,7 @@ export function TableEditorProvider(props: ParentProps<{ rows: unknown[] }>) {
     },
   });
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command: "MoveCellUp",
     keybindExpression: "k",
     action() {
@@ -82,7 +101,7 @@ export function TableEditorProvider(props: ParentProps<{ rows: unknown[] }>) {
     },
   });
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command: "MoveCellDown",
     keybindExpression: "j",
     action() {
@@ -92,7 +111,11 @@ export function TableEditorProvider(props: ParentProps<{ rows: unknown[] }>) {
 
   return (
     <TableEditorContext.Provider
-      value={{ row: row.value, column: column.value }}
+      value={{
+        row: row.value,
+        column: column.value,
+        visualModePoint,
+      }}
     >
       {props.children}
     </TableEditorContext.Provider>
@@ -101,8 +124,10 @@ export function TableEditorProvider(props: ParentProps<{ rows: unknown[] }>) {
 
 export function useTableEditorContext() {
   const ctx = useContext(TableEditorContext);
+
   if (!ctx) {
-    throw new Error("no context found");
+    throw new Error("No table editor context found");
   }
+
   return ctx;
 }

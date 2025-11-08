@@ -3,7 +3,7 @@ import type { ZodType } from "zod";
 import type { InferParsedSchemas } from "@/commands/Command";
 import {
   type KeybindCommand,
-  useRegisterKeybindCommand,
+  useRegisterKeybindCommandOnMount,
 } from "./useRegisterKeybindCommand";
 
 export interface RegisterKeybindValueOptions<T extends ZodType[]>
@@ -14,7 +14,7 @@ export function useRegisterKeybindValue<const T extends ZodType[]>(
 ) {
   const [value, setValue] = createSignal<InferParsedSchemas<T>>();
 
-  useRegisterKeybindCommand({
+  useRegisterKeybindCommandOnMount({
     command: options.command,
     actionArgs: options.actionArgs,
     keybindExpression: options.keybindExpression,

@@ -9,7 +9,7 @@ export interface KeybindCommand<T extends ZodType[] = []>
   extends Omit<Command<T>, "name">,
     Keybind {}
 
-export function useRegisterKeybindCommand<const T extends ZodType[]>(
+export function useRegisterKeybindCommandOnMount<const T extends ZodType[]>(
   keybindCommand: KeybindCommand<T>,
 ) {
   const keybindContext = useKeybindContext();

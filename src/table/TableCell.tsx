@@ -27,10 +27,17 @@ export function TableCell(props: {
   columnIndex: number;
   openedCell?: { column: number; row: number };
 }) {
-  const { column, row } = useTableEditorContext();
-  const isActive = () =>
-    column() === props.columnIndex && row() === props.rowIndex;
+  const { column, row, visualModePoint } = useTableEditorContext();
+  const isActive = () => {
+    const point = visualModePoint();
+    if (point) {
+    }
+
+    return column() === props.columnIndex && row() === props.rowIndex;
+  };
+
   const ref = useIntersectionScroll<HTMLTableCellElement>(isActive);
+
   const isOpened = () =>
     props.openedCell?.column === props.columnIndex &&
     props.openedCell.row === props.rowIndex &&
@@ -41,13 +48,7 @@ export function TableCell(props: {
       ref={ref}
       class={cn(
         "border border-gray-300 px-2 py-2 text-sm",
-        column() === props.columnIndex &&
-          row() === props.rowIndex + 1 &&
-          "border-b-red-300",
-        row() === props.rowIndex &&
-          column() === props.columnIndex + 1 &&
-          "border-r-red-300",
-        isActive() && "border-red-300 bg-red-200",
+        isActive() && "bg-red-200",
       )}
     >
       <Popover placement="bottom" open={isOpened()}>
