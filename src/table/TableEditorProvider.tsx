@@ -5,6 +5,7 @@ import {
   type ParentProps,
   useContext,
 } from "solid-js";
+import z from "zod";
 import {
   useRegisterKeybindCommand,
   useRegisterKeybindCommandOnMount,
@@ -141,32 +142,36 @@ export function TableEditorProvider(props: ParentProps<{ rows: unknown[] }>) {
   useRegisterKeybindCommandOnMount({
     command: "MoveCellRight",
     keybindExpression: "l",
-    action() {
-      column.increment();
+    actionArgs: [z.coerce.number().optional().meta({ title: "<distance>" })],
+    action(distance) {
+      column.increment(distance);
     },
   });
 
   useRegisterKeybindCommandOnMount({
     command: "MoveCellLeft",
     keybindExpression: "h",
-    action() {
-      column.decrement();
+    actionArgs: [z.coerce.number().optional().meta({ title: "<distance>" })],
+    action(distance) {
+      column.decrement(distance);
     },
   });
 
   useRegisterKeybindCommandOnMount({
     command: "MoveCellUp",
     keybindExpression: "k",
-    action() {
-      row.decrement();
+    actionArgs: [z.coerce.number().optional().meta({ title: "<distance>" })],
+    action(distance) {
+      row.decrement(distance);
     },
   });
 
   useRegisterKeybindCommandOnMount({
     command: "MoveCellDown",
     keybindExpression: "j",
-    action() {
-      row.increment();
+    actionArgs: [z.coerce.number().optional().meta({ title: "<distance>" })],
+    action(distance) {
+      row.increment(distance);
     },
   });
 

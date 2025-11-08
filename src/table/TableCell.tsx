@@ -35,7 +35,7 @@ export function TableCell(props: {
   };
   const isVisualStart = () => visualBlock()?.start.equals(props.cell);
 
-  const ref = useIntersectionScroll<HTMLTableCellElement>(isActive);
+  const ref = useIntersectionScroll<HTMLTableCellElement>(isCurrent);
 
   const isOpened = () => props.cell.equals(props.openedCell) && isActive();
 
