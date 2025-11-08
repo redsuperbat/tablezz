@@ -42,6 +42,10 @@ export class VisualBlock {
     this.#current = current;
   }
 
+  get start() {
+    return this.#start;
+  }
+
   isIntersectingWith(cell: Cell): boolean {
     const minRow = Math.min(this.#start.row, this.#current.row);
     const maxRow = Math.max(this.#start.row, this.#current.row);

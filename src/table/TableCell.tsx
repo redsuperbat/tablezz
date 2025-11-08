@@ -27,15 +27,13 @@ export function TableCell(props: {
 }) {
   const { visualBlock, currentCell } = useTableEditorContext();
 
+  const isCurrent = () => currentCell().equals(props.cell);
+
   const isActive = () => {
     const block = visualBlock();
-
-    if (block) {
-      return block.isIntersectingWith(props.cell);
-    }
-
-    return currentCell().equals(props.cell);
+    return !!block?.isIntersectingWith(props.cell);
   };
+  const isVisualStart = () => visualBlock()?.start.equals(props.cell);
 
   const ref = useIntersectionScroll<HTMLTableCellElement>(isActive);
 
@@ -47,6 +45,8 @@ export function TableCell(props: {
       class={cn(
         "border border-gray-300 px-2 py-2 text-sm",
         isActive() && "bg-red-200",
+        isCurrent() && "bg-red-300",
+        isVisualStart() && "bg-red-100",
       )}
     >
       <Popover placement="bottom" open={isOpened()}>
