@@ -14,7 +14,7 @@ export class KeybindFormatter {
       .map((node) => {
         return this.#formatKeybind(node);
       })
-      .join(">");
+      .join(" > ");
   }
 
   #formatKeybind(node: KeybindNode): string {

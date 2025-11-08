@@ -24,19 +24,12 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
     createSignal<{ bind: string; command: string }[]>();
 
   function showAllPotentialKeybinds() {
-    // Grab the potential keybinds to show them for the
-    // user, we format the ast to grab the keybinds properly
-    const potentials = keybinds()
-      .values()
-      .filter((k) => k.check[0] !== undefined)
-      .map((k) => ({ node: k.ast[0], command: k.command }))
-      .map((n) => ({
-        bind: formatter.format(n.node ? [n.node] : []),
-        command: n.command,
-      }))
-      .toArray();
+    const potentialKeybinds = keybinds().map((k) => ({
+      bind: formatter.format(k.ast),
+      command: k.command,
+    }));
 
-    setPotentialKeybinds(potentials);
+    setPotentialKeybinds(potentialKeybinds);
   }
 
   function clearPotentialKeybinds() {
@@ -82,19 +75,30 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
 
   onMount(() => {
     let i = 0;
+    let potentialKeybinds: RegisteredKeybind[] | undefined;
+
+    function reset() {
+      i = 0;
+      potentialKeybinds = undefined;
+      clearPotentialKeybinds();
+    }
 
     function checkAndTrigger(e: KeyboardEvent) {
       // We reverse the keybind because we want to potentially trigger them
       // in the reverse order they were registered. If a keybind was registered
       // after another one it should take precedence
-      const reverseKeybinds = [...keybinds()].reverse();
+      if (!potentialKeybinds) {
+        potentialKeybinds = [...keybinds()].reverse();
+      }
+
+      const reverseKeybinds = potentialKeybinds.slice();
 
       const keybindsToCheck = reverseKeybinds.filter(
         (k) => k.check[i] !== undefined,
       );
 
       if (!keybindsToCheck.length) {
-        i = 0;
+        reset();
         return;
       }
 
@@ -103,8 +107,7 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
         e.target instanceof HTMLTextAreaElement;
 
       let keybindHit = false;
-
-      const potentialKeybinds: RegisteredKeybind[] = [];
+      const newPotentialKeybinds: RegisteredKeybind[] = [];
 
       for (const bind of keybindsToCheck) {
         // If the target element is an input element we skip triggering
@@ -116,19 +119,17 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
 
         if (checker(e)) {
           keybindHit = true;
-          potentialKeybinds.push(bind);
+          newPotentialKeybinds.push(bind);
 
           if (bind.check.length === i + 1) {
             // Clear potential keybinds before triggering command
-            clearPotentialKeybinds();
+            reset();
 
             e.preventDefault();
             e.stopPropagation();
 
             commandsContext.triggerCommand(bind.command);
 
-            // Reset checker index if we trigger a binding
-            i = 0;
             return;
           }
         }
@@ -136,15 +137,15 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
 
       // If no keybind was hit during the check we just reset again
       if (!keybindHit) {
-        i = 0;
-        clearPotentialKeybinds();
+        reset();
       } else {
         // Increment the checker index when we did not hit any keybinds
         i += 1;
 
+        potentialKeybinds = newPotentialKeybinds;
         // Grab the potential keybinds to show them for the
         // user, we format the ast to grab the keybinds properly
-        const potentials = potentialKeybinds
+        const potentials = newPotentialKeybinds
           .values()
           .filter((k) => k.check[i] !== undefined)
           .map((k) => ({ node: k.ast[i], command: k.command }))

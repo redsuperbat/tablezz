@@ -265,21 +265,6 @@ function CommandLineContent(props: {
     action() {
       historyIndex.increment();
 
-      const currentInputValue = inputValue();
-
-      if (currentInputValue) {
-        const history = props
-          .commandHistory()
-          .find((v) => v.includes(currentInputValue));
-
-        if (!history) {
-          return;
-        }
-
-        setInputValue(history);
-        return;
-      }
-
       const history = props.commandHistory().at(historyIndex.value());
       if (!history) return;
 
