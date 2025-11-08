@@ -1,20 +1,24 @@
-use serde::{ser::Serializer, Serialize};
+use indexmap::IndexMap;
+use serde::Serialize;
+use serde::Serializer;
 use serde_json::Value as JsonValue;
-use sqlx::migrate::MigrateDatabase;
-use sqlx::{migrate::MigrationType, Column, Pool, Row};
+use sqlx::Executor;
+use sqlx::Pool;
+use sqlx::{Column, Postgres, Row};
+use tauri::Manager;
 use tauri::{
-    command,
-    plugin::{Builder as PluginBuilder, TauriPlugin},
-    AppHandle, Manager, RunEvent, Runtime, State,
+    command, plugin::Builder as PluginBuilder, plugin::TauriPlugin, RunEvent, Runtime, State,
 };
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
-use std::collections::HashMap;
 mod decode;
 
-type Db = sqlx::postgres::Postgres;
+use std::collections::HashMap;
 
-type LastInsertId = u64;
+use crate::postgres::decode::to_json;
+
+#[derive(Default)]
+pub struct DbInstances(pub RwLock<HashMap<String, Pool<Postgres>>>);
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -22,6 +26,8 @@ pub enum Error {
     Sql(#[from] sqlx::Error),
     #[error(transparent)]
     Migration(#[from] sqlx::migrate::MigrateError),
+    #[error("invalid connection url: {0}")]
+    InvalidDbUrl(String),
     #[error("database {0} not loaded")]
     DatabaseNotLoaded(String),
     #[error("unsupported datatype: {0}")]
@@ -37,49 +43,37 @@ impl Serialize for Error {
     }
 }
 
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Default)]
-struct DbInstances(Mutex<HashMap<String, Pool<Db>>>);
-
-#[derive(Debug)]
-pub enum MigrationKind {
-    Up,
-    Down,
-}
-
-impl From<MigrationKind> for MigrationType {
-    fn from(kind: MigrationKind) -> Self {
-        match kind {
-            MigrationKind::Up => Self::ReversibleUp,
-            MigrationKind::Down => Self::ReversibleDown,
-        }
-    }
+#[derive(Serialize)]
+pub enum LastInsertId {
+    Postgres(()),
+    None,
 }
 
 #[command]
-async fn load<R: Runtime>(
-    #[allow(unused_variables)] app: AppHandle<R>,
+pub async fn load(
     db_instances: State<'_, DbInstances>,
-    db: String,
-) -> Result<String> {
-    let fqdb = db.clone();
+    database_url: String,
+) -> Result<String, Error> {
+    let pool = Pool::connect(&database_url).await?;
 
-    if !Db::database_exists(&fqdb).await.unwrap_or(false) {
-        Db::create_database(&fqdb).await?;
-    }
-    let pool = Pool::connect(&fqdb).await?;
+    db_instances
+        .0
+        .write()
+        .await
+        .insert(database_url.clone(), pool);
 
-    db_instances.0.lock().await.insert(db.clone(), pool);
-    Ok(db)
+    Ok(database_url)
 }
 
 /// Allows the database connection(s) to be closed; if no database
 /// name is passed in then _all_ database connection pools will be
 /// shut down.
 #[command]
-async fn close(db_instances: State<'_, DbInstances>, db: Option<String>) -> Result<bool> {
-    let mut instances = db_instances.0.lock().await;
+pub async fn close(
+    db_instances: State<'_, DbInstances>,
+    db: Option<String>,
+) -> Result<bool, Error> {
+    let instances = db_instances.0.read().await;
 
     let pools = if let Some(db) = db {
         vec![db]
@@ -88,9 +82,7 @@ async fn close(db_instances: State<'_, DbInstances>, db: Option<String>) -> Resu
     };
 
     for pool in pools {
-        let db = instances
-            .get_mut(&pool) //
-            .ok_or(Error::DatabaseNotLoaded(pool))?;
+        let db = instances.get(&pool).ok_or(Error::DatabaseNotLoaded(pool))?;
         db.close().await;
     }
 
@@ -99,57 +91,67 @@ async fn close(db_instances: State<'_, DbInstances>, db: Option<String>) -> Resu
 
 /// Execute a command against the database
 #[command]
-async fn execute(
+pub async fn execute(
     db_instances: State<'_, DbInstances>,
     db: String,
     query: String,
     values: Vec<JsonValue>,
-) -> Result<(u64, LastInsertId)> {
-    let mut instances = db_instances.0.lock().await;
+) -> Result<(u64, LastInsertId), Error> {
+    let instances = db_instances.0.read().await;
 
-    let db = instances.get_mut(&db).ok_or(Error::DatabaseNotLoaded(db))?;
+    let pool = instances.get(&db).ok_or(Error::DatabaseNotLoaded(db))?;
     let mut query = sqlx::query(&query);
+
     for value in values {
         if value.is_null() {
             query = query.bind(None::<JsonValue>);
         } else if value.is_string() {
             query = query.bind(value.as_str().unwrap().to_owned())
+        } else if let Some(number) = value.as_number() {
+            query = query.bind(number.as_f64().unwrap_or_default())
         } else {
             query = query.bind(value);
         }
     }
-    let result = query.execute(&*db).await?;
-    let r = Ok((result.rows_affected(), 0));
-    r
+
+    let result = pool.execute(query).await?;
+    Ok((result.rows_affected(), LastInsertId::Postgres(())))
 }
 
 #[command]
-async fn select(
+pub async fn select(
     db_instances: State<'_, DbInstances>,
     db: String,
     query: String,
     values: Vec<JsonValue>,
-) -> Result<Vec<HashMap<String, JsonValue>>> {
-    let mut instances = db_instances.0.lock().await;
-    let db = instances.get_mut(&db).ok_or(Error::DatabaseNotLoaded(db))?;
+) -> Result<Vec<IndexMap<String, JsonValue>>, Error> {
+    let instances = db_instances.0.read().await;
+
+    let pool = instances.get(&db).ok_or(Error::DatabaseNotLoaded(db))?;
+
     let mut query = sqlx::query(&query);
+
     for value in values {
         if value.is_null() {
             query = query.bind(None::<JsonValue>);
         } else if value.is_string() {
             query = query.bind(value.as_str().unwrap().to_owned())
+        } else if let Some(number) = value.as_number() {
+            query = query.bind(number.as_f64().unwrap_or_default())
         } else {
             query = query.bind(value);
         }
     }
-    let rows = query.fetch_all(&*db).await?;
+
+    let rows = pool.fetch_all(query).await?;
     let mut values = Vec::new();
+
     for row in rows {
-        let mut value = HashMap::default();
+        let mut value = IndexMap::default();
         for (i, column) in row.columns().iter().enumerate() {
             let v = row.try_get_raw(i)?;
 
-            let v = decode::to_json(v)?;
+            let v = to_json(v)?;
 
             value.insert(column.name().to_string(), v);
         }
@@ -170,11 +172,16 @@ impl Builder {
     pub fn build<R: Runtime>(self) -> TauriPlugin<R> {
         PluginBuilder::new("sql")
             .invoke_handler(tauri::generate_handler![load, execute, select, close])
+            .setup(|app, _| {
+                let instances = DbInstances::default();
+                app.manage(instances);
+                Ok(())
+            })
             .on_event(|app, event| {
                 if let RunEvent::Exit = event {
                     tauri::async_runtime::block_on(async move {
                         let instances = &*app.state::<DbInstances>();
-                        let instances = instances.0.lock().await;
+                        let instances = instances.0.read().await;
                         for value in instances.values() {
                             value.close().await;
                         }
