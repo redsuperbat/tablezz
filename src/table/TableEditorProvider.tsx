@@ -19,10 +19,12 @@ export function TableEditorProvider(props: ParentProps<{ rows: unknown[] }>) {
   const rowLength = () => props.rows.length ?? 0;
 
   const visibleRows = 10;
+
   const row = createCounterWithBoundaries({
     max: () => rowLength() - 1,
     min: 0,
   });
+
   const column = createCounterWithBoundaries({
     max: () => columnLength() - 1,
     min: 0,
@@ -31,7 +33,7 @@ export function TableEditorProvider(props: ParentProps<{ rows: unknown[] }>) {
   useRegisterKeybindCommand({
     command: "MoveToTop",
     keybindExpression: "G",
-    action: row.maximum,
+    action: row.setToMax,
   });
 
   useRegisterKeybindCommand({

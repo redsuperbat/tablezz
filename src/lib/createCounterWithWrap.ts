@@ -21,9 +21,9 @@ export function createCounterWithWrap(max: Accessor<number>) {
 
   const reset = () => setValue(0);
 
-  const maximum = () => setValue(max());
+  const setToMax = () => setValue(max());
 
-  return { increment, decrement, value, reset, maximum };
+  return { increment, decrement, value, reset, setToMax };
 }
 
 export function createCounterWithBoundaries({
@@ -46,7 +46,7 @@ export function createCounterWithBoundaries({
 
   const reset = () => setValue(initial);
 
-  const maximum = () => setValue(max());
+  const setToMax = () => setValue(max());
 
-  return { increment, decrement, value, reset, maximum };
+  return { increment, decrement, value, reset, setToMax };
 }
