@@ -1,3 +1,4 @@
+mod postgres;
 mod pty;
 
 use std::sync::{Arc, Mutex};
@@ -6,7 +7,7 @@ use std::sync::{Arc, Mutex};
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_sql::Builder::new().build())
+        .plugin(postgres::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .manage(Arc::new(Mutex::new(None::<pty::PtyState>)))
         .invoke_handler(tauri::generate_handler![
