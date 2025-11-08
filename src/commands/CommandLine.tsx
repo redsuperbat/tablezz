@@ -245,7 +245,7 @@ function CommandLineContent(props: {
   });
 
   useRegisterKeybindCommandOnMount({
-    keybindExpression: "ArrowDown",
+    keybindExpression: "ArrowDown | Control + j",
     command: "CommandLineNextHistory",
     overrideInput: true,
     action() {
@@ -259,11 +259,26 @@ function CommandLineContent(props: {
   });
 
   useRegisterKeybindCommandOnMount({
-    keybindExpression: "ArrowUp",
+    keybindExpression: "ArrowUp | Control + k",
     command: "CommandLinePreviousHistory",
     overrideInput: true,
     action() {
       historyIndex.increment();
+
+      const currentInputValue = inputValue();
+
+      if (currentInputValue) {
+        const history = props
+          .commandHistory()
+          .find((v) => v.includes(currentInputValue));
+
+        if (!history) {
+          return;
+        }
+
+        setInputValue(history);
+        return;
+      }
 
       const history = props.commandHistory().at(historyIndex.value());
       if (!history) return;
