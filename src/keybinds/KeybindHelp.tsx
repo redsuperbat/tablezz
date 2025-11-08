@@ -1,15 +1,41 @@
 import { For, Show } from "solid-js";
 import { useKeybindContext } from "./KeybindProvider";
+import {
+  useRegisterKeybindCommand,
+  useRegisterKeybindCommandOnMount,
+} from "./useRegisterKeybindCommand";
 
 export function KeybindHelp() {
-  const binds = useKeybindContext();
+  const keybindContext = useKeybindContext();
+  const registerKeybindCommand = useRegisterKeybindCommand();
 
-  const potentialKeybinds = () => binds.potentialKeybinds();
+  useRegisterKeybindCommandOnMount({
+    command: "KeybindHelpShow",
+    keybindExpression: "?",
+    overrideInput: true,
+    action() {
+      const disposable = registerKeybindCommand({
+        command: "KeybindHelpClose",
+        keybindExpression: "Escape",
+        action() {
+          keybindContext.clearPotentialKeybinds();
+          disposable.dispose();
+        },
+      });
+
+      keybindContext.showAllPotentialKeybinds();
+    },
+  });
+
+  const potentialKeybinds = () =>
+    keybindContext
+      .potentialKeybinds()
+      ?.sort((a, b) => a.command.localeCompare(b.command));
 
   return (
-    <div class="absolute right-0.5 bottom-0.5 border bg-white p-1">
-      <Show when={potentialKeybinds()}>
-        {(binds) => (
+    <Show when={potentialKeybinds()}>
+      {(binds) => (
+        <div class="absolute right-0.5 bottom-0.5 border bg-white p-1">
           <table class="w-full font-mono text-sm">
             <tbody>
               <For each={binds()}>
@@ -25,8 +51,8 @@ export function KeybindHelp() {
               </For>
             </tbody>
           </table>
-        )}
-      </Show>
-    </div>
+        </div>
+      )}
+    </Show>
   );
 }

@@ -23,6 +23,26 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
   const [potentialKeybinds, setPotentialKeybinds] =
     createSignal<{ bind: string; command: string }[]>();
 
+  function showAllPotentialKeybinds() {
+    // Grab the potential keybinds to show them for the
+    // user, we format the ast to grab the keybinds properly
+    const potentials = keybinds()
+      .values()
+      .filter((k) => k.check[0] !== undefined)
+      .map((k) => ({ node: k.ast[0], command: k.command }))
+      .map((n) => ({
+        bind: formatter.format(n.node ? [n.node] : []),
+        command: n.command,
+      }))
+      .toArray();
+
+    setPotentialKeybinds(potentials);
+  }
+
+  function clearPotentialKeybinds() {
+    setPotentialKeybinds(undefined);
+  }
+
   const compileKeybind = (keyExpression: string) => {
     const tokens = new KeybindTokenizer(keyExpression).tokenize();
     const ast = new KeybindParser(tokens).parseKeyExpression();
@@ -99,12 +119,16 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
           potentialKeybinds.push(bind);
 
           if (bind.check.length === i + 1) {
+            // Clear potential keybinds before triggering command
+            clearPotentialKeybinds();
+
             e.preventDefault();
             e.stopPropagation();
+
             commandsContext.triggerCommand(bind.command);
+
             // Reset checker index if we trigger a binding
             i = 0;
-            setPotentialKeybinds(undefined);
             return;
           }
         }
@@ -113,7 +137,7 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
       // If no keybind was hit during the check we just reset again
       if (!keybindHit) {
         i = 0;
-        setPotentialKeybinds(undefined);
+        clearPotentialKeybinds();
       } else {
         // Increment the checker index when we did not hit any keybinds
         i += 1;
@@ -145,5 +169,7 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
     registerKeybind,
     potentialKeybinds,
     unregisterKeybind,
+    showAllPotentialKeybinds,
+    clearPotentialKeybinds,
   };
 });
