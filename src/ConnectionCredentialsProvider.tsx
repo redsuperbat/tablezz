@@ -7,7 +7,7 @@ import {
   Switch,
 } from "solid-js";
 import { z } from "zod";
-import { useRegisterCommand } from "./commands/useRegisterCommand";
+import { useRegisterCommandOnMount } from "./commands/useRegisterCommand";
 import { createSolidContext } from "./createSolidContext";
 
 export const [RootConnectionCredentialsProvider, , useConnectionCredentials] =
@@ -39,7 +39,7 @@ export function ConnectionCredentialsProvider(props: ParentProps) {
     { name: "databaseurl" },
   );
 
-  useRegisterCommand({
+  useRegisterCommandOnMount({
     command: "DatabaseUrlAdd",
     actionArgs: [z.url().meta({ title: "<url>" })],
     action(url) {
@@ -47,7 +47,7 @@ export function ConnectionCredentialsProvider(props: ParentProps) {
     },
   });
 
-  useRegisterCommand({
+  useRegisterCommandOnMount({
     command: "DatabaseUrlClear",
     action() {
       setDatabaseUrlRaw(undefined);

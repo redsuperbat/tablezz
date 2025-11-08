@@ -2,16 +2,13 @@ import { onCleanup, onMount } from "solid-js";
 import type { ZodType } from "zod";
 import type { Command } from "@/commands/Command";
 import { useCommandsContext } from "@/commands/CommandsContext";
+import type { Disposable } from "./Disposable";
 import type { Keybind } from "./Keybind";
 import { useKeybindContext } from "./KeybindProvider";
 
 export interface KeybindCommand<T extends ZodType[] = []>
   extends Omit<Command<T>, "name">,
     Keybind {}
-
-interface Disposable {
-  dispose(): void;
-}
 
 export function useRegisterKeybindCommand() {
   const keybindContext = useKeybindContext();

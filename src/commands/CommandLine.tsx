@@ -20,7 +20,7 @@ import type { Command } from "./Command";
 import { useCommandsContext } from "./CommandsContext";
 import { createWatcher } from "./createWatcher";
 import { Messages, message } from "./Messages";
-import { useRegisterCommand } from "./useRegisterCommand";
+import { useRegisterCommandOnMount } from "./useRegisterCommand";
 
 function AutocompleteOptions(props: {
   filteredCommands: Command[];
@@ -237,7 +237,7 @@ function CommandLineContent(props: {
     overrideInput: true,
   });
 
-  useRegisterCommand({
+  useRegisterCommandOnMount({
     command: "CommandLineClearHistory",
     action() {
       props.setCommandHistory([]);
