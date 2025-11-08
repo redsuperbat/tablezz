@@ -2,6 +2,7 @@ import {
   type Accessor,
   createContext,
   createSignal,
+  type JSXElement,
   type ParentProps,
   useContext,
 } from "solid-js";
@@ -15,8 +16,8 @@ interface CommandsContext {
   unregisterCommand(command: string): void;
   triggerCommand(commandExpression: string): void;
   allCommands(): Command[];
-  addCommandLineSuffix(suffix: string): void;
-  commandLineSuffix: Accessor<string | undefined>;
+  addCommandLineSuffix(suffix: JSXElement): void;
+  commandLineSuffix: Accessor<JSXElement>;
 }
 
 const CommandsContext = createContext<CommandsContext | null>(null);
@@ -33,7 +34,7 @@ export function useCommandsContext() {
 
 export function CommandsProvider(props: ParentProps) {
   const [commands, setCommands] = createSignal(new Map<string, Command>());
-  const [suffix, setSuffix] = createSignal<string>();
+  const [suffix, setSuffix] = createSignal<JSXElement>();
 
   function unregisterCommand(command: string) {
     return setCommands((prev) => {

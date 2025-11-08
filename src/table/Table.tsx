@@ -6,8 +6,6 @@ import {
 } from "@tanstack/solid-table";
 import { createSignal, For } from "solid-js";
 import z from "zod";
-import { useCommandsContext } from "@/commands/CommandsContext";
-import { createWatcher } from "@/commands/createWatcher";
 import { message } from "@/commands/Messages";
 import { useRegisterKeybindCommand } from "@/keybinds/useRegisterKeybindCommand";
 import type { PostgresDataType } from "@/useTableStructure";
@@ -24,12 +22,6 @@ export function Table(props: {
     row: number;
     column: number;
   }>();
-  const commandContext = useCommandsContext();
-
-  createWatcher(
-    () => props.rows,
-    ({ next }) => commandContext.addCommandLineSuffix(`Rows: ${next.length}`),
-  );
 
   useRegisterKeybindCommand({
     command: "SelectionCopyToClipboard",

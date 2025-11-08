@@ -39,11 +39,14 @@ export function createCounterWithBoundaries({
 
   const [value, setValue] = createSignal(initial);
 
-  const increment = () => setValue((v) => Math.min(v + 1, max()));
+  const increment = (offset = 1) =>
+    setValue((v) => Math.min(v + offset, max()));
 
-  const decrement = () => setValue((v) => Math.max(v - 1, min));
+  const decrement = (offset = 1) => setValue((v) => Math.max(v - offset, min));
 
   const reset = () => setValue(initial);
 
-  return { increment, decrement, value, reset };
+  const maximum = () => setValue(max());
+
+  return { increment, decrement, value, reset, maximum };
 }

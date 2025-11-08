@@ -1,14 +1,18 @@
 import { Match, Show, Switch } from "solid-js";
+import { useCommandsContext } from "./commands/CommandsContext";
+import { createWatcher } from "./commands/createWatcher";
 import { QueryHistory } from "./database/QueryHistoryProvider";
 import { useRegisterKeybindToggle } from "./keybinds/useRegisterKeybindToggle";
 import { useSelectedTableContext } from "./SelectedTableProvider";
 import { Table } from "./table/Table";
 import { TableEditorProvider } from "./table/TableEditorProvider";
+import { useTableCount } from "./useTableCount";
 import { useTableRows } from "./useTableRows";
 import { useTableStructure } from "./useTableStructure";
 
 export function TablePage() {
   const { selectedTable } = useSelectedTableContext();
+  const commandContext = useCommandsContext();
 
   const showQueryHistory = useRegisterKeybindToggle({
     command: "ToggleQueryHistory",
@@ -23,7 +27,16 @@ export function TablePage() {
       .join(" ");
 
   const rows = useTableRows(selectedTable);
+  const count = useTableCount(selectedTable);
   const structure = useTableStructure(selectedTable);
+
+  createWatcher(count, ({ next }) =>
+    commandContext.addCommandLineSuffix(
+      <div>
+        {rows.data?.length}/{next} rows
+      </div>,
+    ),
+  );
 
   return (
     <div
