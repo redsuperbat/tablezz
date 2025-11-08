@@ -35,7 +35,7 @@ export function KeybindHelp() {
   return (
     <Show when={potentialKeybinds()}>
       {(binds) => (
-        <div class="absolute right-0.5 bottom-0.5 border bg-white p-1">
+        <div class="absolute right-0.5 bottom-0.5 z-50 border bg-white p-1">
           <table class="w-full font-mono text-sm">
             <tbody>
               <For each={binds()}>
