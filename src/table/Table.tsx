@@ -6,6 +6,7 @@ import {
 } from "@tanstack/solid-table";
 import { createSignal, For } from "solid-js";
 import z from "zod";
+import { useCommandsContext } from "@/commands/CommandsContext";
 import { message } from "@/commands/Messages";
 import { useRegisterKeybindCommandOnMount } from "@/keybinds/useRegisterKeybindCommand";
 import type { PostgresDataType } from "@/useTableStructure";
@@ -17,7 +18,8 @@ export function Table(props: {
   structure: { columnName: string; dataType: PostgresDataType }[];
 }) {
   let ref: HTMLTableElement | undefined;
-  const { currentCell } = useTableEditorContext();
+  const { currentCell, visualBlock } = useTableEditorContext();
+  const commandsContext = useCommandsContext();
   const [openedCell, setOpenedCell] = createSignal<Cell>();
 
   useRegisterKeybindCommandOnMount({
@@ -35,6 +37,41 @@ export function Table(props: {
         .meta({ title: "<row>" }),
     ],
     action(column, row) {
+      const block = visualBlock();
+
+      if (block) {
+        const cells = props.rows.flatMap((r, rowIndex) =>
+          Object.values(r).map((v, columnIndex) => ({
+            cell: new Cell({ column: columnIndex, row: rowIndex }),
+            value: v,
+          })),
+        );
+
+        const intersectingCells = cells.filter(({ cell }) =>
+          block.isIntersectingWith(cell),
+        );
+
+        const cellsByRow = Map.groupBy(intersectingCells, (c) => c.cell.row);
+
+        const sortedRows = Array.from(cellsByRow.entries()).sort(
+          ([rowA], [rowB]) => rowA - rowB,
+        );
+
+        const values = sortedRows
+          .map(([_, rowCells]) => {
+            return rowCells
+              .sort((a, b) => a.cell.column - b.cell.column)
+              .map((c) => String(c.value))
+              .join("\t");
+          })
+          .join("\n");
+
+        navigator.clipboard.writeText(values);
+        message.info("Copied to clipboard");
+        commandsContext.triggerCommand("VisualModeExit");
+        return;
+      }
+
       const key = props.structure.at(column)?.columnName;
       if (!key) return;
       const data = props.rows.at(row)?.[key];
