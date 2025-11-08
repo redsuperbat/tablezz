@@ -46,23 +46,15 @@ impl Serialize for Error {
 #[derive(Serialize)]
 pub enum LastInsertId {
     Postgres(()),
-    None,
 }
 
 #[command]
-pub async fn load(
-    db_instances: State<'_, DbInstances>,
-    database_url: String,
-) -> Result<String, Error> {
-    let pool = Pool::connect(&database_url).await?;
+pub async fn load(db_instances: State<'_, DbInstances>, db: String) -> Result<String, Error> {
+    let pool = Pool::connect(&db).await?;
 
-    db_instances
-        .0
-        .write()
-        .await
-        .insert(database_url.clone(), pool);
+    db_instances.0.write().await.insert(db.clone(), pool);
 
-    Ok(database_url)
+    Ok(db)
 }
 
 /// Allows the database connection(s) to be closed; if no database
