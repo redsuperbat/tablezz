@@ -1,31 +1,59 @@
-export function parseCommand(input: string) {
-  const parts: string[] = [];
-  let current = "";
-  let inQuotes = false;
-  let i = 0;
+class CommandParser {
+  #index = 0;
+  #input: string;
+  #parts: string[] = [];
+  #current = "";
+  #inQuotes?: string;
+  #escapeNext = false;
 
-  while (i < input.length) {
-    const char = input[i];
+  constructor(input: string) {
+    this.#input = input;
+  }
 
-    if (char === '"') {
-      inQuotes = !inQuotes;
-    } else if (char === " " && !inQuotes) {
-      if (current.length > 0) {
-        parts.push(current);
-        current = "";
+  parse() {
+    while (this.#index < this.#input.length) {
+      const char = this.#input[this.#index];
+
+      if (this.#escapeNext) {
+        this.#current += char;
+        this.#escapeNext = false;
+      } else if (char === "\\") {
+        this.#escapeNext = true;
+      } else if (char === '"' || char === "'") {
+        this.#handleQuote(char);
+      } else if (char === " " && !this.#inQuotes) {
+        this.#pushCurrent();
+      } else {
+        this.#current += char;
       }
-    } else {
-      current += char;
+
+      this.#index++;
     }
 
-    i++;
+    this.#pushCurrent();
+
+    const [commandName, ...args] = this.#parts;
+    return { commandName, args };
   }
 
-  if (current.length > 0) {
-    parts.push(current);
+  #handleQuote(char: string) {
+    if (this.#inQuotes === char) {
+      this.#inQuotes = undefined;
+    } else if (!this.#inQuotes) {
+      this.#inQuotes = char;
+    } else {
+      this.#current += char;
+    }
   }
 
-  const [commandName, ...args] = parts;
+  #pushCurrent() {
+    if (this.#current.length > 0) {
+      this.#parts.push(this.#current);
+      this.#current = "";
+    }
+  }
+}
 
-  return { commandName, args };
+export function parseCommand(input: string) {
+  return new CommandParser(input).parse();
 }
