@@ -5,7 +5,10 @@ import {
   type ParentProps,
   useContext,
 } from "solid-js";
-import { useRegisterKeybindCommandOnMount } from "@/keybinds/useRegisterKeybindCommand";
+import {
+  useRegisterKeybindCommand,
+  useRegisterKeybindCommandOnMount,
+} from "@/keybinds/useRegisterKeybindCommand";
 import { createCounterWithBoundaries } from "@/lib/createCounterWithWrap";
 
 interface TableEditorContext {
@@ -25,6 +28,7 @@ export function TableEditorProvider(props: ParentProps<{ rows: unknown[] }>) {
   const columnLength = () => Object.keys(props.rows.at(0) ?? {}).length;
   const rowLength = () => props.rows.length ?? 0;
   const [visualModePoint, setVisualModePoint] = createSignal<Point>();
+  const registerKeybindCommand = useRegisterKeybindCommand();
 
   const visibleRows = 10;
 
@@ -39,12 +43,21 @@ export function TableEditorProvider(props: ParentProps<{ rows: unknown[] }>) {
   });
 
   useRegisterKeybindCommandOnMount({
-    command: "VisualMode",
+    command: "VisualModeEnter",
     keybindExpression: "v",
     action() {
       setVisualModePoint({
         column: column.value(),
         row: row.value(),
+      });
+
+      const disposable = registerKeybindCommand({
+        keybindExpression: "Escape",
+        command: "VisualModeExit",
+        action() {
+          disposable.dispose();
+          setVisualModePoint(undefined);
+        },
       });
     },
   });

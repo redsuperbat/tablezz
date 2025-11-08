@@ -9,6 +9,33 @@ export interface KeybindCommand<T extends ZodType[] = []>
   extends Omit<Command<T>, "name">,
     Keybind {}
 
+export function useRegisterKeybindCommand() {
+  const keybindContext = useKeybindContext();
+  const commandsContext = useCommandsContext();
+
+  return <const T extends ZodType[]>(keybindCommand: KeybindCommand<T>) => {
+    commandsContext.registerCommand({
+      action: keybindCommand.action,
+      command: keybindCommand.command,
+      actionArgs: keybindCommand.actionArgs,
+      description: keybindCommand.description,
+    });
+
+    keybindContext.registerKeybind({
+      command: keybindCommand.command,
+      keybindExpression: keybindCommand.keybindExpression,
+      overrideInput: keybindCommand.overrideInput,
+    });
+
+    return {
+      dispose() {
+        commandsContext.unregisterCommand(keybindCommand.command);
+        keybindContext.unregisterKeybind(keybindCommand);
+      },
+    };
+  };
+}
+
 export function useRegisterKeybindCommandOnMount<const T extends ZodType[]>(
   keybindCommand: KeybindCommand<T>,
 ) {
