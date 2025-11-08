@@ -101,7 +101,7 @@ export function TableEditorProvider(props: ParentProps<{ rows: unknown[] }>) {
       );
 
       const disposable = registerKeybindCommand({
-        keybindExpression: "Escape",
+        keybindExpression: "Escape | v",
         command: "VisualModeExit",
         action() {
           disposable.dispose();

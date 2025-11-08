@@ -37,7 +37,7 @@ export function TableCell(props: {
 
   const ref = useIntersectionScroll<HTMLTableCellElement>(isCurrent);
 
-  const isOpened = () => props.cell.equals(props.openedCell) && isActive();
+  const isOpened = () => props.cell.equals(props.openedCell) && isCurrent();
 
   return (
     <td
