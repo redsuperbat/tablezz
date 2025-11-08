@@ -9,11 +9,17 @@ export interface KeybindCommand<T extends ZodType[] = []>
   extends Omit<Command<T>, "name">,
     Keybind {}
 
+interface Disposable {
+  dispose(): void;
+}
+
 export function useRegisterKeybindCommand() {
   const keybindContext = useKeybindContext();
   const commandsContext = useCommandsContext();
 
-  return <const T extends ZodType[]>(keybindCommand: KeybindCommand<T>) => {
+  return <const T extends ZodType[]>(
+    keybindCommand: KeybindCommand<T>,
+  ): Disposable => {
     commandsContext.registerCommand({
       action: keybindCommand.action,
       command: keybindCommand.command,
@@ -39,26 +45,15 @@ export function useRegisterKeybindCommand() {
 export function useRegisterKeybindCommandOnMount<const T extends ZodType[]>(
   keybindCommand: KeybindCommand<T>,
 ) {
-  const keybindContext = useKeybindContext();
-  const commandsContext = useCommandsContext();
+  const register = useRegisterKeybindCommand();
+
+  let disposable: Disposable | undefined;
 
   onMount(() => {
-    commandsContext.registerCommand({
-      action: keybindCommand.action,
-      command: keybindCommand.command,
-      actionArgs: keybindCommand.actionArgs,
-      description: keybindCommand.description,
-    });
-
-    keybindContext.registerKeybind({
-      command: keybindCommand.command,
-      keybindExpression: keybindCommand.keybindExpression,
-      overrideInput: keybindCommand.overrideInput,
-    });
+    disposable = register(keybindCommand);
   });
 
   onCleanup(() => {
-    commandsContext.unregisterCommand(keybindCommand.command);
-    keybindContext.unregisterKeybind(keybindCommand);
+    disposable?.dispose();
   });
 }
