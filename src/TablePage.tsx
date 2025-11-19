@@ -29,10 +29,28 @@ export function TablePage() {
   const rows = useTableRows(selectedTable);
   const count = useTableCount(selectedTable);
   const structure = useTableStructure(selectedTable);
+  const structureData = () => structure.data ?? [];
+
+  const rowsWithStructure = () => {
+    if (!rows.data) {
+      return;
+    }
+
+    return [
+      structureData().reduce(
+        (acc, curr) => {
+          acc[curr.column_name] = curr.column_name;
+          return acc;
+        },
+        {} as Record<string, unknown>,
+      ),
+      ...rows.data,
+    ];
+  };
 
   createWatcher(count, ({ next }) =>
     commandContext.addCommandLineSuffix(
-      <div>
+      <div class="text-zinc-500">
         {rows.data?.length}/{next} rows
       </div>,
     ),
@@ -47,7 +65,7 @@ export function TablePage() {
     >
       <Switch>
         <Match when={rows.error}>{(error) => error().message}</Match>
-        <Match when={rows.data}>
+        <Match when={rowsWithStructure()}>
           {(rows) => (
             <TableEditorProvider rows={rows()}>
               <Table

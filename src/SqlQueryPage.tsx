@@ -19,11 +19,28 @@ export function SqlQueryPage(props: { query: string }) {
       dataType: "text" as const,
     }));
 
+  const rowsWithStructure = () => {
+    if (!rows.data) {
+      return;
+    }
+
+    return [
+      structure().reduce(
+        (acc, curr) => {
+          acc[curr.columnName] = curr.columnName;
+          return acc;
+        },
+        {} as Record<string, unknown>,
+      ),
+      ...rows.data,
+    ];
+  };
+
   return (
     <div class="grid h-full overflow-hidden">
       <Switch>
         <Match when={rows.error}>{(error) => error().message}</Match>
-        <Match when={rows.data}>
+        <Match when={rowsWithStructure()}>
           {(rows) => (
             <TableEditorProvider rows={rows()}>
               <Table

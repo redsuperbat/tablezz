@@ -38,12 +38,14 @@ export function TableCell(props: {
   const ref = useIntersectionScroll<HTMLTableCellElement>(isCurrent);
 
   const isOpened = () => props.cell.equals(props.openedCell) && isCurrent();
+  const isHeaderRow = () => props.cell.row === 0;
 
   return (
     <td
       ref={ref}
       class={cn(
         "border border-gray-300 px-2 py-2 text-sm",
+        isHeaderRow() && "font-bold",
         isActive() && "bg-red-200",
         isCurrent() && "bg-red-300",
         isVisualStart() && "bg-red-100",
