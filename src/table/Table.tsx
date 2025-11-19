@@ -17,7 +17,6 @@ export function Table(props: {
   rows: Record<string, unknown>[];
   structure: { columnName: string; dataType: PostgresDataType }[];
 }) {
-  let ref: HTMLTableElement | undefined;
   const { currentCell, visualBlock } = useTableEditorContext();
   const commandsContext = useCommandsContext();
   const [openedCell, setOpenedCell] = createSignal<Cell>();
@@ -135,7 +134,7 @@ export function Table(props: {
 
   return (
     <div class="overflow-y-auto">
-      <table ref={ref}>
+      <table>
         <thead>
           <For each={table().getHeaderGroups()}>
             {(headerGroup) => (
