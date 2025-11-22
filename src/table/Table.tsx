@@ -135,24 +135,6 @@ export function Table(props: {
   return (
     <div class="overflow-y-auto">
       <table>
-        <thead>
-          <For each={table().getHeaderGroups()}>
-            {(headerGroup) => (
-              <tr>
-                <For each={headerGroup.headers}>
-                  {(header) => (
-                    <th class="sticky top-0">
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                    </th>
-                  )}
-                </For>
-              </tr>
-            )}
-          </For>
-        </thead>
         <tbody>
           <For each={table().getRowModel().rows}>
             {(row) => (
