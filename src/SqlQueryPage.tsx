@@ -7,20 +7,20 @@ import { TableEditorProvider } from "./table/TableEditorProvider";
 export function SqlQueryPage(props: { query: string }) {
   const database = useDatabase();
 
-  const rows = useQuery(() => ({
+  const rowsQuery = useQuery(() => ({
     queryFn: () => database.select<Record<string, unknown>[]>(props.query),
 
     queryKey: ["sql-query", props.query],
   }));
 
   const structure = () =>
-    Object.keys(rows.data?.at(0) ?? {}).map((k) => ({
+    Object.keys(rowsQuery.data?.at(0) ?? {}).map((k) => ({
       columnName: k,
       dataType: "text" as const,
     }));
 
   const rowsWithStructure = () => {
-    if (!rows.data) {
+    if (!rowsQuery.data) {
       return;
     }
 
@@ -32,18 +32,21 @@ export function SqlQueryPage(props: { query: string }) {
         },
         {} as Record<string, unknown>,
       ),
-      ...rows.data,
+      ...rowsQuery.data,
     ];
   };
 
   return (
     <div class="grid h-full overflow-hidden">
       <Switch>
-        <Match when={rows.error}>{(error) => error().message}</Match>
+        <Match when={rowsQuery.error}>{(error) => error().message}</Match>
         <Match when={rowsWithStructure()}>
           {(rows) => (
             <TableEditorProvider rows={rows()}>
               <Table
+                reload={() => {
+                  rowsQuery.refetch();
+                }}
                 rows={rows()}
                 structure={(structure() ?? []).map((d) => ({
                   columnName: d.columnName,

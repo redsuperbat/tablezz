@@ -3,7 +3,6 @@ import { useCommandsContext } from "./commands/CommandsContext";
 import { createWatcher } from "./commands/createWatcher";
 import { QueryHistory } from "./database/QueryHistoryProvider";
 import { useRegisterKeybindToggle } from "./keybinds/useRegisterKeybindToggle";
-import { ReloadKeybind } from "./ReloadKeybind";
 import { useSelectedTableContext } from "./SelectedTableProvider";
 import { Table } from "./table/Table";
 import { TableEditorProvider } from "./table/TableEditorProvider";
@@ -27,13 +26,13 @@ export function TablePage() {
       .map(() => "1fr")
       .join(" ");
 
-  const rows = useTableRows(selectedTable);
+  const rowsQuery = useTableRows(selectedTable);
   const count = useTableCount(selectedTable);
-  const structure = useTableStructure(selectedTable);
-  const structureData = () => structure.data ?? [];
+  const structureQuery = useTableStructure(selectedTable);
+  const structureData = () => structureQuery.data ?? [];
 
   const rowsWithStructure = () => {
-    if (!rows.data) {
+    if (!rowsQuery.data) {
       return;
     }
 
@@ -45,14 +44,14 @@ export function TablePage() {
         },
         {} as Record<string, unknown>,
       ),
-      ...rows.data,
+      ...rowsQuery.data,
     ];
   };
 
   createWatcher(count, ({ next }) =>
     commandContext.addCommandLineSuffix(
       <div class="text-zinc-500">
-        {rows.data?.length}/{next} rows
+        {rowsQuery.data?.length}/{next} rows
       </div>,
     ),
   );
@@ -64,20 +63,18 @@ export function TablePage() {
         "grid-template-rows": gridTemplateRows(),
       }}
     >
-      <ReloadKeybind
-        reload={() => {
-          rows.refetch();
-          structure.refetch();
-        }}
-      />
       <Switch>
-        <Match when={rows.error}>{(error) => error().message}</Match>
+        <Match when={rowsQuery.error}>{(error) => error().message}</Match>
         <Match when={rowsWithStructure()}>
           {(rows) => (
             <TableEditorProvider rows={rows()}>
               <Table
+                reload={() => {
+                  rowsQuery.refetch();
+                  structureQuery.refetch();
+                }}
                 rows={rows()}
-                structure={(structure.data ?? []).map((d) => ({
+                structure={(structureQuery.data ?? []).map((d) => ({
                   columnName: d.column_name,
                   dataType: d.data_type,
                 }))}

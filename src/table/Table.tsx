@@ -16,10 +16,19 @@ import { Cell, useTableEditorContext } from "./TableEditorProvider";
 export function Table(props: {
   rows: Record<string, unknown>[];
   structure: { columnName: string; dataType: PostgresDataType }[];
+  reload: () => void;
 }) {
   const { currentCell, visualBlock } = useTableEditorContext();
   const commandsContext = useCommandsContext();
   const [openedCell, setOpenedCell] = createSignal<Cell>();
+
+  useRegisterKeybindCommandOnMount({
+    command: "ReloadTable",
+    keybindExpression: "r",
+    action() {
+      props.reload();
+    },
+  });
 
   useRegisterKeybindCommandOnMount({
     command: "SelectionCopyToClipboard",
