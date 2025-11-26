@@ -20,6 +20,7 @@
           rustc
           rust-analyzer
           rustfmt
+          pgcli
         ];
       };
     });

@@ -8,12 +8,26 @@ import { useIntersectionScroll } from "@/lib/useIntersectionScroll";
 import type { PostgresDataType } from "@/useTableStructure";
 import { type Cell, useTableEditorContext } from "./TableEditorProvider";
 
+function JsonCell(props: { cell: Cell; data: unknown }) {
+  return (
+    <div>
+      <pre>
+        <code>{JSON.stringify(props.data, null, 2)}</code>
+      </pre>
+    </div>
+  );
+}
+
 function TableCellDataType(props: {
   data: unknown;
   dataType: PostgresDataType;
   cell: Cell;
 }) {
   switch (props.dataType) {
+    case "json":
+    case "jsonb":
+      return <JsonCell cell={props.cell} data={props.data} />;
+
     default:
       return <div class={cn("max-w-48 truncate")}>{String(props.data)}</div>;
   }
