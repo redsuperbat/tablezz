@@ -1,3 +1,4 @@
+import { Match, type ParentProps, Switch } from "solid-js";
 import {
   Popover,
   PopoverContent,
@@ -18,19 +19,24 @@ function JsonCell(props: { cell: Cell; data: unknown }) {
   );
 }
 
-function TableCellDataType(props: {
+function CellDataType(props: {
   data: unknown;
   dataType: PostgresDataType;
   cell: Cell;
 }) {
-  switch (props.dataType) {
-    case "json":
-    case "jsonb":
-      return <JsonCell cell={props.cell} data={props.data} />;
+  return (
+    <Switch
+      fallback={<div class={cn("max-w-48 truncate")}>{String(props.data)}</div>}
+    >
+      <Match when={props.dataType === "jsonb" || props.dataType === "json"}>
+        <JsonCell cell={props.cell} data={props.data} />
+      </Match>
+    </Switch>
+  );
+}
 
-    default:
-      return <div class={cn("max-w-48 truncate")}>{String(props.data)}</div>;
-  }
+function ConstrainedCell(props: ParentProps) {
+  return <div class="h-6 overflow-scroll">{props.children}</div>;
 }
 
 export function TableCell(props: {
@@ -65,16 +71,22 @@ export function TableCell(props: {
         isVisualStart() && "bg-red-100",
       )}
     >
-      <Popover placement="bottom" open={isOpened()}>
-        <PopoverTrigger>
-          <TableCellDataType
+      <Popover open={isOpened()}>
+        <PopoverTrigger as="div">
+          <ConstrainedCell>
+            <CellDataType
+              cell={props.cell}
+              data={props.data}
+              dataType={props.dataType}
+            />
+          </ConstrainedCell>
+        </PopoverTrigger>
+        <PopoverContent class="break-words bg-white">
+          <CellDataType
             cell={props.cell}
             data={props.data}
             dataType={props.dataType}
           />
-        </PopoverTrigger>
-        <PopoverContent class="break-words bg-white">
-          {String(props.data)}
         </PopoverContent>
       </Popover>
     </td>
