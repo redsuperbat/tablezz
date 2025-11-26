@@ -1,8 +1,9 @@
-import { useRegisterCommandOnMount } from "./commands/useRegisterCommand";
+import { useRegisterKeybindCommandOnMount } from "./keybinds/useRegisterKeybindCommand";
 
 export function ReloadKeybind(props: { reload: () => void }) {
-  useRegisterCommandOnMount({
+  useRegisterKeybindCommandOnMount({
     command: "ReloadTable",
+    keybindExpression: "r",
     action() {
       props.reload();
     },

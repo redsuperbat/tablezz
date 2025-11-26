@@ -3,6 +3,7 @@ import { useCommandsContext } from "./commands/CommandsContext";
 import { createWatcher } from "./commands/createWatcher";
 import { QueryHistory } from "./database/QueryHistoryProvider";
 import { useRegisterKeybindToggle } from "./keybinds/useRegisterKeybindToggle";
+import { ReloadKeybind } from "./ReloadKeybind";
 import { useSelectedTableContext } from "./SelectedTableProvider";
 import { Table } from "./table/Table";
 import { TableEditorProvider } from "./table/TableEditorProvider";
@@ -63,6 +64,12 @@ export function TablePage() {
         "grid-template-rows": gridTemplateRows(),
       }}
     >
+      <ReloadKeybind
+        reload={() => {
+          rows.refetch();
+          structure.refetch();
+        }}
+      />
       <Switch>
         <Match when={rows.error}>{(error) => error().message}</Match>
         <Match when={rowsWithStructure()}>
