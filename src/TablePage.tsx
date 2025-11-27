@@ -31,23 +31,6 @@ export function TablePage() {
   const structureQuery = useTableStructure(selectedTable);
   const structureData = () => structureQuery.data ?? [];
 
-  const rowsWithStructure = () => {
-    if (!rowsQuery.data) {
-      return;
-    }
-
-    return [
-      structureData().reduce(
-        (acc, curr) => {
-          acc[curr.column_name] = curr.column_name;
-          return acc;
-        },
-        {} as Record<string, unknown>,
-      ),
-      ...rowsQuery.data,
-    ];
-  };
-
   createWatcher(count, ({ next }) =>
     commandContext.addCommandLineSuffix(
       <div class="text-zinc-500">
@@ -65,19 +48,14 @@ export function TablePage() {
     >
       <Switch>
         <Match when={rowsQuery.error}>{(error) => error().message}</Match>
-        <Match when={rowsWithStructure()}>
+        <Match when={rowsQuery.data}>
           {(rows) => (
-            <TableEditorProvider rows={rows()}>
+            <TableEditorProvider structure={structureData()} rows={rows()}>
               <Table
                 reload={() => {
                   rowsQuery.refetch();
                   structureQuery.refetch();
                 }}
-                rows={rows()}
-                structure={(structureQuery.data ?? []).map((d) => ({
-                  columnName: d.column_name,
-                  dataType: d.data_type,
-                }))}
               />
             </TableEditorProvider>
           )}

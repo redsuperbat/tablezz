@@ -52,31 +52,31 @@ export type PostgresDataType =
   | "ARRAY"
   | "USER-DEFINED";
 
-type ColumnDefault = "now()" | null;
-
 export function useTableStructure(tableName: () => string) {
   const { schema } = useSchemaContext();
   const database = useDatabase();
 
   return useQuery(() => ({
-    queryFn: () =>
-      database.select<
+    queryFn: async () => {
+      const response = await database.select<
         {
           column_name: string;
           data_type: PostgresDataType;
-          is_nullable: "YES" | "NO";
-          column_default: ColumnDefault;
         }[]
       >(
         `
 SELECT
 column_name,
-data_type,
-is_nullable,
-column_default
+data_type
 FROM information_schema.columns
 WHERE table_schema = '${schema()}' AND table_name = '${tableName()}';`,
-      ),
+      );
+
+      return response.map((r) => ({
+        columnName: r.column_name,
+        dataType: r.data_type,
+      }));
+    },
     queryKey: ["table-structure", schema(), tableName()],
   }));
 }

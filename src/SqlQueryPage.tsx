@@ -9,7 +9,6 @@ export function SqlQueryPage(props: { query: string }) {
 
   const rowsQuery = useQuery(() => ({
     queryFn: () => database.select<Record<string, unknown>[]>(props.query),
-
     queryKey: ["sql-query", props.query],
   }));
 
@@ -42,17 +41,8 @@ export function SqlQueryPage(props: { query: string }) {
         <Match when={rowsQuery.error}>{(error) => error().message}</Match>
         <Match when={rowsWithStructure()}>
           {(rows) => (
-            <TableEditorProvider rows={rows()}>
-              <Table
-                reload={() => {
-                  rowsQuery.refetch();
-                }}
-                rows={rows()}
-                structure={(structure() ?? []).map((d) => ({
-                  columnName: d.columnName,
-                  dataType: d.dataType,
-                }))}
-              />
+            <TableEditorProvider structure={structure()} rows={rows()}>
+              <Table reload={rowsQuery.refetch} />
             </TableEditorProvider>
           )}
         </Match>

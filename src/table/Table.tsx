@@ -1,24 +1,13 @@
-import {
-  type ColumnDef,
-  createSolidTable,
-  flexRender,
-  getCoreRowModel,
-} from "@tanstack/solid-table";
 import { createSignal, For } from "solid-js";
 import z from "zod";
 import { useCommandsContext } from "@/commands/CommandsContext";
 import { message } from "@/commands/Messages";
 import { useRegisterKeybindCommandOnMount } from "@/keybinds/useRegisterKeybindCommand";
-import type { PostgresDataType } from "@/useTableStructure";
 import { TableCell } from "./TableCell";
-import { Cell, useTableEditorContext } from "./TableEditorProvider";
+import { type Cell, useTableEditorContext } from "./TableEditorProvider";
 
-export function Table(props: {
-  rows: Record<string, unknown>[];
-  structure: { columnName: string; dataType: PostgresDataType }[];
-  reload: () => void;
-}) {
-  const { currentCell, visualBlock } = useTableEditorContext();
+export function Table(props: { reload: () => void }) {
+  const { currentCell, visualBlock, getTable } = useTableEditorContext();
   const commandsContext = useCommandsContext();
   const [openedCell, setOpenedCell] = createSignal<Cell>();
 
@@ -46,20 +35,16 @@ export function Table(props: {
     ],
     action(column, row) {
       const block = visualBlock();
+      const table = getTable();
 
       if (block) {
-        const cells = props.rows.flatMap((r, rowIndex) =>
-          Object.values(r).map((v, columnIndex) => ({
-            cell: new Cell({ column: columnIndex, row: rowIndex }),
-            value: v,
-          })),
-        );
+        const cells = table.getAllCells();
 
-        const intersectingCells = cells.filter(({ cell }) =>
+        const intersectingCells = cells.filter((cell) =>
           block.isIntersectingWith(cell),
         );
 
-        const cellsByRow = Map.groupBy(intersectingCells, (c) => c.cell.row);
+        const cellsByRow = Map.groupBy(intersectingCells, (c) => c.row);
 
         const sortedRows = Array.from(cellsByRow.entries()).sort(
           ([rowA], [rowB]) => rowA - rowB,
@@ -68,8 +53,8 @@ export function Table(props: {
         const values = sortedRows
           .map(([_, rowCells]) => {
             return rowCells
-              .sort((a, b) => a.cell.column - b.cell.column)
-              .map((c) => String(c.value))
+              .sort((a, b) => a.column - b.column)
+              .map((c) => c.getData().display())
               .join("\t");
           })
           .join("\n");
@@ -80,11 +65,9 @@ export function Table(props: {
         return;
       }
 
-      const key = props.structure.at(column)?.columnName;
-      if (!key) return;
-      const data = props.rows.at(row)?.[key];
-      if (data === undefined) return;
-      navigator.clipboard.writeText(String(data));
+      const cell = table.getCell(row, column);
+      if (!cell) return;
+      navigator.clipboard.writeText(cell.getData().display());
       message.info("Copied to clipboard");
     },
   });
@@ -104,54 +87,30 @@ export function Table(props: {
         .meta({ title: "<row>" }),
     ],
     action(column, row) {
-      setOpenedCell(new Cell({ column, row }));
+      const cell = getTable().getCell(row, column);
+      if (!cell) return;
+      setOpenedCell(cell);
     },
   });
-
-  const columns: () => ColumnDef<Record<string, unknown>>[] = () =>
-    props.structure.map((s) => ({
-      id: s.columnName,
-      accessorKey: s.columnName,
-      header(props) {
-        return <div class="px-1">{props.header.id}</div>;
-      },
-      cell: (props) => {
-        const cell = new Cell({
-          column: props.column.getIndex(),
-          row: props.row.index,
-        });
-
-        return (
-          <TableCell
-            cell={cell}
-            openedCell={openedCell()}
-            data={props.getValue()}
-            dataType={s.dataType}
-          />
-        );
-      },
-    }));
-
-  const table = () =>
-    createSolidTable({
-      columns: columns(),
-      get data() {
-        return props.rows ?? [];
-      },
-      getCoreRowModel: getCoreRowModel(),
-    });
 
   return (
     <div class="overflow-y-auto">
       <table>
+        <thead>
+          <tr>
+            <For each={getTable().getColumns()}>
+              {(column) => <th>{column.getName()}</th>}
+            </For>
+          </tr>
+        </thead>
         <tbody>
-          <For each={table().getRowModel().rows}>
+          <For each={getTable().getRows()}>
             {(row) => (
               <tr>
-                <For each={row.getVisibleCells()}>
-                  {(cell) =>
-                    flexRender(cell.column.columnDef.cell, cell.getContext())
-                  }
+                <For each={row.getCells()}>
+                  {(cell) => (
+                    <TableCell cell={cell} openedCell={openedCell()} />
+                  )}
                 </For>
               </tr>
             )}

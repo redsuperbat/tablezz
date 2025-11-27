@@ -1,4 +1,4 @@
-import { Match, type ParentProps, Switch } from "solid-js";
+import type { ParentProps } from "solid-js";
 import {
   Popover,
   PopoverContent,
@@ -6,45 +6,13 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/cn";
 import { useIntersectionScroll } from "@/lib/useIntersectionScroll";
-import type { PostgresDataType } from "@/useTableStructure";
 import { type Cell, useTableEditorContext } from "./TableEditorProvider";
-
-function JsonCell(props: { cell: Cell; data: unknown }) {
-  return (
-    <div>
-      <pre>
-        <code>{JSON.stringify(props.data, null, 2)}</code>
-      </pre>
-    </div>
-  );
-}
-
-function CellDataType(props: {
-  data: unknown;
-  dataType: PostgresDataType;
-  cell: Cell;
-}) {
-  return (
-    <Switch
-      fallback={<div class={cn("max-w-48 truncate")}>{String(props.data)}</div>}
-    >
-      <Match when={props.dataType === "jsonb" || props.dataType === "json"}>
-        <JsonCell cell={props.cell} data={props.data} />
-      </Match>
-    </Switch>
-  );
-}
 
 function ConstrainedCell(props: ParentProps) {
   return <div class="h-6 overflow-scroll">{props.children}</div>;
 }
 
-export function TableCell(props: {
-  data: unknown;
-  dataType: PostgresDataType;
-  cell: Cell;
-  openedCell?: Cell;
-}) {
+export function TableCell(props: { cell: Cell; openedCell?: Cell }) {
   const { visualBlock, currentCell } = useTableEditorContext();
 
   const isCurrent = () => currentCell().equals(props.cell);
@@ -53,19 +21,20 @@ export function TableCell(props: {
     const block = visualBlock();
     return !!block?.isIntersectingWith(props.cell);
   };
-  const isVisualStart = () => visualBlock()?.start.equals(props.cell);
+
+  const isVisualStart = () => {
+    return visualBlock()?.start.equals(props.cell);
+  };
 
   const ref = useIntersectionScroll<HTMLTableCellElement>(isCurrent);
 
   const isOpened = () => props.cell.equals(props.openedCell) && isCurrent();
-  const isHeaderRow = () => props.cell.row === 0;
 
   return (
     <td
       ref={ref}
       class={cn(
         "border border-gray-300 px-2 py-2 text-sm",
-        isHeaderRow() && "font-bold",
         isActive() && "bg-red-200",
         isCurrent() && "bg-red-300",
         isVisualStart() && "bg-red-100",
@@ -73,20 +42,10 @@ export function TableCell(props: {
     >
       <Popover open={isOpened()}>
         <PopoverTrigger as="div">
-          <ConstrainedCell>
-            <CellDataType
-              cell={props.cell}
-              data={props.data}
-              dataType={props.dataType}
-            />
-          </ConstrainedCell>
+          <ConstrainedCell>{props.cell.getData().display()}</ConstrainedCell>
         </PopoverTrigger>
         <PopoverContent class="break-words bg-white">
-          <CellDataType
-            cell={props.cell}
-            data={props.data}
-            dataType={props.dataType}
-          />
+          {props.cell.getData().displayExpanded()}
         </PopoverContent>
       </Popover>
     </td>
