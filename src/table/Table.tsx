@@ -16,6 +16,7 @@ export function Table(props: { reload: () => void }) {
     keybindExpression: "r",
     action() {
       props.reload();
+      message.info("Refreshed data");
     },
   });
 
