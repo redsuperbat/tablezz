@@ -110,7 +110,11 @@ export function Table(props: { reload: () => void }) {
               <tr>
                 <For each={row.getCells()}>
                   {(cell) => (
-                    <TableCell cell={cell} openedCell={openedCell()} />
+                    <TableCell
+                      clearOpenedCell={() => setOpenedCell(undefined)}
+                      cell={cell}
+                      openedCell={openedCell()}
+                    />
                   )}
                 </For>
               </tr>

@@ -1,4 +1,5 @@
 import type { ParentProps } from "solid-js";
+import { createWatcher } from "@/commands/createWatcher";
 import {
   Popover,
   PopoverContent,
@@ -12,7 +13,11 @@ function ConstrainedCell(props: ParentProps) {
   return <div class="h-6 overflow-scroll">{props.children}</div>;
 }
 
-export function TableCell(props: { cell: Cell; openedCell?: Cell }) {
+export function TableCell(props: {
+  cell: Cell;
+  openedCell?: Cell;
+  clearOpenedCell: () => void;
+}) {
   const { visualBlock, currentCell } = useTableEditorContext();
 
   const isCurrent = () => currentCell().equals(props.cell);
@@ -25,6 +30,8 @@ export function TableCell(props: { cell: Cell; openedCell?: Cell }) {
   const isVisualStart = () => {
     return visualBlock()?.start.equals(props.cell);
   };
+
+  createWatcher(isCurrent, () => props.clearOpenedCell());
 
   const ref = useIntersectionScroll<HTMLTableCellElement>(isCurrent);
 
@@ -41,7 +48,7 @@ export function TableCell(props: { cell: Cell; openedCell?: Cell }) {
       )}
     >
       <Popover open={isOpened()}>
-        <PopoverTrigger as="div">
+        <PopoverTrigger as="div" class="outline-none">
           <ConstrainedCell>{props.cell.getData().display()}</ConstrainedCell>
         </PopoverTrigger>
         <PopoverContent class="break-words bg-white">
