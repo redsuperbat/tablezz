@@ -10,7 +10,7 @@ import { useIntersectionScroll } from "@/lib/useIntersectionScroll";
 import { type Cell, useTableEditorContext } from "./TableEditorProvider";
 
 function ConstrainedCell(props: ParentProps) {
-  return <div class="h-6 overflow-scroll">{props.children}</div>;
+  return <div class="h-6 truncate">{props.children}</div>;
 }
 
 export function TableCell(props: {
@@ -49,10 +49,10 @@ export function TableCell(props: {
     >
       <Popover open={isOpened()}>
         <PopoverTrigger as="div" class="outline-none">
-          <ConstrainedCell>{props.cell.getData().display()}</ConstrainedCell>
+          <ConstrainedCell>{props.cell.getData().toString()}</ConstrainedCell>
         </PopoverTrigger>
         <PopoverContent class="break-words bg-white">
-          {props.cell.getData().displayExpanded()}
+          {props.cell.getData().display()}
         </PopoverContent>
       </Popover>
     </td>

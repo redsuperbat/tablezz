@@ -79,7 +79,13 @@ export function CommandsProvider(props: ParentProps) {
       parsedArgs.push(arg.data);
     }
 
-    command.action(...parsedArgs);
+    try {
+      command.action(...parsedArgs);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      message.error(errorMessage);
+    }
   }
 
   function allCommands() {

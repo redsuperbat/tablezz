@@ -18,28 +18,11 @@ export function SqlQueryPage(props: { query: string }) {
       dataType: "text" as const,
     }));
 
-  const rowsWithStructure = () => {
-    if (!rowsQuery.data) {
-      return;
-    }
-
-    return [
-      structure().reduce(
-        (acc, curr) => {
-          acc[curr.columnName] = curr.columnName;
-          return acc;
-        },
-        {} as Record<string, unknown>,
-      ),
-      ...rowsQuery.data,
-    ];
-  };
-
   return (
     <div class="grid h-full overflow-hidden">
       <Switch>
         <Match when={rowsQuery.error}>{(error) => error().message}</Match>
-        <Match when={rowsWithStructure()}>
+        <Match when={rowsQuery.data}>
           {(rows) => (
             <TableEditorProvider structure={structure()} rows={rows()}>
               <Table reload={rowsQuery.refetch} />

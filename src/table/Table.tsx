@@ -55,7 +55,7 @@ export function Table(props: { reload: () => void }) {
           .map(([_, rowCells]) => {
             return rowCells
               .sort((a, b) => a.column - b.column)
-              .map((c) => c.getData().display())
+              .map((c) => c.getData().toString())
               .join("\t");
           })
           .join("\n");
@@ -68,7 +68,7 @@ export function Table(props: { reload: () => void }) {
 
       const cell = table.getCell(row, column);
       if (!cell) return;
-      navigator.clipboard.writeText(cell.getData().display());
+      navigator.clipboard.writeText(cell.getData().toString());
       message.info("Copied to clipboard");
     },
   });
@@ -88,8 +88,7 @@ export function Table(props: { reload: () => void }) {
         .meta({ title: "<row>" }),
     ],
     action(column, row) {
-      const cell = getTable().getCell(row, column);
-      if (!cell) return;
+      const cell = getTable().getCellOrThrow(row, column);
       setOpenedCell(cell);
     },
   });
@@ -97,8 +96,8 @@ export function Table(props: { reload: () => void }) {
   return (
     <div class="overflow-y-auto">
       <table>
-        <thead>
-          <tr>
+        <thead class="sticky top-0 z-10 bg-white">
+          <tr class="border-gray-300 border-b">
             <For each={getTable().getColumns()}>
               {(column) => <th>{column.getName()}</th>}
             </For>

@@ -132,6 +132,16 @@ class Table {
     return this.getRow(row)?.getCell(column);
   }
 
+  getCellOrThrow(row: number, column: number) {
+    const cell = this.getCell(row, column);
+
+    if (!cell) {
+      throw new Error(`No cell found at index ${row}:${column}`);
+    }
+
+    return cell;
+  }
+
   getAllCells() {
     return this.#rows.flatMap((r) => r.getCells());
   }
