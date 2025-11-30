@@ -3,10 +3,11 @@ import z from "zod";
 import { useCommandsContext } from "@/commands/CommandsContext";
 import { message } from "@/commands/Messages";
 import { useRegisterKeybindCommandOnMount } from "@/keybinds/useRegisterKeybindCommand";
-import { TableCell } from "./TableCell";
-import { type Cell, useTableEditorContext } from "./TableEditorProvider";
+import type { Cell } from "./Cell";
+import { TableCell } from "./DataTableCell";
+import { useTableEditorContext } from "./DataTableProvider";
 
-export function Table(props: { reload: () => void }) {
+export function DataTable(props: { reload: () => void }) {
   const { currentCell, visualBlock, getTable } = useTableEditorContext();
   const commandsContext = useCommandsContext();
   const [openedCell, setOpenedCell] = createSignal<Cell>();

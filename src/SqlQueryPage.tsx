@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/solid-query";
 import { Match, Switch } from "solid-js";
 import { useDatabase } from "./database/useDatabase";
-import { Table } from "./table/Table";
-import { TableEditorProvider } from "./table/TableEditorProvider";
+import { DataTable } from "./table/DataTable";
+import { DataTableProvider } from "./table/DataTableProvider";
 
 export function SqlQueryPage(props: { query: string }) {
   const database = useDatabase();
@@ -16,6 +16,7 @@ export function SqlQueryPage(props: { query: string }) {
     Object.keys(rowsQuery.data?.at(0) ?? {}).map((k) => ({
       columnName: k,
       dataType: "text" as const,
+      isPrimary: false,
     }));
 
   return (
@@ -24,9 +25,9 @@ export function SqlQueryPage(props: { query: string }) {
         <Match when={rowsQuery.error}>{(error) => error().message}</Match>
         <Match when={rowsQuery.data}>
           {(rows) => (
-            <TableEditorProvider structure={structure()} rows={rows()}>
-              <Table reload={rowsQuery.refetch} />
-            </TableEditorProvider>
+            <DataTableProvider structure={structure()} rows={rows()}>
+              <DataTable reload={rowsQuery.refetch} />
+            </DataTableProvider>
           )}
         </Match>
       </Switch>

@@ -4,8 +4,8 @@ import { createWatcher } from "./commands/createWatcher";
 import { QueryHistory } from "./database/QueryHistoryProvider";
 import { useRegisterKeybindToggle } from "./keybinds/useRegisterKeybindToggle";
 import { useSelectedTableContext } from "./SelectedTableProvider";
-import { Table } from "./table/Table";
-import { TableEditorProvider } from "./table/TableEditorProvider";
+import { DataTable } from "./table/DataTable";
+import { DataTableProvider } from "./table/DataTableProvider";
 import { useTableCount } from "./useTableCount";
 import { useTableRows } from "./useTableRows";
 import { useTableStructure } from "./useTableStructure";
@@ -50,14 +50,14 @@ export function TablePage() {
         <Match when={rowsQuery.error}>{(error) => error().message}</Match>
         <Match when={rowsQuery.data}>
           {(rows) => (
-            <TableEditorProvider structure={structureData()} rows={rows()}>
-              <Table
+            <DataTableProvider structure={structureData()} rows={rows()}>
+              <DataTable
                 reload={() => {
                   rowsQuery.refetch();
                   structureQuery.refetch();
                 }}
               />
-            </TableEditorProvider>
+            </DataTableProvider>
           )}
         </Match>
       </Switch>

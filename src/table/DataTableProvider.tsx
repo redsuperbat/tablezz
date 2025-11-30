@@ -13,7 +13,11 @@ import {
 } from "@/keybinds/useRegisterKeybindCommand";
 import { createCounterWithBoundaries } from "@/lib/counter";
 import type { PostgresDataType } from "@/useTableStructure";
+import { Cell } from "./Cell";
+import { Column } from "./Column";
 import { DataType } from "./DataType";
+import { Row } from "./Row";
+import { Table } from "./Table";
 
 interface TableEditorContext {
   currentCell: Accessor<Cell>;
@@ -22,47 +26,6 @@ interface TableEditorContext {
 }
 
 const TableEditorContext = createContext<TableEditorContext | null>(null);
-
-export class Cell {
-  readonly getColumn: () => Column;
-  readonly getRow: () => Row;
-  readonly getTable: () => Table;
-  readonly #data: unknown;
-
-  constructor({
-    getColumn,
-    getRow,
-    getTable,
-    data,
-  }: {
-    getRow: () => Row;
-    getColumn: () => Column;
-    getTable: () => Table;
-    data: unknown;
-  }) {
-    this.getColumn = getColumn;
-    this.getRow = getRow;
-    this.getTable = getTable;
-    this.#data = data;
-  }
-
-  display() {
-    return this.getColumn().getDataType().display(this.#data);
-  }
-
-  toString() {
-    return this.getColumn().getDataType().toString(this.#data);
-  }
-
-  equals(cell?: Cell) {
-    if (!cell) return false;
-
-    return (
-      cell.getRow().index === this.getRow().index &&
-      cell.getColumn().index === this.getColumn().index
-    );
-  }
-}
 
 export class VisualBlock {
   #start: Cell;
@@ -97,106 +60,13 @@ export class VisualBlock {
   }
 }
 
-class Row {
-  #cells: Cell[];
-  readonly index: number;
-
-  constructor(cells: Cell[], index: number) {
-    this.#cells = cells;
-    this.index = index;
-  }
-
-  getCell(columnIndex: number) {
-    return this.getCells().at(columnIndex);
-  }
-
-  getCells() {
-    return this.#cells;
-  }
-}
-
-class Column {
-  readonly index: number;
-  #name: string;
-  #dataType: DataType;
-
-  constructor({
-    name,
-    index,
-    dataType,
-  }: { name: string; dataType: DataType; index: number }) {
-    this.#name = name;
-    this.#dataType = dataType;
-    this.index = index;
-  }
-
-  getDataType() {
-    return this.#dataType;
-  }
-
-  getName() {
-    return this.#name;
-  }
-}
-
-class Table {
-  #rows: Row[];
-  #columns: Column[];
-
-  constructor(rows: Row[], columns: Column[]) {
-    this.#rows = rows;
-    this.#columns = columns;
-  }
-
-  getColumnOrThrow(columnIndex: number) {
-    const column = this.getColumns().at(columnIndex);
-    if (!column) {
-      throw new Error("No column found");
-    }
-    return column;
-  }
-
-  getColumn(columnIndex: number) {
-    return this.getColumns().at(columnIndex);
-  }
-
-  getColumns() {
-    return this.#columns;
-  }
-
-  getRow(index: number) {
-    return this.getRows().at(index);
-  }
-
-  getRows() {
-    return this.#rows;
-  }
-
-  getCell({ row, column }: { row: number; column: number }) {
-    return this.getRow(row)?.getCell(column);
-  }
-
-  getCellOrThrow({ row, column }: { row: number; column: number }) {
-    const cell = this.getCell({ row, column });
-
-    if (!cell) {
-      throw new Error(`No cell found at index ${row}:${column}`);
-    }
-
-    return cell;
-  }
-
-  getAllCells() {
-    return this.#rows.flatMap((r) => r.getCells());
-  }
-}
-
-export function TableEditorProvider(
+export function DataTableProvider(
   props: ParentProps<{
     rows: unknown[];
     structure: {
       columnName: string;
       dataType: PostgresDataType;
+      isPrimary: boolean;
     }[];
   }>,
 ) {
@@ -205,7 +75,10 @@ export function TableEditorProvider(
       (c, index) =>
         new Column({
           name: c.columnName,
-          dataType: DataType.fromPostgresDataType(c.dataType),
+          dataType: DataType.fromPostgresDataType({
+            type: c.dataType,
+            isPrimary: c.isPrimary,
+          }),
           index,
         }),
     ),

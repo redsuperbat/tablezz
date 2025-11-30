@@ -7,7 +7,8 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/cn";
 import { useIntersectionScroll } from "@/lib/useIntersectionScroll";
-import { type Cell, useTableEditorContext } from "./TableEditorProvider";
+import type { Cell } from "./Cell";
+import { useTableEditorContext } from "./DataTableProvider";
 
 function ConstrainedCell(props: ParentProps) {
   return <div class="h-6 truncate">{props.children}</div>;

@@ -5,10 +5,11 @@ import type { PostgresDataType } from "@/useTableStructure";
 export interface DataType {
   toString(data: unknown): string;
   display(data: unknown): JSXElement;
-  is?(data: unknown): boolean;
+  isPrimary: boolean;
 }
 
 class JsonCellData implements DataType {
+  isPrimary = false;
   display(data: unknown) {
     return (
       <code>
@@ -23,6 +24,7 @@ class JsonCellData implements DataType {
 }
 
 class ZonedDateTimeCellData implements DataType {
+  isPrimary = false;
   #toTemporal(data: unknown) {
     return Temporal.ZonedDateTime.from(
       `1970-01-01T${normalizeIsoDatetime(String(data))}`,
@@ -39,6 +41,7 @@ class ZonedDateTimeCellData implements DataType {
 }
 
 class PlainDateTimeCellData implements DataType {
+  isPrimary = false;
   #toTemporal(data: unknown) {
     return Temporal.PlainDateTime.from(normalizeIsoDatetime(String(data)));
   }
@@ -53,6 +56,7 @@ class PlainDateTimeCellData implements DataType {
 }
 
 class PlainTimeCellData implements DataType {
+  isPrimary = false;
   #toTemporal(data: unknown) {
     return Temporal.PlainTime.from(String(data));
   }
@@ -67,6 +71,12 @@ class PlainTimeCellData implements DataType {
 }
 
 class DefaultCellData implements DataType {
+  isPrimary = false;
+
+  constructor(isPrimary: boolean) {
+    this.isPrimary = isPrimary;
+  }
+
   display(data: unknown): string {
     return this.toString(data);
   }
@@ -87,7 +97,13 @@ function normalizeIsoDatetime(s: string): string {
 }
 
 export namespace DataType {
-  export function fromPostgresDataType(type: PostgresDataType): DataType {
+  export function fromPostgresDataType({
+    type,
+    isPrimary,
+  }: {
+    type: PostgresDataType;
+    isPrimary: boolean;
+  }): DataType {
     switch (type) {
       case "json":
       case "jsonb":
@@ -109,7 +125,7 @@ export namespace DataType {
         return new ZonedDateTimeCellData();
       }
       default:
-        return new DefaultCellData();
+        return new DefaultCellData(isPrimary);
     }
   }
 }
