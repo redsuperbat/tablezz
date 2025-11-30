@@ -13,7 +13,7 @@ import {
 } from "@/keybinds/useRegisterKeybindCommand";
 import { createCounterWithBoundaries } from "@/lib/counter";
 import type { PostgresDataType } from "@/useTableStructure";
-import { CellData } from "./CellData";
+import { DataType } from "./DataType";
 
 interface TableEditorContext {
   currentCell: Accessor<Cell>;
@@ -27,7 +27,7 @@ export class Cell {
   readonly getColumn: () => Column;
   readonly getRow: () => Row;
   readonly getTable: () => Table;
-  readonly #data: CellData;
+  readonly #data: unknown;
 
   constructor({
     getColumn,
@@ -38,7 +38,7 @@ export class Cell {
     getRow: () => Row;
     getColumn: () => Column;
     getTable: () => Table;
-    data: CellData;
+    data: unknown;
   }) {
     this.getColumn = getColumn;
     this.getRow = getRow;
@@ -46,8 +46,12 @@ export class Cell {
     this.#data = data;
   }
 
-  getData() {
-    return this.#data;
+  display() {
+    return this.getColumn().getDataType().display(this.#data);
+  }
+
+  toString() {
+    return this.getColumn().getDataType().toString(this.#data);
   }
 
   equals(cell?: Cell) {
@@ -114,13 +118,13 @@ class Row {
 class Column {
   readonly index: number;
   #name: string;
-  #dataType: PostgresDataType;
+  #dataType: DataType;
 
   constructor({
     name,
     index,
     dataType,
-  }: { name: string; dataType: PostgresDataType; index: number }) {
+  }: { name: string; dataType: DataType; index: number }) {
     this.#name = name;
     this.#dataType = dataType;
     this.index = index;
@@ -142,6 +146,14 @@ class Table {
   constructor(rows: Row[], columns: Column[]) {
     this.#rows = rows;
     this.#columns = columns;
+  }
+
+  getColumnOrThrow(columnIndex: number) {
+    const column = this.getColumns().at(columnIndex);
+    if (!column) {
+      throw new Error("No column found");
+    }
+    return column;
   }
 
   getColumn(columnIndex: number) {
@@ -191,7 +203,11 @@ export function TableEditorProvider(
   const columns = createMemo(() =>
     props.structure.map(
       (c, index) =>
-        new Column({ name: c.columnName, dataType: c.dataType, index }),
+        new Column({
+          name: c.columnName,
+          dataType: DataType.fromPostgresDataType(c.dataType),
+          index,
+        }),
     ),
   );
 
@@ -199,7 +215,7 @@ export function TableEditorProvider(
     return props.rows.map((row, rowIndex) => {
       const cells = Object.entries(row as object)
         .values()
-        .map(([name, value], columnIndex) => {
+        .map(([name, data], columnIndex) => {
           const dataType = props.structure.find((s) => s.columnName === name);
 
           if (!dataType) {
@@ -209,7 +225,7 @@ export function TableEditorProvider(
           return new Cell({
             getColumn: () => columns().at(columnIndex) as Column,
             getRow: () => rows().at(rowIndex) as Row,
-            data: CellData.fromPostgresDataType(dataType.dataType, value),
+            data,
             getTable: () => getTable(),
           });
         })
@@ -279,9 +295,9 @@ export function TableEditorProvider(
         .meta({ title: "<row>" }),
       z.string(),
     ],
-    action(column, row, value) {
+    action(column, row, _value) {
       const cell = getTable().getCellOrThrow({ column, row });
-      cell.getData().tryUpdate?.(value);
+      cell.getTable();
     },
     keybindExpression: "c",
   });

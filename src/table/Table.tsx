@@ -58,7 +58,7 @@ export function Table(props: { reload: () => void }) {
           .map(([_, rowCells]) => {
             return rowCells
               .sort((a, b) => a.getRow().index - b.getRow().index)
-              .map((c) => c.getData().toString())
+              .map((c) => c.toString())
               .join("\t");
           })
           .join("\n");
@@ -71,7 +71,7 @@ export function Table(props: { reload: () => void }) {
 
       const cell = table.getCell({ row, column });
       if (!cell) return;
-      navigator.clipboard.writeText(cell.getData().toString());
+      navigator.clipboard.writeText(cell.toString());
       message.info("Copied to clipboard");
     },
   });

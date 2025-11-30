@@ -49,10 +49,10 @@ export function TableCell(props: {
     >
       <Popover open={isOpened()}>
         <PopoverTrigger as="div" class="outline-none">
-          <ConstrainedCell>{props.cell.getData().toString()}</ConstrainedCell>
+          <ConstrainedCell>{props.cell.toString()}</ConstrainedCell>
         </PopoverTrigger>
         <PopoverContent class="break-words bg-white">
-          {props.cell.getData().display()}
+          {props.cell.display()}
         </PopoverContent>
       </Popover>
     </td>
