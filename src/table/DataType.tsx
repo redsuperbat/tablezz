@@ -29,12 +29,12 @@ class ZonedDateTimeCellData implements DataType {
     );
   }
 
-  display(): string {
-    return this.#toTemporal.toLocaleString();
+  display(data: unknown): string {
+    return this.#toTemporal(data).toLocaleString();
   }
 
-  toString(): string {
-    return this.#toTemporal.toString();
+  toString(data: unknown): string {
+    return this.#toTemporal(data).toString();
   }
 }
 
@@ -43,12 +43,12 @@ class PlainDateTimeCellData implements DataType {
     return Temporal.PlainDateTime.from(normalizeIsoDatetime(String(data)));
   }
 
-  display(): string {
-    return this.#toTemporal.toLocaleString();
+  display(data: unknown): string {
+    return this.#toTemporal(data).toLocaleString();
   }
 
-  toString(): string {
-    return this.#toTemporal.toString();
+  toString(data: unknown): string {
+    return this.#toTemporal(data).toString();
   }
 }
 

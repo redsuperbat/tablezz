@@ -82,7 +82,7 @@ export function Table(props: { reload: () => void }) {
     actionArgs: [
       z.coerce
         .number()
-        .default(() => currentCell().getRow().index)
+        .default(() => currentCell().getColumn().index)
         .meta({ title: "<column>" }),
 
       z.coerce
