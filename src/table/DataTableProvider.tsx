@@ -59,6 +59,41 @@ export class VisualSelection {
     return this.#table.getAllCells().filter((c) => this.isIntersectingWith(c));
   }
 
+  updateIntersectingCells(value: string) {
+    const cells: Cell[] = [];
+    for (const [rowIndex, row] of value.split("\n").entries()) {
+      for (const [columnIndex, value] of row.split("\t").entries()) {
+        const cell = this.#table.getCellOrThrow({
+          column: columnIndex,
+          row: rowIndex,
+        });
+
+        cell.updateData(value);
+        cells.push(cell);
+      }
+    }
+    return cells;
+  }
+
+  intersectingCellsToString(): string {
+    const intersectingCells = this.getAllIntersectingCells();
+
+    const cellsByRow = Map.groupBy(intersectingCells, (c) => c.getRow().index);
+
+    const sortedRows = Array.from(cellsByRow.entries()).sort(
+      ([rowA], [rowB]) => rowA - rowB,
+    );
+
+    return sortedRows
+      .map(([_, rowCells]) => {
+        return rowCells
+          .sort((a, b) => a.getRow().index - b.getRow().index)
+          .map((c) => c.toString())
+          .join("\t");
+      })
+      .join("\n");
+  }
+
   isIntersectingWith(cell: Cell): boolean {
     if (!this.start) {
       return false;
@@ -94,7 +129,7 @@ export function DataTableProvider(
       isPrimary: boolean;
     }[];
 
-    editCell?(cell: Cell): void;
+    onEditSelection?(selection: VisualSelection): void;
 
     onPreparedStatementCreated?(data: {
       columnName: string;
@@ -219,7 +254,7 @@ export function DataTableProvider(
     command: "OpenCellEditor",
     keybindExpression: "c",
     action() {
-      props.editCell?.(currentCell());
+      props.onEditSelection?.(visualSelection());
     },
   });
 

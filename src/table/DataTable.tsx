@@ -25,26 +25,7 @@ export function DataTable(props: { reload: () => void }) {
     command: "SelectionCopyToClipboard",
     keybindExpression: "y",
     action() {
-      const intersectingCells = visualSelection().getAllIntersectingCells();
-
-      const cellsByRow = Map.groupBy(
-        intersectingCells,
-        (c) => c.getRow().index,
-      );
-
-      const sortedRows = Array.from(cellsByRow.entries()).sort(
-        ([rowA], [rowB]) => rowA - rowB,
-      );
-
-      const values = sortedRows
-        .map(([_, rowCells]) => {
-          return rowCells
-            .sort((a, b) => a.getRow().index - b.getRow().index)
-            .map((c) => c.toString())
-            .join("\t");
-        })
-        .join("\n");
-
+      const values = visualSelection().intersectingCellsToString();
       navigator.clipboard.writeText(values);
       message.info("Copied to clipboard");
       commandsContext.triggerCommand("VisualModeExit");

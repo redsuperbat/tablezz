@@ -8,9 +8,11 @@ import { useRegisterKeybindCommandOnMount } from "./keybinds/useRegisterKeybindC
 import { useRegisterKeybindToggle } from "./keybinds/useRegisterKeybindToggle";
 import { useSelectedTableContext } from "./SelectedTableProvider";
 import { Editor } from "./sql-editor/SqlEditor";
-import type { Cell } from "./table/Cell";
 import { DataTable } from "./table/DataTable";
-import { DataTableProvider } from "./table/DataTableProvider";
+import {
+  DataTableProvider,
+  type VisualSelection,
+} from "./table/DataTableProvider";
 import { useTableCount } from "./useTableCount";
 import { useTableRows } from "./useTableRows";
 import { useTableStructure } from "./useTableStructure";
@@ -28,7 +30,7 @@ export function TablePage() {
   const [preparedStatements, setPreparedStatements] = createSignal<
     PreparedStatement[]
   >([]);
-  const [cellToEdit, setCellToEdit] = createSignal<Cell>();
+  const [selectionToEdit, setSelectionToEdit] = createSignal<VisualSelection>();
   const commandContext = useCommandsContext();
   const database = useDatabase();
 
@@ -97,7 +99,7 @@ export function TablePage() {
               structure={structureData()}
               rows={rows()}
               name={selectedTable()}
-              editCell={setCellToEdit}
+              onEditSelection={setSelectionToEdit}
               onPreparedStatementCreated={(data) => {
                 setPreparedStatements((statements) => [...statements, data]);
               }}
@@ -108,39 +110,40 @@ export function TablePage() {
         </Match>
       </Switch>
 
-      <Dialog modal open={!!cellToEdit()}>
+      <Dialog modal open={!!selectionToEdit()}>
         <DialogContent
           onEscapeKeyDown={(e) => e.preventDefault()}
           class="m-0 flex h-[80vh] w-[80vw] flex-col justify-start border-none p-0 shadow-none"
         >
-          <Editor
-            extension={cellToEdit()
-              ?.getColumn()
-              .getDataType()
-              .toFileExtension?.()}
-            initialContent={cellToEdit()?.toString()!}
-            onExit={(data) => {
-              try {
-                const cell = cellToEdit();
+          <Show when={selectionToEdit()}>
+            {(selection) => (
+              <Editor
+                extension=".txt"
+                initialContent={selection().intersectingCellsToString()}
+                onExit={(data) => {
+                  try {
+                    const previousData =
+                      selection().intersectingCellsToString();
 
-                if (!cell) {
-                  return;
-                }
+                    // If nothing changed, do nothing
+                    if (data === previousData) {
+                      return;
+                    }
 
-                // If nothing changed, do nothing
-                if (data === cell.toString()) {
-                  return;
-                }
+                    const cells = selection().updateIntersectingCells(data);
 
-                commandContext.triggerCommand(
-                  `EditCell ${cell.getColumn().index} ${cell.getRow().index} '${data}'`,
-                );
-                cell.updateData(data);
-              } finally {
-                setCellToEdit(undefined);
-              }
-            }}
-          />
+                    for (const cell of cells) {
+                      commandContext.triggerCommand(
+                        `EditCell ${cell.getColumn().index} ${cell.getRow().index} '${data}'`,
+                      );
+                    }
+                  } finally {
+                    setSelectionToEdit(undefined);
+                  }
+                }}
+              />
+            )}
+          </Show>
         </DialogContent>
       </Dialog>
 
