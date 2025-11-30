@@ -26,12 +26,12 @@ export function Table(props: { reload: () => void }) {
     actionArgs: [
       z.coerce
         .number()
-        .default(() => currentCell().column)
+        .default(() => currentCell().getRow().index)
         .meta({ title: "<column>" }),
 
       z.coerce
         .number()
-        .default(() => currentCell().row)
+        .default(() => currentCell().getColumn().index)
         .meta({ title: "<row>" }),
     ],
     action(column, row) {
@@ -45,7 +45,10 @@ export function Table(props: { reload: () => void }) {
           block.isIntersectingWith(cell),
         );
 
-        const cellsByRow = Map.groupBy(intersectingCells, (c) => c.row);
+        const cellsByRow = Map.groupBy(
+          intersectingCells,
+          (c) => c.getRow().index,
+        );
 
         const sortedRows = Array.from(cellsByRow.entries()).sort(
           ([rowA], [rowB]) => rowA - rowB,
@@ -54,7 +57,7 @@ export function Table(props: { reload: () => void }) {
         const values = sortedRows
           .map(([_, rowCells]) => {
             return rowCells
-              .sort((a, b) => a.column - b.column)
+              .sort((a, b) => a.getRow().index - b.getRow().index)
               .map((c) => c.getData().toString())
               .join("\t");
           })
@@ -66,7 +69,7 @@ export function Table(props: { reload: () => void }) {
         return;
       }
 
-      const cell = table.getCell(row, column);
+      const cell = table.getCell({ row, column });
       if (!cell) return;
       navigator.clipboard.writeText(cell.getData().toString());
       message.info("Copied to clipboard");
@@ -79,16 +82,16 @@ export function Table(props: { reload: () => void }) {
     actionArgs: [
       z.coerce
         .number()
-        .default(() => currentCell().column)
+        .default(() => currentCell().getRow().index)
         .meta({ title: "<column>" }),
 
       z.coerce
         .number()
-        .default(() => currentCell().row)
+        .default(() => currentCell().getRow().index)
         .meta({ title: "<row>" }),
     ],
     action(column, row) {
-      const cell = getTable().getCellOrThrow(row, column);
+      const cell = getTable().getCellOrThrow({ row, column });
       setOpenedCell(cell);
     },
   });

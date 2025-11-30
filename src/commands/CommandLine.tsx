@@ -14,7 +14,7 @@ import { cn } from "@/lib/cn";
 import {
   createCounterWithBoundaries,
   createCounterWithWrap,
-} from "@/lib/createCounterWithWrap";
+} from "@/lib/counter";
 import { useIntersectionScroll } from "@/lib/useIntersectionScroll";
 import type { Command } from "./Command";
 import { useCommandsContext } from "./CommandsContext";

@@ -5,6 +5,7 @@ import type { PostgresDataType } from "@/useTableStructure";
 export interface CellData {
   toString(): string;
   display(): JSXElement;
+  tryUpdate?(value: unknown): void;
 }
 
 class JsonCellData implements CellData {

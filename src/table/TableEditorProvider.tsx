@@ -24,17 +24,25 @@ interface TableEditorContext {
 const TableEditorContext = createContext<TableEditorContext | null>(null);
 
 export class Cell {
-  readonly column: number;
-  readonly row: number;
+  readonly getColumn: () => Column;
+  readonly getRow: () => Row;
+  readonly getTable: () => Table;
   readonly #data: CellData;
 
   constructor({
-    column,
-    row,
+    getColumn,
+    getRow,
+    getTable,
     data,
-  }: { row: number; column: number; data: CellData }) {
-    this.column = column;
-    this.row = row;
+  }: {
+    getRow: () => Row;
+    getColumn: () => Column;
+    getTable: () => Table;
+    data: CellData;
+  }) {
+    this.getColumn = getColumn;
+    this.getRow = getRow;
+    this.getTable = getTable;
     this.#data = data;
   }
 
@@ -44,7 +52,11 @@ export class Cell {
 
   equals(cell?: Cell) {
     if (!cell) return false;
-    return cell.row === this.row && cell.column === this.column;
+
+    return (
+      cell.getRow().index === this.getRow().index &&
+      cell.getColumn().index === this.getColumn().index
+    );
   }
 }
 
@@ -62,25 +74,32 @@ export class VisualBlock {
   }
 
   isIntersectingWith(cell: Cell): boolean {
-    const minRow = Math.min(this.#start.row, this.#current.row);
-    const maxRow = Math.max(this.#start.row, this.#current.row);
-    const minColumn = Math.min(this.#start.column, this.#current.column);
-    const maxColumn = Math.max(this.#start.column, this.#current.column);
+    const startRowIndex = this.#start.getRow().index;
+    const currentRowIndex = this.#current.getRow().index;
+    const startColumnIndex = this.#start.getColumn().index;
+    const currentColumnIndex = this.#current.getColumn().index;
+
+    const minRow = Math.min(startRowIndex, currentRowIndex);
+    const maxRow = Math.max(startRowIndex, currentRowIndex);
+    const minColumn = Math.min(startColumnIndex, currentColumnIndex);
+    const maxColumn = Math.max(startColumnIndex, currentColumnIndex);
 
     return (
-      cell.row >= minRow &&
-      cell.row <= maxRow &&
-      cell.column >= minColumn &&
-      cell.column <= maxColumn
+      cell.getRow().index >= minRow &&
+      cell.getRow().index <= maxRow &&
+      cell.getColumn().index >= minColumn &&
+      cell.getColumn().index <= maxColumn
     );
   }
 }
 
 class Row {
   #cells: Cell[];
+  readonly index: number;
 
-  constructor(cells: Cell[]) {
+  constructor(cells: Cell[], index: number) {
     this.#cells = cells;
+    this.index = index;
   }
 
   getCell(columnIndex: number) {
@@ -93,9 +112,22 @@ class Row {
 }
 
 class Column {
+  readonly index: number;
   #name: string;
-  constructor(name: string) {
+  #dataType: PostgresDataType;
+
+  constructor({
+    name,
+    index,
+    dataType,
+  }: { name: string; dataType: PostgresDataType; index: number }) {
     this.#name = name;
+    this.#dataType = dataType;
+    this.index = index;
+  }
+
+  getDataType() {
+    return this.#dataType;
   }
 
   getName() {
@@ -128,12 +160,12 @@ class Table {
     return this.#rows;
   }
 
-  getCell(row: number, column: number) {
+  getCell({ row, column }: { row: number; column: number }) {
     return this.getRow(row)?.getCell(column);
   }
 
-  getCellOrThrow(row: number, column: number) {
-    const cell = this.getCell(row, column);
+  getCellOrThrow({ row, column }: { row: number; column: number }) {
+    const cell = this.getCell({ row, column });
 
     if (!cell) {
       throw new Error(`No cell found at index ${row}:${column}`);
@@ -156,13 +188,18 @@ export function TableEditorProvider(
     }[];
   }>,
 ) {
-  const columns = () => props.structure.map((c) => new Column(c.columnName));
+  const columns = createMemo(() =>
+    props.structure.map(
+      (c, index) =>
+        new Column({ name: c.columnName, dataType: c.dataType, index }),
+    ),
+  );
 
-  const rows = () => {
+  const rows = createMemo((): Row[] => {
     return props.rows.map((row, rowIndex) => {
       const cells = Object.entries(row as object)
         .values()
-        .map(([name, value], column) => {
+        .map(([name, value], columnIndex) => {
           const dataType = props.structure.find((s) => s.columnName === name);
 
           if (!dataType) {
@@ -170,17 +207,18 @@ export function TableEditorProvider(
           }
 
           return new Cell({
-            column,
-            row: rowIndex,
+            getColumn: () => columns().at(columnIndex) as Column,
+            getRow: () => rows().at(rowIndex) as Row,
             data: CellData.fromPostgresDataType(dataType.dataType, value),
+            getTable: () => getTable(),
           });
         })
         .filter((v) => v !== undefined)
         .toArray();
 
-      return new Row(cells);
+      return new Row(cells, rowIndex);
     });
-  };
+  });
 
   const getTable = createMemo(() => new Table(rows(), columns()));
 
@@ -230,7 +268,21 @@ export function TableEditorProvider(
 
   useRegisterKeybindCommandOnMount({
     command: "EditCell",
-    action() {},
+    actionArgs: [
+      z.coerce
+        .number()
+        .default(() => currentCell().getColumn().index)
+        .meta({ title: "<column>" }),
+      z.coerce
+        .number()
+        .default(() => currentCell().getRow().index)
+        .meta({ title: "<row>" }),
+      z.string(),
+    ],
+    action(column, row, value) {
+      const cell = getTable().getCellOrThrow({ column, row });
+      cell.getData().tryUpdate?.(value);
+    },
     keybindExpression: "c",
   });
 
