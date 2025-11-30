@@ -28,6 +28,10 @@ export class Cell {
   }
 
   updateData(value: string) {
+    if (this.toString() === value) {
+      return;
+    }
+
     this.#data.push(this.getColumn().getDataType().fromString(value));
     this.#isDirty = true;
     this.#forceRerender?.();

@@ -7,6 +7,7 @@ import {
   useContext,
 } from "solid-js";
 import z from "zod";
+import { useCommandsContext } from "@/commands/CommandsContext";
 import { useRegisterCommand } from "@/commands/useRegisterCommand";
 import {
   useRegisterKeybindCommand,
@@ -19,6 +20,7 @@ import { Column } from "./Column";
 import { DataType } from "./DataType";
 import { Row } from "./Row";
 import { Table } from "./Table";
+import { VisualSelection } from "./VisualSelection";
 
 interface TableEditorContext {
   currentCell: Accessor<Cell>;
@@ -27,97 +29,6 @@ interface TableEditorContext {
 }
 
 const TableEditorContext = createContext<TableEditorContext | null>(null);
-
-export class VisualSelection {
-  #start?: Cell;
-  #current: Cell;
-  #table: Table;
-
-  constructor({
-    start,
-    current,
-    table,
-  }: { start?: Cell; current: Cell; table: Table }) {
-    this.#start = start;
-    this.#current = current;
-    this.#table = table;
-  }
-
-  get current() {
-    return this.#current;
-  }
-
-  get start() {
-    return this.#start;
-  }
-
-  getAllIntersectingCells(): Cell[] {
-    if (!this.start) {
-      return [this.#current];
-    }
-
-    return this.#table.getAllCells().filter((c) => this.isIntersectingWith(c));
-  }
-
-  updateIntersectingCells(value: string) {
-    const cells: Cell[] = [];
-    for (const [rowIndex, row] of value.split("\n").entries()) {
-      for (const [columnIndex, value] of row.split("\t").entries()) {
-        const cell = this.#table.getCellOrThrow({
-          column: columnIndex,
-          row: rowIndex,
-        });
-
-        cell.updateData(value);
-        cells.push(cell);
-      }
-    }
-    return cells;
-  }
-
-  intersectingCellsToString(): string {
-    const intersectingCells = this.getAllIntersectingCells();
-
-    const cellsByRow = Map.groupBy(intersectingCells, (c) => c.getRow().index);
-
-    const sortedRows = Array.from(cellsByRow.entries()).sort(
-      ([rowA], [rowB]) => rowA - rowB,
-    );
-
-    return sortedRows
-      .map(([_, rowCells]) => {
-        return rowCells
-          .sort((a, b) => a.getRow().index - b.getRow().index)
-          .map((c) => c.toString())
-          .join("\t");
-      })
-      .join("\n");
-  }
-
-  isIntersectingWith(cell: Cell): boolean {
-    if (!this.start) {
-      return false;
-    }
-
-    const startRowIndex = this.start.getRow().index;
-    const startColumnIndex = this.start.getColumn().index;
-
-    const currentRowIndex = this.#current.getRow().index;
-    const currentColumnIndex = this.#current.getColumn().index;
-
-    const minRow = Math.min(startRowIndex, currentRowIndex);
-    const maxRow = Math.max(startRowIndex, currentRowIndex);
-    const minColumn = Math.min(startColumnIndex, currentColumnIndex);
-    const maxColumn = Math.max(startColumnIndex, currentColumnIndex);
-
-    return (
-      cell.getRow().index >= minRow &&
-      cell.getRow().index <= maxRow &&
-      cell.getColumn().index >= minColumn &&
-      cell.getColumn().index <= maxColumn
-    );
-  }
-}
 
 export function DataTableProvider(
   props: ParentProps<{
@@ -141,6 +52,7 @@ export function DataTableProvider(
   }>,
 ) {
   const registerCommand = useRegisterCommand();
+  const commandContext = useCommandsContext();
 
   const columns = createMemo(() =>
     props.structure.map(
@@ -234,9 +146,12 @@ export function DataTableProvider(
     command: "SelectionUndo",
     keybindExpression: "s > u",
     action() {
-      visualSelection()
-        .getAllIntersectingCells()
-        .forEach((c) => c.undo());
+      const selection = visualSelection();
+      selection.getAllIntersectingCells().forEach((c) => c.undo());
+
+      if (selection.isSelecting) {
+        commandContext.triggerCommand("VisualModeExit");
+      }
     },
   });
 
@@ -244,9 +159,12 @@ export function DataTableProvider(
     command: "SelectionReset",
     keybindExpression: "s > r",
     action() {
-      visualSelection()
-        .getAllIntersectingCells()
-        .forEach((c) => c.reset());
+      const selection = visualSelection();
+      selection.getAllIntersectingCells().forEach((c) => c.reset());
+
+      if (selection.isSelecting) {
+        commandContext.triggerCommand("VisualModeExit");
+      }
     },
   });
 
@@ -259,7 +177,7 @@ export function DataTableProvider(
   });
 
   registerCommand({
-    command: "EditCell",
+    command: "CellEdit",
     actionArgs: [
       z.coerce.number().meta({ title: "<column>" }),
       z.coerce.number().meta({ title: "<row>" }),

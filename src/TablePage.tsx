@@ -9,10 +9,8 @@ import { useRegisterKeybindToggle } from "./keybinds/useRegisterKeybindToggle";
 import { useSelectedTableContext } from "./SelectedTableProvider";
 import { Editor } from "./sql-editor/SqlEditor";
 import { DataTable } from "./table/DataTable";
-import {
-  DataTableProvider,
-  type VisualSelection,
-} from "./table/DataTableProvider";
+import { DataTableProvider } from "./table/DataTableProvider";
+import type { VisualSelection } from "./table/VisualSelection";
 import { useTableCount } from "./useTableCount";
 import { useTableRows } from "./useTableRows";
 import { useTableStructure } from "./useTableStructure";
@@ -113,7 +111,7 @@ export function TablePage() {
       <Dialog modal open={!!selectionToEdit()}>
         <DialogContent
           onEscapeKeyDown={(e) => e.preventDefault()}
-          class="m-0 flex h-[80vh] w-[80vw] flex-col justify-start border-none p-0 shadow-none"
+          class="m-0 flex h-[80vh] max-w-[80vw] flex-col justify-start border-none p-0 shadow-none"
         >
           <Show when={selectionToEdit()}>
             {(selection) => (
@@ -122,22 +120,19 @@ export function TablePage() {
                 initialContent={selection().intersectingCellsToString()}
                 onExit={(data) => {
                   try {
-                    const previousData =
-                      selection().intersectingCellsToString();
-
-                    // If nothing changed, do nothing
-                    if (data === previousData) {
-                      return;
-                    }
-
-                    const cells = selection().updateIntersectingCells(data);
+                    const cells = selection()
+                      .updateIntersectingCells(data)
+                      .filter((c) => c.isDirty);
 
                     for (const cell of cells) {
                       commandContext.triggerCommand(
-                        `EditCell ${cell.getColumn().index} ${cell.getRow().index} '${data}'`,
+                        `CellEdit ${cell.getColumn().index} ${cell.getRow().index} '${cell.toString()}'`,
                       );
                     }
                   } finally {
+                    if (selection().isSelecting) {
+                      commandContext.triggerCommand("VisualModeExit");
+                    }
                     setSelectionToEdit(undefined);
                   }
                 }}
