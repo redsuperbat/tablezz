@@ -4,17 +4,25 @@ import type { Row } from "./Row";
 export class Table {
   #rows: Row[];
   #columns: Column[];
+  readonly name: string;
 
-  constructor(rows: Row[], columns: Column[]) {
+  constructor({
+    rows,
+    columns,
+    name,
+  }: { rows: Row[]; columns: Column[]; name: string }) {
     this.#rows = rows;
     this.#columns = columns;
+    this.name = name;
   }
 
   getColumnOrThrow(columnIndex: number) {
     const column = this.getColumns().at(columnIndex);
+
     if (!column) {
-      throw new Error("No column found");
+      throw new Error(`No column found as index: ${columnIndex}`);
     }
+
     return column;
   }
 
@@ -28,6 +36,14 @@ export class Table {
 
   getRow(index: number) {
     return this.getRows().at(index);
+  }
+
+  getRowOrThrow(index: number) {
+    const row = this.getRow(index);
+    if (!row) {
+      throw new Error("bad");
+    }
+    return row;
   }
 
   getRows() {

@@ -9,10 +9,6 @@ export class Row {
     this.index = index;
   }
 
-  getPrimaryKey(): unknown | undefined {
-    return this.#cells.find((c) => c.isPrimary)?.data;
-  }
-
   getCell(columnIndex: number) {
     return this.getCells().at(columnIndex);
   }

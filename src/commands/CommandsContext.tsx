@@ -52,7 +52,7 @@ export function CommandsProvider(props: ParentProps) {
     });
   }
 
-  function triggerCommand(commandExpression: string) {
+  async function triggerCommand(commandExpression: string) {
     const { commandName, args } = parseCommand(commandExpression);
 
     if (!commandName) return;
@@ -80,7 +80,7 @@ export function CommandsProvider(props: ParentProps) {
     }
 
     try {
-      command.action(...parsedArgs);
+      await command.action(...parsedArgs);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);

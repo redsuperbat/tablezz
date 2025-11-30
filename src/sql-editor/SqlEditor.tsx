@@ -5,11 +5,13 @@ import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import { onCleanup, onMount } from "solid-js";
 import { useConfig } from "@/config/ConfigurationProvider";
-import { useRouter } from "@/Router";
 
-export function SqlEditor() {
+export function Editor(props: {
+  onExit(value: string): void;
+  initialContent: string;
+  extension?: string;
+}) {
   const { config } = useConfig();
-  const { navigateTo } = useRouter();
 
   let terminalRef: HTMLDivElement | undefined;
   const term = new Terminal({ fontFamily: "Fira Code" });
@@ -61,7 +63,8 @@ export function SqlEditor() {
       invoke("create_pty", {
         cols: term.cols,
         rows: term.rows,
-        initialContent: "",
+        initialContent: props.initialContent,
+        extension: props.extension,
         editor: config.editor,
       });
 
@@ -79,8 +82,13 @@ export function SqlEditor() {
       term.write(data);
     }).then((o) => disposables.add(o));
 
-    listen("pty-exit", () => {
-      navigateTo("table");
+    listen("pty-exit", (event) => {
+      const data = String(event.payload).trim();
+      try {
+        props.onExit(data);
+      } catch {
+        // do nothing
+      }
     }).then((o) => disposables.add(o));
   });
 

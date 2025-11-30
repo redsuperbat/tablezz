@@ -6,35 +6,63 @@ export class Cell {
   readonly getColumn: () => Column;
   readonly getRow: () => Row;
   readonly getTable: () => Table;
-  readonly #data: unknown;
 
-  constructor({
-    getColumn,
-    getRow,
-    getTable,
-    data,
-  }: {
+  #data: unknown[];
+  #forceRerender?: () => void;
+  #isDirty = false;
+
+  constructor(opts: {
     getRow: () => Row;
     getColumn: () => Column;
     getTable: () => Table;
     data: unknown;
   }) {
-    this.getColumn = getColumn;
-    this.getRow = getRow;
-    this.getTable = getTable;
-    this.#data = data;
+    this.getColumn = opts.getColumn;
+    this.getRow = opts.getRow;
+    this.getTable = opts.getTable;
+    this.#data = [opts.data];
+  }
+
+  setRenderer(renderer: () => void) {
+    this.#forceRerender = renderer;
+  }
+
+  updateData(value: string) {
+    this.#data.push(this.getColumn().getDataType().fromString(value));
+    this.#isDirty = true;
+    this.#forceRerender?.();
+  }
+
+  undo() {
+    if (this.#data.length === 1) {
+      return;
+    }
+
+    this.#data.pop();
+    this.#isDirty = this.#data.length !== 1;
+    this.#forceRerender?.();
+  }
+
+  reset() {
+    this.#data = [this.#data.at(0)];
+    this.#isDirty = false;
+    this.#forceRerender?.();
+  }
+
+  get isDirty() {
+    return this.#isDirty;
   }
 
   display() {
-    return this.getColumn().getDataType().display(this.#data);
+    return this.getColumn().getDataType().display(this.data);
   }
 
   toString() {
-    return this.getColumn().getDataType().toString(this.#data);
+    return this.getColumn().getDataType().toString(this.data);
   }
 
   get data() {
-    return this.#data;
+    return this.#data.at(-1);
   }
 
   isPrimary() {

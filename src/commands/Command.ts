@@ -8,5 +8,5 @@ export interface Command<T extends ZodType[] = ZodType<unknown>[]> {
   command: string;
   description?: string;
   actionArgs?: T;
-  action: (...args: InferParsedSchemas<T>) => void;
+  action(...args: InferParsedSchemas<T>): Promise<unknown> | unknown;
 }

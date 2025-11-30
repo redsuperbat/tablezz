@@ -1,5 +1,4 @@
 import { For, Show } from "solid-js";
-import { createWatcher } from "@/commands/createWatcher";
 import { useKeybindContext } from "./KeybindProvider";
 import {
   useRegisterKeybindCommand,
@@ -31,8 +30,6 @@ export function KeybindHelp() {
       keybindContext.showAllPotentialKeybinds();
     },
   });
-
-  createWatcher(potentialKeybinds, console.log);
 
   return (
     <Show when={potentialKeybinds()}>

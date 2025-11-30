@@ -52,11 +52,17 @@ export type PostgresDataType =
   | "ARRAY"
   | "USER-DEFINED";
 
+export type TableStructure = {
+  columnName: string;
+  dataType: PostgresDataType;
+  isPrimary: boolean;
+};
+
 export function useTableStructure(tableName: () => string) {
   const { schema } = useSchemaContext();
   const database = useDatabase();
 
-  return useQuery(() => ({
+  return useQuery<TableStructure[]>(() => ({
     queryFn: async () => {
       const response = await database.select<
         {

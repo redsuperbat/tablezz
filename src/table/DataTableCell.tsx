@@ -1,4 +1,4 @@
-import type { ParentProps } from "solid-js";
+import { createSignal, onMount, type ParentProps } from "solid-js";
 import { createWatcher } from "@/commands/createWatcher";
 import {
   Popover,
@@ -19,24 +19,38 @@ export function TableCell(props: {
   openedCell?: Cell;
   clearOpenedCell: () => void;
 }) {
-  const { visualBlock, currentCell } = useTableEditorContext();
+  const [rerender, forceRerender] = createSignal({});
+  const { visualSelection, currentCell } = useTableEditorContext();
 
   const isCurrent = () => currentCell().equals(props.cell);
 
-  const isActive = () => {
-    const block = visualBlock();
-    return !!block?.isIntersectingWith(props.cell);
-  };
+  const isActive = () => visualSelection().isIntersectingWith(props.cell);
 
-  const isVisualStart = () => {
-    return visualBlock()?.start.equals(props.cell);
-  };
+  const isVisualStart = () => visualSelection().start?.equals(props.cell);
 
   createWatcher(isCurrent, () => props.clearOpenedCell());
+
+  onMount(() => {
+    props.cell.setRenderer(() => forceRerender({}));
+  });
 
   const ref = useIntersectionScroll<HTMLTableCellElement>(isCurrent);
 
   const isOpened = () => props.cell.equals(props.openedCell) && isCurrent();
+
+  const toString = () => {
+    rerender();
+    return props.cell.toString();
+  };
+
+  const display = () => {
+    rerender();
+    return props.cell.display();
+  };
+  const isDirty = () => {
+    rerender();
+    return props.cell.isDirty;
+  };
 
   return (
     <td
@@ -46,14 +60,16 @@ export function TableCell(props: {
         isActive() && "bg-red-200",
         isCurrent() && "bg-red-300",
         isVisualStart() && "bg-red-100",
+        isDirty() && "bg-green-200",
+        isDirty() && isCurrent() && "bg-yellow-200",
       )}
     >
       <Popover open={isOpened()}>
         <PopoverTrigger as="div" class="outline-none">
-          <ConstrainedCell>{props.cell.toString()}</ConstrainedCell>
+          <ConstrainedCell>{toString()}</ConstrainedCell>
         </PopoverTrigger>
         <PopoverContent class="break-words bg-white">
-          {props.cell.display()}
+          {display()}
         </PopoverContent>
       </Popover>
     </td>

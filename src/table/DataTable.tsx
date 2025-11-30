@@ -8,7 +8,7 @@ import { TableCell } from "./DataTableCell";
 import { useTableEditorContext } from "./DataTableProvider";
 
 export function DataTable(props: { reload: () => void }) {
-  const { currentCell, visualBlock, getTable } = useTableEditorContext();
+  const { currentCell, visualSelection, getTable } = useTableEditorContext();
   const commandsContext = useCommandsContext();
   const [openedCell, setOpenedCell] = createSignal<Cell>();
 
@@ -24,56 +24,30 @@ export function DataTable(props: { reload: () => void }) {
   useRegisterKeybindCommandOnMount({
     command: "SelectionCopyToClipboard",
     keybindExpression: "y",
-    actionArgs: [
-      z.coerce
-        .number()
-        .default(() => currentCell().getRow().index)
-        .meta({ title: "<column>" }),
+    action() {
+      const intersectingCells = visualSelection().getAllIntersectingCells();
 
-      z.coerce
-        .number()
-        .default(() => currentCell().getColumn().index)
-        .meta({ title: "<row>" }),
-    ],
-    action(column, row) {
-      const block = visualBlock();
-      const table = getTable();
+      const cellsByRow = Map.groupBy(
+        intersectingCells,
+        (c) => c.getRow().index,
+      );
 
-      if (block) {
-        const cells = table.getAllCells();
+      const sortedRows = Array.from(cellsByRow.entries()).sort(
+        ([rowA], [rowB]) => rowA - rowB,
+      );
 
-        const intersectingCells = cells.filter((cell) =>
-          block.isIntersectingWith(cell),
-        );
+      const values = sortedRows
+        .map(([_, rowCells]) => {
+          return rowCells
+            .sort((a, b) => a.getRow().index - b.getRow().index)
+            .map((c) => c.toString())
+            .join("\t");
+        })
+        .join("\n");
 
-        const cellsByRow = Map.groupBy(
-          intersectingCells,
-          (c) => c.getRow().index,
-        );
-
-        const sortedRows = Array.from(cellsByRow.entries()).sort(
-          ([rowA], [rowB]) => rowA - rowB,
-        );
-
-        const values = sortedRows
-          .map(([_, rowCells]) => {
-            return rowCells
-              .sort((a, b) => a.getRow().index - b.getRow().index)
-              .map((c) => c.toString())
-              .join("\t");
-          })
-          .join("\n");
-
-        navigator.clipboard.writeText(values);
-        message.info("Copied to clipboard");
-        commandsContext.triggerCommand("VisualModeExit");
-        return;
-      }
-
-      const cell = table.getCell({ row, column });
-      if (!cell) return;
-      navigator.clipboard.writeText(cell.toString());
+      navigator.clipboard.writeText(values);
       message.info("Copied to clipboard");
+      commandsContext.triggerCommand("VisualModeExit");
     },
   });
 

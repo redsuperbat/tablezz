@@ -7,6 +7,7 @@ import {
   useContext,
 } from "solid-js";
 import z from "zod";
+import { useRegisterCommand } from "@/commands/useRegisterCommand";
 import {
   useRegisterKeybindCommand,
   useRegisterKeybindCommandOnMount,
@@ -22,28 +23,51 @@ import { Table } from "./Table";
 interface TableEditorContext {
   currentCell: Accessor<Cell>;
   getTable: Accessor<Table>;
-  visualBlock: Accessor<VisualBlock | undefined>;
+  visualSelection: Accessor<VisualSelection>;
 }
 
 const TableEditorContext = createContext<TableEditorContext | null>(null);
 
-export class VisualBlock {
-  #start: Cell;
+export class VisualSelection {
+  #start?: Cell;
   #current: Cell;
+  #table: Table;
 
-  constructor(start: Cell, current: Cell) {
+  constructor({
+    start,
+    current,
+    table,
+  }: { start?: Cell; current: Cell; table: Table }) {
     this.#start = start;
     this.#current = current;
+    this.#table = table;
+  }
+
+  get current() {
+    return this.#current;
   }
 
   get start() {
     return this.#start;
   }
 
+  getAllIntersectingCells(): Cell[] {
+    if (!this.start) {
+      return [this.#current];
+    }
+
+    return this.#table.getAllCells().filter((c) => this.isIntersectingWith(c));
+  }
+
   isIntersectingWith(cell: Cell): boolean {
-    const startRowIndex = this.#start.getRow().index;
+    if (!this.start) {
+      return false;
+    }
+
+    const startRowIndex = this.start.getRow().index;
+    const startColumnIndex = this.start.getColumn().index;
+
     const currentRowIndex = this.#current.getRow().index;
-    const startColumnIndex = this.#start.getColumn().index;
     const currentColumnIndex = this.#current.getColumn().index;
 
     const minRow = Math.min(startRowIndex, currentRowIndex);
@@ -63,13 +87,26 @@ export class VisualBlock {
 export function DataTableProvider(
   props: ParentProps<{
     rows: unknown[];
+    name: string;
     structure: {
       columnName: string;
       dataType: PostgresDataType;
       isPrimary: boolean;
     }[];
+
+    editCell?(cell: Cell): void;
+
+    onPreparedStatementCreated?(data: {
+      columnName: string;
+      tableName: string;
+      primaryKeyValue: unknown;
+      primaryKeyColumnName: unknown;
+      value: unknown;
+    }): void;
   }>,
 ) {
+  const registerCommand = useRegisterCommand();
+
   const columns = createMemo(() =>
     props.structure.map(
       (c, index) =>
@@ -96,10 +133,13 @@ export function DataTableProvider(
           }
 
           return new Cell({
+            // We lazily self reference here for convenience
+            // these functions never recurse indefinitely since there is
+            // a cache layer handling base cases
+            getTable: () => getTable(),
             getColumn: () => columns().at(columnIndex) as Column,
             getRow: () => rows().at(rowIndex) as Row,
             data,
-            getTable: () => getTable(),
           });
         })
         .filter((v) => v !== undefined)
@@ -109,7 +149,9 @@ export function DataTableProvider(
     });
   });
 
-  const getTable = createMemo(() => new Table(rows(), columns()));
+  const getTable = createMemo(
+    () => new Table({ rows: rows(), columns: columns(), name: props.name }),
+  );
 
   const [visualModeStartCell, setVisualModeStartCell] = createSignal<Cell>();
   const registerKeybindCommand = useRegisterKeybindCommand();
@@ -126,17 +168,15 @@ export function DataTableProvider(
     min: 0,
   });
 
-  const currentCell = () =>
-    getTable().getRow(row.value())?.getCell(column.value()) as Cell;
+  const visualSelection = createMemo(() => {
+    return new VisualSelection({
+      start: visualModeStartCell(),
+      current: getTable().getRow(row.value())?.getCell(column.value()) as Cell,
+      table: getTable(),
+    });
+  });
 
-  const visualBlock = () => {
-    const start = visualModeStartCell();
-    if (!start) {
-      return;
-    }
-
-    return new VisualBlock(start, currentCell());
-  };
+  const currentCell = () => visualSelection().current;
 
   useRegisterKeybindCommandOnMount({
     command: "VisualModeEnter",
@@ -156,23 +196,62 @@ export function DataTableProvider(
   });
 
   useRegisterKeybindCommandOnMount({
+    command: "SelectionUndo",
+    keybindExpression: "s > u",
+    action() {
+      visualSelection()
+        .getAllIntersectingCells()
+        .forEach((c) => c.undo());
+    },
+  });
+
+  useRegisterKeybindCommandOnMount({
+    command: "SelectionReset",
+    keybindExpression: "s > r",
+    action() {
+      visualSelection()
+        .getAllIntersectingCells()
+        .forEach((c) => c.reset());
+    },
+  });
+
+  useRegisterKeybindCommandOnMount({
+    command: "OpenCellEditor",
+    keybindExpression: "c",
+    action() {
+      props.editCell?.(currentCell());
+    },
+  });
+
+  registerCommand({
     command: "EditCell",
     actionArgs: [
-      z.coerce
-        .number()
-        .default(() => currentCell().getColumn().index)
-        .meta({ title: "<column>" }),
-      z.coerce
-        .number()
-        .default(() => currentCell().getRow().index)
-        .meta({ title: "<row>" }),
-      z.string(),
+      z.coerce.number().meta({ title: "<column>" }),
+      z.coerce.number().meta({ title: "<row>" }),
+      z.string().meta({ title: "<value>" }),
     ],
-    action(column, row, _value) {
-      const cell = getTable().getCellOrThrow({ column, row });
-      cell.getTable();
+    action(column, row, value) {
+      const primaryKeyCell = getTable()
+        .getRowOrThrow(row)
+        .getCells()
+        .find((c) => c.isPrimary());
+
+      if (!primaryKeyCell) {
+        throw new Error("Cannot update row without primary key");
+      }
+
+      const primaryKeyValue = primaryKeyCell.data;
+      const primaryKeyColumnName = primaryKeyCell.getColumn().getName();
+      const columnName = getTable().getColumnOrThrow(column).getName();
+
+      props.onPreparedStatementCreated?.({
+        tableName: props.name,
+        columnName,
+        primaryKeyValue,
+        primaryKeyColumnName,
+        value,
+      });
     },
-    keybindExpression: "c",
   });
 
   useRegisterKeybindCommandOnMount({
@@ -243,7 +322,7 @@ export function DataTableProvider(
     <TableEditorContext.Provider
       value={{
         currentCell,
-        visualBlock,
+        visualSelection,
         getTable,
       }}
     >

@@ -25,7 +25,11 @@ export function SqlQueryPage(props: { query: string }) {
         <Match when={rowsQuery.error}>{(error) => error().message}</Match>
         <Match when={rowsQuery.data}>
           {(rows) => (
-            <DataTableProvider structure={structure()} rows={rows()}>
+            <DataTableProvider
+              structure={structure()}
+              rows={rows()}
+              name="Unknown"
+            >
               <DataTable reload={rowsQuery.refetch} />
             </DataTableProvider>
           )}

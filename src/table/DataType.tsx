@@ -6,6 +6,8 @@ export interface DataType {
   toString(data: unknown): string;
   display(data: unknown): JSXElement;
   isPrimary: boolean;
+  fromString(value: string): unknown;
+  toFileExtension?(): string;
 }
 
 class JsonCellData implements DataType {
@@ -21,10 +23,19 @@ class JsonCellData implements DataType {
   toString(data: unknown): string {
     return JSON.stringify(data);
   }
+
+  fromString(value: string): unknown {
+    return JSON.parse(value);
+  }
+
+  toFileExtension(): string {
+    return ".json";
+  }
 }
 
 class ZonedDateTimeCellData implements DataType {
   isPrimary = false;
+
   #toTemporal(data: unknown) {
     return Temporal.ZonedDateTime.from(
       `1970-01-01T${normalizeIsoDatetime(String(data))}`,
@@ -38,10 +49,15 @@ class ZonedDateTimeCellData implements DataType {
   toString(data: unknown): string {
     return this.#toTemporal(data).toString();
   }
+
+  fromString(value: string): unknown {
+    return value;
+  }
 }
 
 class PlainDateTimeCellData implements DataType {
   isPrimary = false;
+
   #toTemporal(data: unknown) {
     return Temporal.PlainDateTime.from(normalizeIsoDatetime(String(data)));
   }
@@ -52,6 +68,10 @@ class PlainDateTimeCellData implements DataType {
 
   toString(data: unknown): string {
     return this.#toTemporal(data).toString();
+  }
+
+  fromString(value: string): unknown {
+    return value;
   }
 }
 
@@ -68,6 +88,10 @@ class PlainTimeCellData implements DataType {
   toString(data: unknown): string {
     return this.display(data);
   }
+
+  fromString(value: string): unknown {
+    return value;
+  }
 }
 
 class DefaultCellData implements DataType {
@@ -83,6 +107,10 @@ class DefaultCellData implements DataType {
 
   toString(data: unknown): string {
     return String(data);
+  }
+
+  fromString(value: string): unknown {
+    return value;
   }
 }
 
