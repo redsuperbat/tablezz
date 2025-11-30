@@ -15,7 +15,7 @@ import { useKeybindContext } from "./keybinds/KeybindProvider";
 import { useRegisterKeybindCommandOnMount } from "./keybinds/useRegisterKeybindCommand";
 import { useRegisterKeybindValue } from "./keybinds/useRegisterKeybindValue";
 import { cn } from "./lib/cn";
-import { createCounterWithWrap } from "./lib/createCounterWithWrap";
+import { createCounterWithWrap } from "./lib/counter";
 import { useIntersectionScroll } from "./lib/useIntersectionScroll";
 import { useSchemaContext } from "./SchemaProvider";
 import { useSelectedTableContext } from "./SelectedTableProvider";

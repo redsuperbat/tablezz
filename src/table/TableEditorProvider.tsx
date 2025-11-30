@@ -11,7 +11,7 @@ import {
   useRegisterKeybindCommand,
   useRegisterKeybindCommandOnMount,
 } from "@/keybinds/useRegisterKeybindCommand";
-import { createCounterWithBoundaries } from "@/lib/createCounterWithWrap";
+import { createCounterWithBoundaries } from "@/lib/counter";
 import type { PostgresDataType } from "@/useTableStructure";
 import { CellData } from "./CellData";
 
@@ -226,6 +226,12 @@ export function TableEditorProvider(
         },
       });
     },
+  });
+
+  useRegisterKeybindCommandOnMount({
+    command: "EditCell",
+    action() {},
+    keybindExpression: "c",
   });
 
   useRegisterKeybindCommandOnMount({
