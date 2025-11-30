@@ -1,4 +1,5 @@
 import { For, Show } from "solid-js";
+import { createWatcher } from "@/commands/createWatcher";
 import { useKeybindContext } from "./KeybindProvider";
 import {
   useRegisterKeybindCommand,
@@ -9,6 +10,11 @@ export function KeybindHelp() {
   const keybindContext = useKeybindContext();
   const registerKeybindCommand = useRegisterKeybindCommand();
 
+  const potentialKeybinds = () =>
+    keybindContext
+      .potentialKeybinds()
+      ?.sort((a, b) => a.command.localeCompare(b.command));
+
   useRegisterKeybindCommandOnMount({
     command: "KeybindHelpShow",
     keybindExpression: "?",
@@ -18,7 +24,6 @@ export function KeybindHelp() {
         command: "KeybindHelpClose",
         keybindExpression: "Escape",
         action() {
-          keybindContext.clearPotentialKeybinds();
           disposable.dispose();
         },
       });
@@ -27,10 +32,7 @@ export function KeybindHelp() {
     },
   });
 
-  const potentialKeybinds = () =>
-    keybindContext
-      .potentialKeybinds()
-      ?.sort((a, b) => a.command.localeCompare(b.command));
+  createWatcher(potentialKeybinds, console.log);
 
   return (
     <Show when={potentialKeybinds()}>

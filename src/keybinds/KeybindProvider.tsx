@@ -56,7 +56,10 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
       ast: compilation.ast,
     };
 
-    setKeybinds((k) => [...k, registeredKeybind]);
+    setKeybinds((k) => {
+      const old = k.filter((k) => k.command !== keybind.command);
+      return [...old, registeredKeybind];
+    });
   };
 
   const unregisterKeybind = (keybind: Keybind) => {
