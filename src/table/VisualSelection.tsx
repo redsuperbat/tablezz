@@ -61,10 +61,12 @@ export class VisualSelection {
       this.#current.getColumn().index,
     );
 
-    for (const [rowOffset, row] of stringifiedCells
-      .split(columnDelimiter)
-      .entries()) {
-      for (const [colOffset, cellValue] of row.split(rowDelimiter).entries()) {
+    const rows = stringifiedCells.split(rowDelimiter).entries();
+
+    for (const [rowOffset, row] of rows) {
+      const columns = row.split(columnDelimiter).entries();
+
+      for (const [colOffset, cellValue] of columns) {
         const cell = this.#table.getCellOrThrow({
           column: startCol + colOffset,
           row: startRow + rowOffset,
@@ -98,9 +100,9 @@ export class VisualSelection {
         return rowCells
           .sort((a, b) => a.getRow().index - b.getRow().index)
           .map((c) => c.toString())
-          .join(rowDelimiter);
+          .join(columnDelimiter);
       })
-      .join(columnDelimiter);
+      .join(rowDelimiter);
   }
 
   isIntersectingWith(cell: Cell): boolean {
