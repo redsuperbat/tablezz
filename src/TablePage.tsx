@@ -82,7 +82,7 @@ export function TablePage() {
     ),
   );
   const columnDelimiter = "|";
-  const rowDelimiter = "-";
+  const rowDelimiter = "-\n";
 
   return (
     <div
@@ -116,37 +116,46 @@ export function TablePage() {
           class="m-0 flex h-[80vh] max-w-[80vw] flex-col justify-start border-none p-0 shadow-none"
         >
           <Show when={selectionToEdit()}>
-            {(selection) => (
-              <Editor
-                extension=".txt"
-                initialContent={selection().intersectingCellsToString({
-                  columnDelimiter,
-                  rowDelimiter,
-                })}
-                onExit={(data) => {
-                  try {
-                    const cells = selection()
-                      .updateIntersectingCells({
-                        stringifiedCells: data,
-                        columnDelimiter,
-                        rowDelimiter,
-                      })
-                      .filter((c) => c.isDirty);
+            {(selection) => {
+              const extension = selection()
+                .getAllIntersectingCells()
+                .at(0)
+                ?.getColumn()
+                .getDataType()
+                .toFileExtension();
 
-                    for (const cell of cells) {
-                      commandContext.triggerCommand(
-                        `CellEdit ${cell.getColumn().index} ${cell.getRow().index} '${cell.toString()}'`,
-                      );
+              return (
+                <Editor
+                  extension={extension}
+                  initialContent={selection().intersectingCellsToString({
+                    columnDelimiter,
+                    rowDelimiter,
+                  })}
+                  onExit={(data) => {
+                    try {
+                      const cells = selection()
+                        .updateIntersectingCells({
+                          stringifiedCells: data,
+                          columnDelimiter,
+                          rowDelimiter,
+                        })
+                        .filter((c) => c.isDirty);
+
+                      for (const cell of cells) {
+                        commandContext.triggerCommand(
+                          `CellEdit ${cell.getColumn().index} ${cell.getRow().index} '${cell.toString()}'`,
+                        );
+                      }
+                    } finally {
+                      if (selection().isSelecting) {
+                        commandContext.triggerCommand("VisualModeExit");
+                      }
+                      setSelectionToEdit(undefined);
                     }
-                  } finally {
-                    if (selection().isSelecting) {
-                      commandContext.triggerCommand("VisualModeExit");
-                    }
-                    setSelectionToEdit(undefined);
-                  }
-                }}
-              />
-            )}
+                  }}
+                />
+              );
+            }}
           </Show>
         </DialogContent>
       </Dialog>
