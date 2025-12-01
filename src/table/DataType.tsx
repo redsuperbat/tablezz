@@ -181,7 +181,6 @@ export namespace DataType {
     type: PostgresDataType;
     isPrimary: boolean;
   }): DataType {
-    console.log({ type });
     const inner = () => {
       switch (type) {
         case "json":
