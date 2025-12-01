@@ -11,7 +11,7 @@ import type { Cell } from "./Cell";
 import { useTableEditorContext } from "./DataTableProvider";
 
 function ConstrainedCell(props: ParentProps) {
-  return <div class="h-6 truncate">{props.children}</div>;
+  return <div class="h-6 max-w-xl truncate">{props.children}</div>;
 }
 
 export function TableCell(props: {
@@ -38,15 +38,16 @@ export function TableCell(props: {
 
   const isOpened = () => props.cell.equals(props.openedCell) && isCurrent();
 
-  const toString = () => {
+  const cellToString = () => {
     rerender();
     return props.cell.toString();
   };
 
-  const display = () => {
+  const displayCell = () => {
     rerender();
     return props.cell.display();
   };
+
   const isDirty = () => {
     rerender();
     return props.cell.isDirty;
@@ -66,10 +67,10 @@ export function TableCell(props: {
     >
       <Popover open={isOpened()}>
         <PopoverTrigger as="div" class="outline-none">
-          <ConstrainedCell>{toString()}</ConstrainedCell>
+          <ConstrainedCell>{cellToString()}</ConstrainedCell>
         </PopoverTrigger>
-        <PopoverContent class="break-words bg-white">
-          {display()}
+        <PopoverContent class="w-full max-w-6xl truncate break-words bg-white">
+          {displayCell()}
         </PopoverContent>
       </Popover>
     </td>
