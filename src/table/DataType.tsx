@@ -3,8 +3,6 @@ import { Temporal } from "temporal-polyfill";
 import type { PostgresDataType } from "@/useTableStructure";
 
 export abstract class DataType {
-  abstract isPrimary: boolean;
-
   abstract toString(data: unknown): string;
   abstract display(data: unknown): JSXElement;
   abstract fromString(value: string): unknown;
@@ -12,11 +10,13 @@ export abstract class DataType {
   toFileExtension(): string {
     return ".txt";
   }
+
+  isPrimary(): boolean {
+    return false;
+  }
 }
 
 class JsonCellData extends DataType {
-  isPrimary = false;
-
   display(data: unknown) {
     return (
       <code>
@@ -39,7 +39,6 @@ class JsonCellData extends DataType {
 }
 
 class WithoutNullish extends DataType {
-  isPrimary = false;
   #inner: DataType;
 
   constructor(inner: DataType) {
@@ -71,14 +70,16 @@ class WithoutNullish extends DataType {
     return this.#inner.fromString(value);
   }
 
+  override isPrimary(): boolean {
+    return this.#inner.isPrimary();
+  }
+
   override toFileExtension() {
     return this.#inner.toFileExtension();
   }
 }
 
 class ZonedDateTimeCellData extends DataType {
-  isPrimary = false;
-
   #toTemporal(data: unknown) {
     // Convert to ISO 8601 format
     const isoString = String(data)
@@ -103,8 +104,6 @@ class ZonedDateTimeCellData extends DataType {
 }
 
 class PlainDateTimeCellData extends DataType {
-  isPrimary = false;
-
   #toTemporal(data: unknown) {
     return Temporal.PlainDateTime.from(normalizeIsoDatetime(String(data)));
   }
@@ -123,8 +122,6 @@ class PlainDateTimeCellData extends DataType {
 }
 
 class PlainTimeCellData extends DataType {
-  isPrimary = false;
-
   #toTemporal(data: unknown) {
     return Temporal.PlainTime.from(String(data));
   }
@@ -143,11 +140,15 @@ class PlainTimeCellData extends DataType {
 }
 
 class DefaultCellData extends DataType {
-  isPrimary: boolean;
+  #isPrimary: boolean;
 
   constructor(isPrimary: boolean) {
     super();
-    this.isPrimary = isPrimary;
+    this.#isPrimary = isPrimary;
+  }
+
+  override isPrimary(): boolean {
+    return this.#isPrimary;
   }
 
   display(data: unknown): string {

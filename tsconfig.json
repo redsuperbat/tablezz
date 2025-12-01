@@ -26,7 +26,8 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitAny": true,
-    "noUncheckedIndexedAccess": true
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
