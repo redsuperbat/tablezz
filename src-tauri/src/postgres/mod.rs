@@ -26,8 +26,6 @@ pub enum Error {
     Sql(#[from] sqlx::Error),
     #[error(transparent)]
     Migration(#[from] sqlx::migrate::MigrateError),
-    #[error("invalid connection url: {0}")]
-    InvalidDbUrl(String),
     #[error("database {0} not loaded")]
     DatabaseNotLoaded(String),
     #[error("unsupported datatype: {0}")]
