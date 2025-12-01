@@ -59,18 +59,19 @@ export function TablePage() {
     command: "WriteChanges",
     async action() {
       const statements = preparedStatements();
-      // Set here in case update throws
-      setPreparedStatements([]);
-
-      for (const statement of statements) {
-        const sqlStatement = `
-          UPDATE "${statement.tableName}"
-          SET "${statement.columnName}" = '${statement.value}'
-          WHERE "${statement.primaryKeyColumnName}" = '${statement.primaryKeyValue}';`;
-        await database.execute(sqlStatement);
+      try {
+        for (const statement of statements) {
+          const sqlStatement = `
+            UPDATE "${statement.tableName}"
+            SET "${statement.columnName}" = '${statement.value}'
+            WHERE "${statement.primaryKeyColumnName}" = '${statement.primaryKeyValue}';`;
+          await database.execute(sqlStatement);
+        }
+      } finally {
+        // We want to do this if the update fails or succeeds
+        setPreparedStatements([]);
+        reload();
       }
-
-      reload();
     },
   });
 
@@ -122,7 +123,7 @@ export function TablePage() {
                 .at(0)
                 ?.getColumn()
                 .getDataType()
-                .toFileExtension();
+                .fileExtension();
 
               return (
                 <Editor

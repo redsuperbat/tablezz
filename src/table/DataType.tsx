@@ -7,7 +7,7 @@ export abstract class DataType {
   abstract display(data: unknown): JSXElement;
   abstract fromString(value: string): unknown;
 
-  toFileExtension(): string {
+  fileExtension(): string {
     return ".txt";
   }
 
@@ -33,7 +33,7 @@ class JsonCellData extends DataType {
     return JSON.parse(value);
   }
 
-  override toFileExtension(): string {
+  override fileExtension(): string {
     return ".json";
   }
 }
@@ -74,8 +74,8 @@ class WithoutNullish extends DataType {
     return this.#inner.isPrimary();
   }
 
-  override toFileExtension() {
-    return this.#inner.toFileExtension();
+  override fileExtension() {
+    return this.#inner.fileExtension();
   }
 }
 
