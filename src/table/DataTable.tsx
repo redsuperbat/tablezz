@@ -25,7 +25,11 @@ export function DataTable(props: { reload: () => void }) {
     command: "SelectionCopyToClipboard",
     keybindExpression: "y",
     action() {
-      const values = visualSelection().intersectingCellsToString();
+      const values = visualSelection().intersectingCellsToString({
+        // Use these delimiters since it's useful for excel
+        columnDelimiter: "\n",
+        rowDelimiter: "\t",
+      });
       navigator.clipboard.writeText(values);
       message.info("Copied to clipboard");
       commandsContext.triggerCommand("VisualModeExit");

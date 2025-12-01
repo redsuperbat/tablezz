@@ -81,6 +81,8 @@ export function TablePage() {
       </div>,
     ),
   );
+  const columnDelimiter = "|";
+  const rowDelimiter = "-";
 
   return (
     <div
@@ -117,11 +119,18 @@ export function TablePage() {
             {(selection) => (
               <Editor
                 extension=".txt"
-                initialContent={selection().intersectingCellsToString()}
+                initialContent={selection().intersectingCellsToString({
+                  columnDelimiter,
+                  rowDelimiter,
+                })}
                 onExit={(data) => {
                   try {
                     const cells = selection()
-                      .updateIntersectingCells(data)
+                      .updateIntersectingCells({
+                        stringifiedCells: data,
+                        columnDelimiter,
+                        rowDelimiter,
+                      })
                       .filter((c) => c.isDirty);
 
                     for (const cell of cells) {

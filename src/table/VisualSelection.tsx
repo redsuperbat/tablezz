@@ -36,9 +36,17 @@ export class VisualSelection {
     return this.#table.getAllCells().filter((c) => this.isIntersectingWith(c));
   }
 
-  updateIntersectingCells(value: string) {
+  updateIntersectingCells({
+    stringifiedCells,
+    columnDelimiter,
+    rowDelimiter,
+  }: {
+    stringifiedCells: string;
+    rowDelimiter: string;
+    columnDelimiter: string;
+  }) {
     if (!this.start) {
-      this.current.updateData(value);
+      this.current.updateData(stringifiedCells);
       return [this.current];
     }
 
@@ -53,8 +61,10 @@ export class VisualSelection {
       this.#current.getColumn().index,
     );
 
-    for (const [rowOffset, row] of value.split("\n").entries()) {
-      for (const [colOffset, cellValue] of row.split("\t").entries()) {
+    for (const [rowOffset, row] of stringifiedCells
+      .split(columnDelimiter)
+      .entries()) {
+      for (const [colOffset, cellValue] of row.split(rowDelimiter).entries()) {
         const cell = this.#table.getCellOrThrow({
           column: startCol + colOffset,
           row: startRow + rowOffset,
@@ -68,7 +78,13 @@ export class VisualSelection {
     return cells;
   }
 
-  intersectingCellsToString(): string {
+  intersectingCellsToString({
+    rowDelimiter,
+    columnDelimiter,
+  }: {
+    rowDelimiter: string;
+    columnDelimiter: string;
+  }): string {
     const intersectingCells = this.getAllIntersectingCells();
 
     const cellsByRow = Map.groupBy(intersectingCells, (c) => c.getRow().index);
@@ -82,9 +98,9 @@ export class VisualSelection {
         return rowCells
           .sort((a, b) => a.getRow().index - b.getRow().index)
           .map((c) => c.toString())
-          .join("\t");
+          .join(rowDelimiter);
       })
-      .join("\n");
+      .join(columnDelimiter);
   }
 
   isIntersectingWith(cell: Cell): boolean {
