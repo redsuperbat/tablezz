@@ -46,7 +46,12 @@ export function KeybindHelp() {
                       {bind.bind}
                     </td>
                     <td class="w-8 px-2 py-2 text-center text-zinc-500">→</td>
-                    <td class="px-3 py-2 text-zinc-500">{bind.command}</td>
+                    <td class="px-3 py-2 text-zinc-500">
+                      <div class="flex flex-col">
+                        <span>{bind.command}</span>
+                        <small>{bind.description}</small>
+                      </div>
+                    </td>
                   </tr>
                 )}
               </For>

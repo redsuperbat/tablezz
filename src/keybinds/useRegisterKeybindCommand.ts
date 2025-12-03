@@ -28,6 +28,7 @@ export function useRegisterKeybindCommand() {
       command: keybindCommand.command,
       keybindExpression: keybindCommand.keybindExpression,
       overrideInput: keybindCommand.overrideInput,
+      commandDescription: keybindCommand.description,
     });
 
     return {

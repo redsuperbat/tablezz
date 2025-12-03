@@ -13,6 +13,7 @@ type CheckFn = (e: KeyEvent) => boolean;
 interface RegisteredKeybind extends Keybind {
   check: CheckFn[];
   ast: KeyExpression;
+  commandDescription: string | undefined;
 }
 
 export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
@@ -23,7 +24,9 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
     new Map(),
   );
   const [potentialKeybinds, setPotentialKeybinds] =
-    createSignal<{ bind: string; command: string }[]>();
+    createSignal<
+      { bind: string; command: string; description: string | undefined }[]
+    >();
 
   function showAllPotentialKeybinds() {
     const potentialKeybinds = keybinds()
@@ -31,6 +34,7 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
       .map((k) => ({
         bind: formatter.format(k.ast),
         command: k.command,
+        description: k.commandDescription,
       }))
       .toArray();
 
@@ -53,13 +57,16 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
     return { checker, ast };
   };
 
-  const registerKeybind = (keybind: Keybind) => {
+  const registerKeybind = (
+    keybind: Keybind & { commandDescription: string | undefined },
+  ) => {
     const compilation = compileKeybind(keybind.keybindExpression);
     setKeybinds((map) =>
       new Map(map).set(keybind.command, {
         ...keybind,
         check: compilation.checker,
         ast: compilation.ast,
+        commandDescription: keybind.commandDescription,
       }),
     );
   };
@@ -76,7 +83,11 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
     const configurationKeybinds = Object.entries(config.keybindings || {});
 
     for (const [keybindExpression, command] of configurationKeybinds) {
-      registerKeybind({ command, keybindExpression });
+      registerKeybind({
+        command,
+        keybindExpression,
+        commandDescription: undefined,
+      });
     }
   });
 
@@ -163,10 +174,15 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
         const potentials = newPotentialKeybinds
           .values()
           .filter((k) => k.check[i] !== undefined)
-          .map((k) => ({ node: k.ast[i], command: k.command }))
+          .map((k) => ({
+            node: k.ast[i],
+            command: k.command,
+            commandDescription: k.commandDescription,
+          }))
           .map((n) => ({
             bind: formatter.format(n.node ? [n.node] : []),
             command: n.command,
+            description: n.commandDescription,
           }))
           .toArray();
 
