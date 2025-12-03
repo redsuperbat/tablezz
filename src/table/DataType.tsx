@@ -85,6 +85,7 @@ class ZonedDateTimeCellData extends DataType {
     const isoString = String(data)
       .replace(" ", "T")
       .replace(/([+-]\d{2}:\d{2}):\d{2}$/, "$1")
+      .replace(/T(\d):/, "T0$1:") // Pad single-digit hours
       .replaceAll(" ", "");
 
     return Temporal.Instant.from(isoString).toZonedDateTimeISO("UTC");
