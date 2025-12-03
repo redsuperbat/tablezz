@@ -100,9 +100,17 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
 
       const reverseKeybinds = potentialKeybinds.slice();
 
-      const keybindsToCheck = reverseKeybinds.filter(
-        (k) => k.check[i] !== undefined,
-      );
+      const keybindsToCheck = reverseKeybinds
+        .filter((k) => k.check[i] !== undefined)
+        .sort((a, b) => {
+          const aNode = a.ast[i];
+          const bNode = b.ast[i];
+          const countModifiers = (node: KeyExpression[number] | undefined) => {
+            if (!node) return 0;
+            return node.kind === "combination" ? 1 : 0;
+          };
+          return countModifiers(bNode) - countModifiers(aNode);
+        });
 
       if (!keybindsToCheck.length) {
         reset();
