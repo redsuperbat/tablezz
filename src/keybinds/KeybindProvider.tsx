@@ -19,15 +19,20 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
   const { config } = useConfig();
   const commandsContext = useCommandsContext();
   const formatter = new KeybindFormatter();
-  const [keybinds, setKeybinds] = createSignal<RegisteredKeybind[]>([]);
+  const [keybinds, setKeybinds] = createSignal<Map<string, RegisteredKeybind>>(
+    new Map(),
+  );
   const [potentialKeybinds, setPotentialKeybinds] =
     createSignal<{ bind: string; command: string }[]>();
 
   function showAllPotentialKeybinds() {
-    const potentialKeybinds = keybinds().map((k) => ({
-      bind: formatter.format(k.ast),
-      command: k.command,
-    }));
+    const potentialKeybinds = keybinds()
+      .values()
+      .map((k) => ({
+        bind: formatter.format(k.ast),
+        command: k.command,
+      }))
+      .toArray();
 
     setPotentialKeybinds(potentialKeybinds);
   }
@@ -50,21 +55,20 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
 
   const registerKeybind = (keybind: Keybind) => {
     const compilation = compileKeybind(keybind.keybindExpression);
-    const registeredKeybind = {
-      ...keybind,
-      check: compilation.checker,
-      ast: compilation.ast,
-    };
-
-    setKeybinds((k) => {
-      const old = k.filter((k) => k.command !== keybind.command);
-      return [...old, registeredKeybind];
-    });
+    setKeybinds((map) =>
+      new Map(map).set(keybind.command, {
+        ...keybind,
+        check: compilation.checker,
+        ast: compilation.ast,
+      }),
+    );
   };
 
   const unregisterKeybind = (keybind: Keybind) => {
-    setKeybinds((keys) => {
-      return keys.filter((k) => k.command !== keybind.command);
+    setKeybinds((map) => {
+      const next = new Map(map);
+      next.delete(keybind.command);
+      return next;
     });
   };
 
@@ -91,7 +95,7 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
       // in the reverse order they were registered. If a keybind was registered
       // after another one it should take precedence
       if (!potentialKeybinds) {
-        potentialKeybinds = [...keybinds()].reverse();
+        potentialKeybinds = keybinds().values().toArray().reverse();
       }
 
       const reverseKeybinds = potentialKeybinds.slice();
