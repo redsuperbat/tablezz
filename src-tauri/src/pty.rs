@@ -35,7 +35,7 @@ pub fn create_pty(
 
     let temp_file = {
         let temp_dir = env::temp_dir();
-        let temp_file = temp_dir.join(format!("edit_{}.{ext}", rand::random::<u16>()));
+        let temp_file = temp_dir.join(format!("edit_{}{ext}", rand::random::<u16>()));
         fs::write(&temp_file, initial_content).map_err(|e| e.to_string())?;
 
         let path = temp_file.to_string_lossy().to_string();
