@@ -14,6 +14,7 @@ export function DataTable(props: { reload: () => void }) {
 
   useRegisterKeybindCommandOnMount({
     command: "ReloadTable",
+    description: "Reload the current table data.",
     keybindExpression: "r",
     action() {
       props.reload();
@@ -23,6 +24,7 @@ export function DataTable(props: { reload: () => void }) {
 
   useRegisterKeybindCommandOnMount({
     command: "SelectionCopyToClipboard",
+    description: "Copy the selected cells to the clipboard.",
     keybindExpression: "y",
     action() {
       const values = visualSelection().intersectingCellsToString({
@@ -38,6 +40,7 @@ export function DataTable(props: { reload: () => void }) {
 
   useRegisterKeybindCommandOnMount({
     command: "SelectionOpen",
+    description: "Open a cell for inline viewing.",
     keybindExpression: "K",
     actionArgs: [
       z.coerce
