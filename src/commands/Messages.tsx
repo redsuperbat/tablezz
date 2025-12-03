@@ -1,6 +1,7 @@
 import { Toast, toaster } from "@kobalte/core/toast";
 
 function Message(props: { message: string; class: string }) {
+  clear();
   return toaster.show((p) => (
     <Toast toastId={p.toastId} class={props.class}>
       {props.message}
