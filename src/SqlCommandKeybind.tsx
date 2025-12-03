@@ -3,10 +3,20 @@ import z from "zod";
 import { message } from "./commands/Messages";
 import { useRegisterCommandOnMount } from "./commands/useRegisterCommand";
 import { useDatabase } from "./database/useDatabase";
+import { useRegisterKeybindCommandOnMount } from "./keybinds/useRegisterKeybindCommand";
 
 export function SqlCommandKeybind() {
   const database = useDatabase();
   const queryClient = useQueryClient();
+
+  useRegisterKeybindCommandOnMount({
+    keybindExpression: "Meta + r",
+    command: "ReloadFull",
+    action() {
+      queryClient.invalidateQueries();
+      message.info("Reloaded");
+    },
+  });
 
   useRegisterCommandOnMount({
     command: "SqlExecute",
