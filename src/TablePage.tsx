@@ -82,8 +82,8 @@ export function TablePage() {
       </div>,
     ),
   );
-  const columnDelimiter = "|";
-  const rowDelimiter = "-\n";
+  const columnDelimiter = "\x1F";
+  const rowDelimiter = "\x1F\n";
 
   return (
     <div
