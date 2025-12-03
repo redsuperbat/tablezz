@@ -57,11 +57,15 @@ export function Picker() {
 
     switch (type[0]) {
       case "keybinds":
-        return keybindContext.keybinds().map((k) => ({
-          icon: <Key />,
-          onSelect() {},
-          searchTerm: `${k.keybindExpression} -> ${k.command}`,
-        }));
+        return keybindContext
+          .keybinds()
+          .values()
+          .map((k) => ({
+            icon: <Key />,
+            onSelect() {},
+            searchTerm: `${k.keybindExpression} -> ${k.command}`,
+          }))
+          .toArray();
 
       case "schemas":
         return schemas().map((s) => ({
