@@ -1,6 +1,6 @@
 import type { FuzzyMatches, FuzzyResult } from "@nozbe/microfuzz";
 import createFuzzySearch from "@nozbe/microfuzz";
-import { Folder, Key, Table } from "lucide-solid";
+import { Folder, Table } from "lucide-solid";
 import { createMemo, For, type JSXElement } from "solid-js";
 import z from "zod";
 import {
@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/dialog";
 import { createWatcher } from "./commands/createWatcher";
 import { useAppForm } from "./components/form";
-import { useKeybindContext } from "./keybinds/KeybindProvider";
 import { useRegisterKeybindCommandOnMount } from "./keybinds/useRegisterKeybindCommand";
 import { useRegisterKeybindValue } from "./keybinds/useRegisterKeybindValue";
 import { cn } from "./lib/cn";
@@ -34,16 +33,12 @@ export function Picker() {
   const selectedSchemas = useSelectedDatabaseSchemas();
   const { setSchema } = useSchemaContext();
 
-  const keybindContext = useKeybindContext();
   const pickerType = useRegisterKeybindValue({
     command: "PickerOpen",
-    description: "Open the picker to search tables, schemas, or keybinds.",
+    description: "Open the picker to pick items",
     keybindExpression: "Leader > Space",
     actionArgs: [
-      z
-        .enum(["keybinds", "schemas", "tables"])
-        .default("tables")
-        .meta({ title: "<type>" }),
+      z.enum(["schemas", "tables"]).default("tables").meta({ title: "<type>" }),
     ],
   });
 
@@ -56,17 +51,6 @@ export function Picker() {
     if (!type) return [];
 
     switch (type[0]) {
-      case "keybinds":
-        return keybindContext
-          .keybinds()
-          .values()
-          .map((k) => ({
-            icon: <Key />,
-            onSelect() {},
-            searchTerm: `${k.keybindExpression} -> ${k.command}`,
-          }))
-          .toArray();
-
       case "schemas":
         return schemas().map((s) => ({
           icon: <Folder />,
