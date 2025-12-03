@@ -37,6 +37,7 @@ export function Picker() {
   const keybindContext = useKeybindContext();
   const pickerType = useRegisterKeybindValue({
     command: "PickerOpen",
+    description: "Open the picker to search tables, schemas, or keybinds.",
     keybindExpression: "Leader > Space",
     actionArgs: [
       z
@@ -105,6 +106,7 @@ function PickerContent(props: { items: PickerItem[]; onSelect: () => void }) {
 
   useRegisterKeybindCommandOnMount({
     command: "PickerClose",
+    description: "Close the picker dialog.",
     action: props.onSelect,
     keybindExpression: "Escape",
     overrideInput: true,
@@ -134,6 +136,7 @@ function PickerContent(props: { items: PickerItem[]; onSelect: () => void }) {
 
   useRegisterKeybindCommandOnMount({
     command: "PickerSelect",
+    description: "Select the highlighted item in the picker.",
     action() {
       const item = filteredItems()[selectedIndex.value()];
       item?.item.onSelect?.();
@@ -146,6 +149,7 @@ function PickerContent(props: { items: PickerItem[]; onSelect: () => void }) {
 
   useRegisterKeybindCommandOnMount({
     command: "PickerSelectPrev",
+    description: "Move to the previous item in the picker.",
     keybindExpression: "(Control + k) | ArrowUp",
     overrideInput: true,
     action() {
@@ -155,6 +159,7 @@ function PickerContent(props: { items: PickerItem[]; onSelect: () => void }) {
 
   useRegisterKeybindCommandOnMount({
     command: "PickerSelectNext",
+    description: "Move to the next item in the picker.",
     keybindExpression: "(Control + j) | ArrowDown",
     overrideInput: true,
     action() {

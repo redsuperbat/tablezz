@@ -20,10 +20,12 @@ export function Router() {
 
   useRegisterCommandOnMount({
     command: "SqlQuery",
+    description: "Run a custom SQL query and display the results.",
     actionArgs: [z.string().min(1).meta({ title: "<sql>" })],
     action(sql) {
       const disposable = registerKeybindCommand({
         command: "SqlQueryReset",
+        description: "Clear the current SQL query and return to table view.",
         keybindExpression: "Escape",
         action() {
           disposable.dispose();

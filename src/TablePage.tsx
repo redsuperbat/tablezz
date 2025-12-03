@@ -33,6 +33,7 @@ export function TablePage() {
 
   const showQueryHistory = useRegisterKeybindToggle({
     command: "ToggleQueryHistory",
+    description: "Show or hide the SQL query history panel.",
     keybindExpression: "Leader > q",
     initialValue: false,
   });
@@ -56,6 +57,7 @@ export function TablePage() {
   useRegisterKeybindCommandOnMount({
     keybindExpression: "w",
     command: "WriteChanges",
+    description: "Write pending cell changes to the database.",
     async action() {
       const statements = preparedStatements();
       try {

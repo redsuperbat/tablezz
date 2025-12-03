@@ -12,6 +12,7 @@ export function SqlCommandKeybind() {
   useRegisterKeybindCommandOnMount({
     keybindExpression: "Meta + r",
     command: "ReloadFull",
+    description: "Reload all data from the database.",
     action() {
       queryClient.resetQueries();
       message.info("Reloaded all data");
@@ -20,6 +21,7 @@ export function SqlCommandKeybind() {
 
   useRegisterCommandOnMount({
     command: "SqlExecute",
+    description: "Execute a SQL statement without returning results.",
     actionArgs: [z.string().min(1).meta({ title: "<sql>" })],
     async action(sql) {
       try {

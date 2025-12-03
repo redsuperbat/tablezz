@@ -41,6 +41,7 @@ export function ConnectionCredentialsProvider(props: ParentProps) {
 
   useRegisterCommandOnMount({
     command: "DatabaseUrlAdd",
+    description: "Set the database connection URL.",
     actionArgs: [z.url().meta({ title: "<url>" })],
     action(url) {
       setDatabaseUrlRaw(url);
@@ -49,6 +50,7 @@ export function ConnectionCredentialsProvider(props: ParentProps) {
 
   useRegisterCommandOnMount({
     command: "DatabaseUrlClear",
+    description: "Clear the current database connection URL.",
     action() {
       setDatabaseUrlRaw(undefined);
     },

@@ -16,11 +16,13 @@ export function KeybindHelp() {
 
   useRegisterKeybindCommandOnMount({
     command: "KeybindHelpShow",
+    description: "Show available keyboard shortcuts.",
     keybindExpression: "?",
     overrideInput: true,
     action() {
       const disposable = registerKeybindCommand({
         command: "KeybindHelpClose",
+        description: "Close the keyboard shortcuts help.",
         keybindExpression: "Escape",
         action() {
           disposable.dispose();

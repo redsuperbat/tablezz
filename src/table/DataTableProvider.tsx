@@ -126,6 +126,7 @@ export function DataTableProvider(
 
   useRegisterKeybindCommandOnMount({
     command: "VisualModeEnter",
+    description: "Enter visual selection mode.",
     keybindExpression: "v",
     action() {
       setVisualModeStartCell(currentCell());
@@ -133,6 +134,7 @@ export function DataTableProvider(
       const disposable = registerKeybindCommand({
         keybindExpression: "Escape | v",
         command: "VisualModeExit",
+        description: "Exit visual selection mode.",
         action() {
           disposable.dispose();
           setVisualModeStartCell(undefined);
@@ -143,6 +145,7 @@ export function DataTableProvider(
 
   useRegisterKeybindCommandOnMount({
     command: "SelectionUndo",
+    description: "Undo changes in the selected cells.",
     keybindExpression: "s > u",
     action() {
       const selection = visualSelection();
@@ -156,6 +159,7 @@ export function DataTableProvider(
 
   useRegisterKeybindCommandOnMount({
     command: "SelectionReset",
+    description: "Reset selected cells to their original values.",
     keybindExpression: "s > r",
     action() {
       const selection = visualSelection();
@@ -169,6 +173,7 @@ export function DataTableProvider(
 
   useRegisterKeybindCommandOnMount({
     command: "OpenCellEditor",
+    description: "Open the cell editor for the current selection.",
     keybindExpression: "c",
     action() {
       props.onEditSelection?.(visualSelection());
@@ -177,6 +182,7 @@ export function DataTableProvider(
 
   registerCommand({
     command: "CellEdit",
+    description: "Edit a cell value at the specified column and row.",
     actionArgs: [
       z.coerce.number().meta({ title: "<column>" }),
       z.coerce.number().meta({ title: "<row>" }),
@@ -211,12 +217,14 @@ export function DataTableProvider(
 
   useRegisterKeybindCommandOnMount({
     command: "MoveToTop",
+    description: "Move to the last row of the table.",
     keybindExpression: "G",
     action: row.setToMax,
   });
 
   useRegisterKeybindCommandOnMount({
     command: "MoveDownHalf",
+    description: "Move down by half a page.",
     keybindExpression: "Control + d",
     action() {
       row.increment(visibleRows);
@@ -225,6 +233,7 @@ export function DataTableProvider(
 
   useRegisterKeybindCommandOnMount({
     command: "MoveUpHalf",
+    description: "Move up by half a page.",
     keybindExpression: "Control + u",
     action() {
       row.decrement(visibleRows);
@@ -233,12 +242,14 @@ export function DataTableProvider(
 
   useRegisterKeybindCommandOnMount({
     command: "MoveToBottom",
+    description: "Move to the first row of the table.",
     keybindExpression: "g",
     action: row.reset,
   });
 
   useRegisterKeybindCommandOnMount({
     command: "MoveCellRight",
+    description: "Move the cursor right by one or more cells.",
     keybindExpression: "l",
     actionArgs: [z.coerce.number().optional().meta({ title: "<distance>" })],
     action(distance) {
@@ -248,6 +259,7 @@ export function DataTableProvider(
 
   useRegisterKeybindCommandOnMount({
     command: "MoveCellLeft",
+    description: "Move the cursor left by one or more cells.",
     keybindExpression: "h",
     actionArgs: [z.coerce.number().optional().meta({ title: "<distance>" })],
     action(distance) {
@@ -257,6 +269,7 @@ export function DataTableProvider(
 
   useRegisterKeybindCommandOnMount({
     command: "MoveCellUp",
+    description: "Move the cursor up by one or more cells.",
     keybindExpression: "k",
     actionArgs: [z.coerce.number().optional().meta({ title: "<distance>" })],
     action(distance) {
@@ -266,6 +279,7 @@ export function DataTableProvider(
 
   useRegisterKeybindCommandOnMount({
     command: "MoveCellDown",
+    description: "Move the cursor down by one or more cells.",
     keybindExpression: "j",
     actionArgs: [z.coerce.number().optional().meta({ title: "<distance>" })],
     action(distance) {

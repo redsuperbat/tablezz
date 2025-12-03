@@ -41,6 +41,7 @@ function AutocompleteOptions(props: {
 
   useRegisterKeybindCommandOnMount({
     command: "CommandAutocompleteHide",
+    description: "Hide the command autocomplete menu.",
     keybindExpression: "Escape",
     action: props.onClose,
     overrideInput: true,
@@ -48,6 +49,7 @@ function AutocompleteOptions(props: {
 
   useRegisterKeybindCommandOnMount({
     command: "CommandAutocompleteNext",
+    description: "Select the next item in the autocomplete list.",
     keybindExpression: "Tab",
     action() {
       // If it's a single command we just select it
@@ -64,6 +66,7 @@ function AutocompleteOptions(props: {
 
   useRegisterKeybindCommandOnMount({
     command: "CommandCompletePrev",
+    description: "Select the previous item in the autocomplete list.",
     action() {
       selectedIndex.decrement();
     },
@@ -73,6 +76,7 @@ function AutocompleteOptions(props: {
 
   useRegisterKeybindCommandOnMount({
     command: "CommandAutocompleteAccept",
+    description: "Accept the selected autocomplete suggestion.",
     keybindExpression: "Enter",
     action() {
       const command = props.filteredCommands.at(selectedIndex.value());
@@ -154,6 +158,7 @@ function Autocomplete(props: {
   const toggleShowAutocomplete = useRegisterKeybindToggle({
     keybindExpression: "Control + Space",
     command: "CommandShowAutocomplete",
+    description: "Show the command autocomplete menu.",
     overrideInput: true,
   });
 
@@ -162,6 +167,7 @@ function Autocomplete(props: {
 
   useRegisterKeybindCommandOnMount({
     command: "CommandComplete",
+    description: "Autocomplete the current command or show suggestions.",
     action() {
       if (filteredCommands().length === 1) {
         return props.onValueChanged(ghostText()?.fill ?? "");
@@ -233,12 +239,14 @@ function CommandLineContent(props: {
   useRegisterKeybindCommandOnMount({
     keybindExpression: "Escape",
     command: "CommandLineClose",
+    description: "Close the command line.",
     action: props.onClose,
     overrideInput: true,
   });
 
   useRegisterCommandOnMount({
     command: "CommandLineClearHistory",
+    description: "Clear all command history.",
     action() {
       props.setCommandHistory([]);
     },
@@ -247,6 +255,7 @@ function CommandLineContent(props: {
   useRegisterKeybindCommandOnMount({
     keybindExpression: "ArrowDown | Control + j",
     command: "CommandLineNextHistory",
+    description: "Navigate to the next command in history.",
     overrideInput: true,
     action() {
       historyIndex.decrement();
@@ -261,6 +270,7 @@ function CommandLineContent(props: {
   useRegisterKeybindCommandOnMount({
     keybindExpression: "ArrowUp | Control + k",
     command: "CommandLinePreviousHistory",
+    description: "Navigate to the previous command in history.",
     overrideInput: true,
     action() {
       historyIndex.increment();
@@ -288,6 +298,7 @@ function CommandLineContent(props: {
       props.onSelect();
     },
     command: "CommandAccept",
+    description: "Execute the current command.",
     overrideInput: true,
   });
 
@@ -313,6 +324,7 @@ export function CommandLine() {
   const toggle = useRegisterKeybindToggle({
     keybindExpression: ":",
     command: "CommandLineActivate",
+    description: "Open the command line.",
   });
 
   createWatcher(toggle.value, ({ next }) => {
