@@ -5,7 +5,12 @@ import { tryCatch } from "@/lib/tryCatch";
 const configuration = z.object({
   leaderKey: z.string().default("Space"),
   leaderKeyTimeoutMs: z.number().default(1000),
-  keybindings: z.record(z.string(), z.string()).default({}),
+  keybinds: z
+    .record(
+      z.string(),
+      z.string().or(z.object({ command: z.string(), description: z.string() })),
+    )
+    .default({}),
   editor: z.string().default("nvim"),
 });
 

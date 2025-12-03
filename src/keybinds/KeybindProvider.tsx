@@ -80,14 +80,22 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
   };
 
   onMount(() => {
-    const configurationKeybinds = Object.entries(config.keybindings || {});
+    const configurationKeybinds = Object.entries(config.keybinds || {});
 
     for (const [keybindExpression, command] of configurationKeybinds) {
-      registerKeybind({
-        command,
-        keybindExpression,
-        commandDescription: undefined,
-      });
+      if (typeof command === "string") {
+        registerKeybind({
+          command,
+          keybindExpression,
+          commandDescription: undefined,
+        });
+      } else {
+        registerKeybind({
+          command: command.command,
+          commandDescription: command.description,
+          keybindExpression,
+        });
+      }
     }
   });
 
