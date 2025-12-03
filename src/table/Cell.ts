@@ -65,12 +65,23 @@ export class Cell {
     return this.getColumn().getDataType().toString(this.data);
   }
 
+  /**
+   * Returns the current initial unmodified value of the cell
+   **/
+  get originalData() {
+    return this.#data.at(0);
+  }
+
+  /**
+   * Returns the current (potentially modified value)
+   * of the cell
+   **/
   get data() {
     return this.#data.at(-1);
   }
 
   isPrimary() {
-    return this.getColumn().getDataType().isPrimary;
+    return this.getColumn().getDataType().isPrimary();
   }
 
   equals(cell?: Cell) {

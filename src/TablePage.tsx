@@ -18,8 +18,7 @@ import { useTableStructure } from "./useTableStructure";
 type PreparedStatement = {
   tableName: string;
   columnName: string;
-  primaryKeyColumnName: unknown;
-  primaryKeyValue: unknown;
+  primaryKeys: { value: unknown; columnName: string }[];
   value: unknown;
 };
 
@@ -64,7 +63,7 @@ export function TablePage() {
           const sqlStatement = `
             UPDATE "${statement.tableName}"
             SET "${statement.columnName}" = '${statement.value}'
-            WHERE "${statement.primaryKeyColumnName}" = '${statement.primaryKeyValue}';`;
+            WHERE ${statement.primaryKeys.map((p) => `"${p.columnName}" = '${p.value}'`).join(" AND ")};`;
           await database.execute(sqlStatement);
         }
       } finally {

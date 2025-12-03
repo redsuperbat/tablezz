@@ -13,8 +13,8 @@ export function SqlCommandKeybind() {
     keybindExpression: "Meta + r",
     command: "ReloadFull",
     action() {
-      queryClient.invalidateQueries();
-      message.info("Reloaded");
+      queryClient.clear();
+      message.info("Reloaded all data");
     },
   });
 

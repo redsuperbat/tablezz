@@ -45,8 +45,7 @@ export function DataTableProvider(
     onPreparedStatementCreated?(data: {
       columnName: string;
       tableName: string;
-      primaryKeyValue: unknown;
-      primaryKeyColumnName: unknown;
+      primaryKeys: { columnName: string; value: unknown }[];
       value: unknown;
     }): void;
   }>,
@@ -184,24 +183,27 @@ export function DataTableProvider(
       z.string().meta({ title: "<value>" }),
     ],
     action(column, row, value) {
-      const primaryKeyCell = getTable()
+      const primaryKeyCells = getTable()
         .getRowOrThrow(row)
         .getCells()
-        .find((c) => c.isPrimary());
+        .filter((c) => c.isPrimary());
 
-      if (!primaryKeyCell) {
+      if (primaryKeyCells.length === 0) {
         throw new Error("Cannot update row without primary key");
       }
 
-      const primaryKeyValue = primaryKeyCell.data;
-      const primaryKeyColumnName = primaryKeyCell.getColumn().getName();
+      const primaryKeys = primaryKeyCells.map((c) => ({
+        // We need the original value to update, if the user updated
+        // the primary key
+        value: c.originalData,
+        columnName: c.getColumn().getName(),
+      }));
       const columnName = getTable().getColumnOrThrow(column).getName();
 
       props.onPreparedStatementCreated?.({
         tableName: props.name,
         columnName,
-        primaryKeyValue,
-        primaryKeyColumnName,
+        primaryKeys,
         value,
       });
     },
