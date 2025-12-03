@@ -62,7 +62,7 @@ export function DataTable(props: { reload: () => void }) {
         <thead class="sticky top-0 z-10 bg-white">
           <tr class="border-gray-300 border-b">
             <For each={getTable().getColumns()}>
-              {(column) => <th>{column.getName()}</th>}
+              {(column) => <th class="px-4">{column.getName()}</th>}
             </For>
           </tr>
         </thead>
