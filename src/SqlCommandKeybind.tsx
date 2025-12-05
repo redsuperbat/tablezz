@@ -1,4 +1,5 @@
 import { useQueryClient } from "@tanstack/solid-query";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import z from "zod";
 import { message } from "./commands/Messages";
 import { useRegisterCommandOnMount } from "./commands/useRegisterCommand";
@@ -8,6 +9,17 @@ import { useRegisterKeybindCommandOnMount } from "./keybinds/useRegisterKeybindC
 export function SqlCommandKeybind() {
   const database = useDatabase();
   const queryClient = useQueryClient();
+
+  useRegisterKeybindCommandOnMount({
+    keybindExpression: "Meta + Enter",
+    command: "ToggleFullscreen",
+    description: "Toggle fullscreen mode.",
+    async action() {
+      const window = getCurrentWindow();
+      const isFullscreen = await window.isFullscreen();
+      await window.setFullscreen(!isFullscreen);
+    },
+  });
 
   useRegisterKeybindCommandOnMount({
     keybindExpression: "Meta + r",
