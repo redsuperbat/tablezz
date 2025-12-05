@@ -1,3 +1,4 @@
+import { makePersisted } from "@solid-primitives/storage";
 import {
   createContext,
   createSignal,
@@ -17,13 +18,17 @@ interface TableContext {
 const TableContext = createContext<TableContext | null>(null);
 
 export function SelectedTableProvider(props: ParentProps) {
-  const [tableName, setTableName] = createSignal<string>();
+  const [tableName, setTableName] = makePersisted(createSignal<string>(), {
+    name: "selectedTable",
+  });
   const { schema } = useSchemaContext();
   const allTables = useSelectedSchemaTables();
-  const selectedTable = () => tableName() || allTables.data?.at(0)?.tableName;
+  const selectedTable = () => tableName() ?? allTables.data?.at(0)?.tableName;
 
-  // If the schema changes, we want to reset the selected table too
-  createWatcher(schema, () => setTableName(undefined));
+  createWatcher(schema, () => setTableName(undefined), {
+    // Do not run on initial render
+    defer: true,
+  });
 
   return (
     <Show fallback={null} when={selectedTable()}>
