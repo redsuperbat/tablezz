@@ -1,24 +1,30 @@
 import { Toast, toaster } from "@kobalte/core/toast";
 
-function Message(props: { message: string; class: string }) {
-  clear();
-  return toaster.show((p) => (
-    <Toast toastId={p.toastId} class={props.class}>
-      {props.message}
+function info(message: string) {
+  toaster.clear();
+  toaster.show((p) => (
+    <Toast toastId={p.toastId} class="text-blue-600">
+      {message}
     </Toast>
   ));
 }
 
-function info(message: string) {
-  return <Message message={message} class="text-blue-600" />;
-}
-
 function success(message: string) {
-  return <Message message={message} class="text-emerald-600" />;
+  toaster.clear();
+  toaster.show((p) => (
+    <Toast toastId={p.toastId} class="text-emerald-600">
+      {message}
+    </Toast>
+  ));
 }
 
 function error(message: string) {
-  return <Message message={message} class="text-red-600" />;
+  toaster.clear();
+  toaster.show((p) => (
+    <Toast toastId={p.toastId} class="text-red-600">
+      {message}
+    </Toast>
+  ));
 }
 
 function clear() {
