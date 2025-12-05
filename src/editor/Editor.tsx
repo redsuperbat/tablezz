@@ -6,6 +6,31 @@ import "@xterm/xterm/css/xterm.css";
 import { onCleanup, onMount } from "solid-js";
 import { useConfig } from "@/config/ConfigurationProvider";
 
+async function waitForFonts() {
+  // xterm calculates character dimensions on open(), so the font must be ready.
+  await document.fonts.ready;
+  try {
+    await document.fonts.load("16px 'Fira Code'");
+  } catch {}
+}
+
+function waitForDimensions(ref: HTMLDivElement) {
+  // Wait for container to have dimensions
+  return new Promise<void>((resolve) => {
+    if (ref.clientWidth > 0 && ref.clientHeight > 0) {
+      resolve();
+      return;
+    }
+    const observer = new ResizeObserver(() => {
+      if (ref.clientWidth > 0 && ref.clientHeight > 0) {
+        observer.disconnect();
+        resolve();
+      }
+    });
+    observer.observe(ref);
+  });
+}
+
 export function Editor(props: {
   onExit(value: string): void;
   initialContent: string;
@@ -59,28 +84,9 @@ export function Editor(props: {
 
     async function init() {
       if (!ref) return;
-      // xterm calculates character dimensions on open(), so the font must be ready.
-      await document.fonts.ready;
-      try {
-        await document.fonts.load("16px 'Fira Code'");
-      } catch {
-        // Font not available, continue anyway
-      }
 
-      // Wait for container to have dimensions
-      await new Promise<void>((resolve) => {
-        if (ref.clientWidth > 0 && ref.clientHeight > 0) {
-          resolve();
-          return;
-        }
-        const observer = new ResizeObserver(() => {
-          if (ref.clientWidth > 0 && ref.clientHeight > 0) {
-            observer.disconnect();
-            resolve();
-          }
-        });
-        observer.observe(ref);
-      });
+      await waitForFonts();
+      await waitForDimensions(ref);
 
       term.open(ref);
 
