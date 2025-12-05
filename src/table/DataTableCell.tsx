@@ -11,7 +11,11 @@ import type { Cell } from "./Cell";
 import { useTableEditorContext } from "./DataTableProvider";
 
 function ConstrainedCell(props: ParentProps) {
-  return <div class="h-5 max-w-xl truncate font-mono text-zinc-700">{props.children}</div>;
+  return (
+    <div class="h-5 max-w-xl truncate font-mono text-zinc-700">
+      {props.children}
+    </div>
+  );
 }
 
 export function TableCell(props: {
@@ -59,10 +63,13 @@ export function TableCell(props: {
       class={cn(
         "border-t border-l border-zinc-200 px-3 py-1.5 text-sm transition-colors last:border-r",
         isActive() && "bg-indigo-500/15",
-        isCurrent() && "bg-blue-500/20 outline outline-1 -outline-offset-1 outline-blue-500",
+        isCurrent() &&
+          "bg-blue-500/20 outline outline-1 -outline-offset-1 outline-blue-500",
         isVisualStart() && "bg-indigo-500/25",
         isDirty() && "bg-amber-500/20",
-        isDirty() && isCurrent() && "bg-amber-500/30 outline outline-1 -outline-offset-1 outline-amber-500",
+        isDirty() &&
+          isCurrent() &&
+          "bg-amber-500/30 outline outline-1 -outline-offset-1 outline-amber-500",
       )}
     >
       <Popover open={isOpened()}>

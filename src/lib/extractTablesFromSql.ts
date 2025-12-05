@@ -1,4 +1,4 @@
-import { parse, astVisitor, Statement } from "pgsql-ast-parser";
+import { astVisitor, parse, type Statement } from "pgsql-ast-parser";
 
 export type ExtractedTable = {
   table: string;

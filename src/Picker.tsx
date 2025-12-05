@@ -207,7 +207,12 @@ function SearchItem(props: {
         isActive() && "bg-blue-500/20 text-zinc-900",
       )}
     >
-      <span class={cn("flex size-4 shrink-0 items-center justify-center text-zinc-400", isActive() && "text-blue-600")}>
+      <span
+        class={cn(
+          "flex size-4 shrink-0 items-center justify-center text-zinc-400",
+          isActive() && "text-blue-600",
+        )}
+      >
         {props.item.icon}
       </span>
       <span class="font-mono">{props.item.searchTerm}</span>
