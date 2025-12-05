@@ -61,7 +61,7 @@ export function TableCell(props: {
     <td
       ref={ref}
       class={cn(
-        "border-zinc-200 border-t border-l px-3 py-1.5 text-sm transition-colors last:border-r",
+        "scroll-mt-12 border-zinc-200 border-t border-l px-3 py-1.5 text-sm transition-colors last:border-r",
         isActive() && "bg-indigo-500/15",
         isCurrent() &&
           "-outline-offset-1 bg-blue-500/20 outline-1 outline-blue-500",
