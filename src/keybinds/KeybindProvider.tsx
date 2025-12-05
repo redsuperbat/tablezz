@@ -1,4 +1,4 @@
-import { createSignal, onMount } from "solid-js";
+import { createSignal, getOwner, onMount, runWithOwner } from "solid-js";
 import { useCommandsContext } from "@/commands/CommandsContext";
 import { useConfig } from "@/config/ConfigurationProvider";
 import { createSolidContext } from "@/createSolidContext";
@@ -100,6 +100,7 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
   });
 
   onMount(() => {
+    const owner = getOwner();
     let i = 0;
     let potentialKeybinds: RegisteredKeybind[] | undefined;
 
@@ -162,7 +163,11 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
             e.preventDefault();
             e.stopPropagation();
 
-            commandsContext.triggerCommand(bind.command);
+            // Run command within the reactive owner context to ensure
+            // any computations created during the update have a proper owner
+            runWithOwner(owner, () => {
+              commandsContext.triggerCommand(bind.command);
+            });
 
             return;
           }
