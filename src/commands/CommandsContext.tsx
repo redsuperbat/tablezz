@@ -52,7 +52,7 @@ export function CommandsProvider(props: ParentProps) {
     });
   }
 
-  async function triggerCommand(commandExpression: string) {
+  function triggerCommand(commandExpression: string) {
     const { commandName, args } = parseCommand(commandExpression);
 
     if (!commandName) return;
@@ -79,13 +79,11 @@ export function CommandsProvider(props: ParentProps) {
       parsedArgs.push(arg.data);
     }
 
-    try {
-      await command.action(...parsedArgs);
-    } catch (error) {
+    Promise.resolve(command.action(...parsedArgs)).catch((error) => {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       message.error(errorMessage);
-    }
+    });
   }
 
   function allCommands() {
