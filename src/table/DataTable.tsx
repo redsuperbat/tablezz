@@ -63,10 +63,10 @@ export function DataTable(props: { reload: () => void }) {
     <div class="overflow-y-auto bg-zinc-50">
       <table class="w-full border-separate border-spacing-0">
         <thead class="sticky top-0 z-10 bg-zinc-100/95 backdrop-blur-sm">
-          <tr class="border-b border-zinc-300">
+          <tr class="border-zinc-300 border-b">
             <For each={getTable().getColumns()}>
               {(column) => (
-                <th class="px-3 py-2 text-left text-base font-medium text-zinc-600">
+                <th class="px-3 py-2 text-left font-medium text-base text-zinc-600">
                   {column.getName()}
                 </th>
               )}

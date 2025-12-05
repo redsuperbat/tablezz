@@ -61,15 +61,15 @@ export function TableCell(props: {
     <td
       ref={ref}
       class={cn(
-        "border-t border-l border-zinc-200 px-3 py-1.5 text-sm transition-colors last:border-r",
+        "border-zinc-200 border-t border-l px-3 py-1.5 text-sm transition-colors last:border-r",
         isActive() && "bg-indigo-500/15",
         isCurrent() &&
-          "bg-blue-500/20 outline outline-1 -outline-offset-1 outline-blue-500",
+          "-outline-offset-1 bg-blue-500/20 outline outline-1 outline-blue-500",
         isVisualStart() && "bg-indigo-500/25",
         isDirty() && "bg-amber-500/20",
         isDirty() &&
           isCurrent() &&
-          "bg-amber-500/30 outline outline-1 -outline-offset-1 outline-amber-500",
+          "-outline-offset-1 bg-amber-500/30 outline outline-1 outline-amber-500",
       )}
     >
       <Popover open={isOpened()}>

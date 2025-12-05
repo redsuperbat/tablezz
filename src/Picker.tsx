@@ -157,7 +157,7 @@ function PickerContent(props: { items: PickerItem[]; onSelect: () => void }) {
 
   return (
     <>
-      <DialogHeader class="border-b border-zinc-200 bg-white p-3">
+      <DialogHeader class="border-zinc-200 border-b bg-white p-3">
         <DialogTitle class="sr-only">Command palette</DialogTitle>
         <form
           class="flex min-w-sm flex-col"

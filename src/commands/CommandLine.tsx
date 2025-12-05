@@ -87,7 +87,7 @@ function AutocompleteOptions(props: {
   });
 
   return (
-    <div class="absolute -left-2 bottom-full flex max-h-52 flex-col-reverse overflow-y-auto border border-zinc-200 bg-white p-1 shadow-lg">
+    <div class="-left-2 absolute bottom-full flex max-h-52 flex-col-reverse overflow-y-auto border border-zinc-200 bg-white p-1 shadow-lg">
       <For each={props.filteredCommands}>
         {(c, index) => (
           <AutocompleteOption
@@ -333,7 +333,7 @@ export function CommandLine() {
   });
 
   return (
-    <div class="h-8 w-screen border-t border-zinc-200 bg-zinc-50">
+    <div class="h-8 w-screen border-zinc-200 border-t bg-zinc-50">
       <div
         class="grid h-full items-center px-3"
         style={{ "grid-template-columns": "1fr auto" }}
