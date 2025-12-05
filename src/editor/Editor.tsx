@@ -53,43 +53,82 @@ export function Editor(props: {
 
   onMount(() => {
     const ref = terminalRef;
-    if (!ref) return;
 
-    term.open(ref);
+    // Track whether PTY has been created - only allow resize calls after creation
+    let ptyCreated = false;
 
-    requestAnimationFrame(() => {
+    async function init() {
+      if (!ref) return;
+      // xterm calculates character dimensions on open(), so the font must be ready.
+      await document.fonts.ready;
+      try {
+        await document.fonts.load("16px 'Fira Code'");
+      } catch {
+        // Font not available, continue anyway
+      }
+
+      // Wait for container to have dimensions
+      await new Promise<void>((resolve) => {
+        if (ref.clientWidth > 0 && ref.clientHeight > 0) {
+          resolve();
+          return;
+        }
+        const observer = new ResizeObserver(() => {
+          if (ref.clientWidth > 0 && ref.clientHeight > 0) {
+            observer.disconnect();
+            resolve();
+          }
+        });
+        observer.observe(ref);
+      });
+
+      term.open(ref);
+
+      term.onData((data) => invoke("write_to_pty", { data }));
+      term.onResize(({ cols, rows }) => {
+        if (ptyCreated) {
+          invoke("resize_pty", { cols, rows });
+        }
+      });
+
+      window.addEventListener("resize", resizeTerm);
+      resizeObserver.observe(ref);
+
+      // Set up PTY output listener
+      listen("pty-output", (event) => {
+        const data = String(event.payload);
+        term.write(data);
+      }).then((o) => disposables.add(o));
+
+      listen("pty-exit", (event) => {
+        const data = String(event.payload).trim();
+        try {
+          props.onExit(data);
+        } catch {
+          // do nothing
+        }
+      }).then((o) => disposables.add(o));
+
+      const dims = fitAddon.proposeDimensions();
+      if (!dims) return;
+
+      term.resize(dims.cols, dims.rows);
       resizeTerm();
 
-      invoke("create_pty", {
-        cols: term.cols,
-        rows: term.rows,
+      // Create PTY
+      await invoke("create_pty", {
+        cols: dims.cols,
+        rows: dims.rows,
         initialContent: props.initialContent,
         extension: props.extension,
         editor: config.editor,
       });
 
+      ptyCreated = true;
       term.focus();
-    });
+    }
 
-    term.onData((data) => invoke("write_to_pty", { data }));
-    term.onResize(({ cols, rows }) => invoke("resize_pty", { cols, rows }));
-
-    window.addEventListener("resize", resizeTerm);
-    resizeObserver.observe(ref);
-
-    listen("pty-output", (event) => {
-      const data = String(event.payload);
-      term.write(data);
-    }).then((o) => disposables.add(o));
-
-    listen("pty-exit", (event) => {
-      const data = String(event.payload).trim();
-      try {
-        props.onExit(data);
-      } catch {
-        // do nothing
-      }
-    }).then((o) => disposables.add(o));
+    init();
   });
 
   onCleanup(() => {
