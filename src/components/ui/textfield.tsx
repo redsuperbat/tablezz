@@ -120,7 +120,7 @@ export const TextField = <T extends ValidComponent = "input">(
   return (
     <TextFieldPrimitive.Input
       class={cn(
-        "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-shadow file:border-0 file:bg-transparent file:font-medium file:text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-[1.5px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+        "flex h-9 w-full rounded-md border border-zinc-200 bg-zinc-50 px-3 py-1 text-sm text-zinc-900 shadow-sm transition-all file:border-0 file:bg-transparent file:font-medium file:text-sm placeholder:text-zinc-400 focus-visible:border-blue-500 focus-visible:bg-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50",
         local.class,
       )}
       {...rest}

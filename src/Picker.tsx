@@ -75,7 +75,7 @@ export function Picker() {
     <Dialog modal open={!!pickerType.value()}>
       <DialogContent
         onEscapeKeyDown={(e) => e.preventDefault()}
-        class="flex flex-col justify-start bg-white"
+        class="flex flex-col justify-start overflow-hidden rounded-none border border-zinc-200 bg-zinc-50 p-0 shadow-2xl"
         aria-describedby="Command palette"
       >
         <PickerContent
@@ -157,10 +157,10 @@ function PickerContent(props: { items: PickerItem[]; onSelect: () => void }) {
 
   return (
     <>
-      <DialogHeader>
+      <DialogHeader class="border-b border-zinc-200 bg-white p-3">
         <DialogTitle class="sr-only">Command palette</DialogTitle>
         <form
-          class="flex min-w-sm flex-col gap-1"
+          class="flex min-w-sm flex-col"
           onSubmit={(e) => {
             e.preventDefault();
             form.handleSubmit();
@@ -174,7 +174,7 @@ function PickerContent(props: { items: PickerItem[]; onSelect: () => void }) {
           />
         </form>
       </DialogHeader>
-      <div class="flex h-80 flex-col overflow-y-auto">
+      <div class="flex h-80 flex-col overflow-y-auto bg-white p-1">
         <For each={filteredItems()}>
           {(result, i) => (
             <SearchItem
@@ -202,10 +202,15 @@ function SearchItem(props: {
   return (
     <div
       ref={ref}
-      class={cn(isActive() && "bg-gray-100", "flex gap-1 rounded p-1")}
+      class={cn(
+        "flex items-center gap-2 px-2 py-1.5 text-sm text-zinc-700 transition-colors",
+        isActive() && "bg-blue-500/20 text-zinc-900",
+      )}
     >
-      <span>{props.item.icon}</span>
-      <div>{props.item.searchTerm}</div>
+      <span class={cn("flex size-4 shrink-0 items-center justify-center text-zinc-400", isActive() && "text-blue-600")}>
+        {props.item.icon}
+      </span>
+      <span class="font-mono">{props.item.searchTerm}</span>
     </div>
   );
 }
