@@ -117,7 +117,7 @@ export function TablePage() {
       <Dialog modal open={!!selectionToEdit()}>
         <DialogContent
           onEscapeKeyDown={(e) => e.preventDefault()}
-          class="m-0 flex h-[80vh] max-w-[80vw] flex-col justify-start border-none p-0 shadow-none"
+          class="flex h-[80vh] max-w-[80vw] flex-col justify-start border-none p-0 shadow-none"
         >
           <Show when={selectionToEdit()}>
             {(selection) => {
