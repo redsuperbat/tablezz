@@ -60,19 +60,23 @@ export function DataTable(props: { reload: () => void }) {
   });
 
   return (
-    <div class="overflow-y-auto">
-      <table>
-        <thead class="sticky top-0 z-10 bg-white">
-          <tr class="border-gray-300 border-b">
+    <div class="overflow-y-auto bg-zinc-50">
+      <table class="w-full border-separate border-spacing-0">
+        <thead class="sticky top-0 z-10 bg-zinc-100/95 backdrop-blur-sm">
+          <tr class="border-b border-zinc-300">
             <For each={getTable().getColumns()}>
-              {(column) => <th class="px-4">{column.getName()}</th>}
+              {(column) => (
+                <th class="px-3 py-2 text-left text-base font-medium text-zinc-600">
+                  {column.getName()}
+                </th>
+              )}
             </For>
           </tr>
         </thead>
-        <tbody>
+        <tbody class="bg-white">
           <For each={getTable().getRows()}>
             {(row) => (
-              <tr>
+              <tr class="transition-colors hover:bg-zinc-50/50">
                 <For each={row.getCells()}>
                   {(cell) => (
                     <TableCell

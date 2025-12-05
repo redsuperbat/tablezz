@@ -11,7 +11,7 @@ import type { Cell } from "./Cell";
 import { useTableEditorContext } from "./DataTableProvider";
 
 function ConstrainedCell(props: ParentProps) {
-  return <div class="h-6 max-w-xl truncate">{props.children}</div>;
+  return <div class="h-5 max-w-xl truncate font-mono text-zinc-700">{props.children}</div>;
 }
 
 export function TableCell(props: {
@@ -57,19 +57,19 @@ export function TableCell(props: {
     <td
       ref={ref}
       class={cn(
-        "border border-gray-300 px-2 py-2 text-sm",
-        isActive() && "bg-red-200",
-        isCurrent() && "bg-red-300",
-        isVisualStart() && "bg-red-100",
-        isDirty() && "bg-green-200",
-        isDirty() && isCurrent() && "bg-yellow-200",
+        "border-t border-l border-zinc-200 px-3 py-1.5 text-sm transition-colors last:border-r",
+        isActive() && "bg-indigo-500/15",
+        isCurrent() && "bg-blue-500/20 outline outline-1 -outline-offset-1 outline-blue-500",
+        isVisualStart() && "bg-indigo-500/25",
+        isDirty() && "bg-amber-500/20",
+        isDirty() && isCurrent() && "bg-amber-500/30 outline outline-1 -outline-offset-1 outline-amber-500",
       )}
     >
       <Popover open={isOpened()}>
         <PopoverTrigger as="div" class="outline-none">
           <ConstrainedCell>{cellToString()}</ConstrainedCell>
         </PopoverTrigger>
-        <PopoverContent class="w-full max-w-6xl truncate break-words bg-white">
+        <PopoverContent class="w-full max-w-6xl truncate break-words rounded-md border border-zinc-200 bg-white p-3 font-mono text-sm text-zinc-700 shadow-lg">
           {displayCell()}
         </PopoverContent>
       </Popover>
