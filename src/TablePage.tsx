@@ -7,6 +7,7 @@ import { useDatabase } from "./database/useDatabase";
 import { Editor } from "./editor/Editor";
 import { useRegisterKeybindCommandOnMount } from "./keybinds/useRegisterKeybindCommand";
 import { useRegisterKeybindToggle } from "./keybinds/useRegisterKeybindToggle";
+import { useSchemaContext } from "./SchemaProvider";
 import { useSelectedTableContext } from "./SelectedTableProvider";
 import { DataTable } from "./table/DataTable";
 import { DataTableProvider } from "./table/DataTableProvider";
@@ -23,6 +24,7 @@ type PreparedStatement = {
 };
 
 export function TablePage() {
+  const { schema } = useSchemaContext();
   const { selectedTable } = useSelectedTableContext();
   const [preparedStatements, setPreparedStatements] = createSignal<
     PreparedStatement[]
@@ -79,7 +81,7 @@ export function TablePage() {
   createWatcher(count, ({ next }) =>
     commandContext.addCommandLineSuffix(
       <div class="text-zinc-500">
-        {rowsQuery.data?.length}/{next} rows
+        {schema()}.{selectedTable()} · {rowsQuery.data?.length}/{next} rows
       </div>,
     ),
   );
