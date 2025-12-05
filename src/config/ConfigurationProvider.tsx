@@ -8,6 +8,7 @@ import {
   Switch,
   useContext,
 } from "solid-js";
+import { useDisposables } from "@/lib/useDisposables";
 import {
   type Configuration,
   configurationFilename,
@@ -20,6 +21,7 @@ interface ConfigurationContext {
 const ConfigurationContext = createContext<ConfigurationContext | null>(null);
 
 export function ConfigurationProvider(props: ParentProps) {
+  const disposables = useDisposables();
   const configQuery = useQuery(() => ({
     queryFn: () => initConfiguration(),
     queryKey: [],
@@ -30,7 +32,7 @@ export function ConfigurationProvider(props: ParentProps) {
   onMount(() => {
     watch(configurationFilename, () => configQuery.refetch(), {
       baseDir: BaseDirectory.Home,
-    });
+    }).then((w) => disposables.add(w));
   });
 
   return (
