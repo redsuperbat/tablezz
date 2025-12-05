@@ -87,7 +87,7 @@ function AutocompleteOptions(props: {
   });
 
   return (
-    <div class="-left-2 absolute bottom-full flex max-h-52 flex-col-reverse overflow-y-auto rounded bg-white px-2">
+    <div class="absolute -left-2 bottom-full flex max-h-52 flex-col-reverse overflow-y-auto border border-zinc-200 bg-white p-1 shadow-lg">
       <For each={props.filteredCommands}>
         {(c, index) => (
           <AutocompleteOption
@@ -110,7 +110,13 @@ function AutocompleteOption(props: {
   const ref = useIntersectionScroll(isActive);
 
   return (
-    <div ref={ref} class={cn(isActive() && "bg-blue-200")}>
+    <div
+      ref={ref}
+      class={cn(
+        "px-2 py-1 font-mono text-sm text-zinc-700",
+        isActive() && "bg-blue-500/20 text-zinc-900",
+      )}
+    >
       {props.commandName}
     </div>
   );
@@ -183,14 +189,7 @@ function Autocomplete(props: {
   return (
     <div class="relative w-full">
       <div class="relative">
-        <div
-          class="pointer-events-none absolute inset-0 overflow-hidden whitespace-nowrap text-gray-400"
-          style={{
-            "font-family": "inherit",
-            "font-size": "inherit",
-            "line-height": "inherit",
-          }}
-        >
+        <div class="pointer-events-none absolute inset-0 overflow-hidden whitespace-nowrap font-mono text-zinc-400">
           <span class="invisible">{props.value}</span>
 
           <span>{ghostText()?.show.slice(props.value.length)}</span>
@@ -214,8 +213,8 @@ function Autocomplete(props: {
           onInput={(e) => props.onValueChanged(e.target.value)}
           placeholder='Type a command name or press "Tab"'
           autofocus
-          class="relative w-full bg-transparent focus:outline-none"
-          style={{ "caret-color": "black" }}
+          class="relative w-full bg-transparent font-mono text-zinc-900 placeholder:text-zinc-400 focus:outline-none"
+          style={{ "caret-color": "currentColor" }}
         />
       </div>
     </div>
@@ -303,8 +302,8 @@ function CommandLineContent(props: {
   });
 
   return (
-    <div class="flex gap-0.5">
-      <span>:</span>
+    <div class="flex items-center gap-1">
+      <span class="font-mono text-zinc-500">:</span>
       <Autocomplete value={inputValue()} onValueChanged={setInputValue} />
     </div>
   );
@@ -334,9 +333,9 @@ export function CommandLine() {
   });
 
   return (
-    <div class="h-8 w-screen border-gray-300 border-t bg-white shadow-[0_-2px_4px_-1px_rgba(0,0,0,0.06)]">
+    <div class="h-8 w-screen border-t border-zinc-200 bg-zinc-50">
       <div
-        class="grid px-2 py-1"
+        class="grid h-full items-center px-3"
         style={{ "grid-template-columns": "1fr auto" }}
       >
         <Switch fallback={<Messages />}>
@@ -349,7 +348,7 @@ export function CommandLine() {
             />
           </Match>
         </Switch>
-        <span class="grid place-content-center">
+        <span class="grid place-content-center text-sm">
           {commandContext.commandLineSuffix()}
         </span>
       </div>

@@ -10,15 +10,15 @@ function Message(props: { message: string; class: string }) {
 }
 
 function info(message: string) {
-  return <Message message={message} class="text-blue-400" />;
+  return <Message message={message} class="text-blue-600" />;
 }
 
 function success(message: string) {
-  return <Message message={message} class="text-green-400" />;
+  return <Message message={message} class="text-emerald-600" />;
 }
 
 function error(message: string) {
-  return <Message message={message} class="text-red-400" />;
+  return <Message message={message} class="text-red-600" />;
 }
 
 function clear() {
@@ -28,7 +28,7 @@ function clear() {
 export function Messages() {
   return (
     <Toast.Region limit={1}>
-      <Toast.List class="bg-white" />
+      <Toast.List class="font-mono text-sm" />
     </Toast.Region>
   );
 }
