@@ -64,12 +64,13 @@ export function TableCell(props: {
         "border-zinc-200 border-t border-l px-3 py-1.5 text-sm transition-colors last:border-r",
         isActive() && "bg-indigo-500/15",
         isCurrent() &&
-          "-outline-offset-1 bg-blue-500/20 outline outline-1 outline-blue-500",
+          "-outline-offset-1 bg-blue-500/20 outline-1 outline-blue-500",
         isVisualStart() && "bg-indigo-500/25",
         isDirty() && "bg-amber-500/20",
+        isDirty() && isActive() && "bg-amber-500/10",
         isDirty() &&
           isCurrent() &&
-          "-outline-offset-1 bg-amber-500/30 outline outline-1 outline-amber-500",
+          "-outline-offset-1 bg-amber-500/30 outline-1 outline-amber-500",
       )}
     >
       <Popover open={isOpened()}>

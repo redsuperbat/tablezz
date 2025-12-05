@@ -41,7 +41,6 @@ export class Cell {
     if (this.#data.length === 1) {
       return;
     }
-
     this.#data.pop();
     this.#isDirty = this.#data.length !== 1;
     this.#forceRerender?.();

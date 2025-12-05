@@ -3,12 +3,12 @@ import {
   createContext,
   createMemo,
   createSignal,
-  type ParentProps,
+  type JSXElement,
   useContext,
 } from "solid-js";
 import z from "zod";
 import { useCommandsContext } from "@/commands/CommandsContext";
-import { useRegisterCommand } from "@/commands/useRegisterCommand";
+import { useDatabase } from "@/database/useDatabase";
 import {
   useRegisterKeybindCommand,
   useRegisterKeybindCommandOnMount,
@@ -30,28 +30,20 @@ interface TableEditorContext {
 
 const TableEditorContext = createContext<TableEditorContext | null>(null);
 
-export function DataTableProvider(
-  props: ParentProps<{
-    rows: unknown[];
-    name: string;
-    structure: {
-      columnName: string;
-      dataType: PostgresDataType;
-      isPrimary: boolean;
-    }[];
-
-    onEditSelection?(selection: VisualSelection): void;
-
-    onPreparedStatementCreated?(data: {
-      columnName: string;
-      tableName: string;
-      primaryKeys: { columnName: string; value: unknown }[];
-      value: unknown;
-    }): void;
-  }>,
-) {
-  const registerCommand = useRegisterCommand();
+export function DataTableProvider(props: {
+  rows: unknown[];
+  name: string;
+  structure: {
+    columnName: string;
+    dataType: PostgresDataType;
+    isPrimary: boolean;
+  }[];
+  onEditSelection?(selection: VisualSelection): void;
+  children: JSXElement;
+  reload: () => void;
+}) {
   const commandContext = useCommandsContext();
+  const database = useDatabase();
 
   const columns = createMemo(() =>
     props.structure.map(
@@ -125,6 +117,40 @@ export function DataTableProvider(
   const currentCell = () => visualSelection().current;
 
   useRegisterKeybindCommandOnMount({
+    keybindExpression: "w",
+    command: "WriteChanges",
+    description: "Write pending cell changes to the database.",
+    async action() {
+      const modifiedCells = getTable()
+        .getAllCells()
+        .filter((c) => c.isDirty);
+
+      try {
+        for (const cell of modifiedCells) {
+          const columnName = cell.getColumn().getName();
+          const primaryKeys = cell
+            .getRow()
+            .getCells()
+            .filter((c) => c.isPrimary())
+            .map((c) => ({
+              columnName: c.getColumn().getName(),
+              value: c.originalData,
+            }));
+
+          const sqlStatement = `
+            UPDATE "${props.name}"
+            SET "${columnName}" = '${cell.data}'
+            WHERE ${primaryKeys.map((p) => `"${p.columnName}" = '${p.value}'`).join(" AND ")};`;
+          await database.execute(sqlStatement);
+        }
+      } finally {
+        // We want to do this if the update fails or succeeds
+        props.reload();
+      }
+    },
+  });
+
+  useRegisterKeybindCommandOnMount({
     command: "VisualModeEnter",
     description: "Enter visual selection mode.",
     keybindExpression: "v",
@@ -177,41 +203,6 @@ export function DataTableProvider(
     keybindExpression: "c",
     action() {
       props.onEditSelection?.(visualSelection());
-    },
-  });
-
-  registerCommand({
-    command: "CellEdit",
-    description: "Edit a cell value at the specified column and row.",
-    actionArgs: [
-      z.coerce.number().meta({ title: "<column>" }),
-      z.coerce.number().meta({ title: "<row>" }),
-      z.string().meta({ title: "<value>" }),
-    ],
-    action(column, row, value) {
-      const primaryKeyCells = getTable()
-        .getRowOrThrow(row)
-        .getCells()
-        .filter((c) => c.isPrimary());
-
-      if (primaryKeyCells.length === 0) {
-        throw new Error("Cannot update row without primary key");
-      }
-
-      const primaryKeys = primaryKeyCells.map((c) => ({
-        // We need the original value to update, if the user updated
-        // the primary key
-        value: c.originalData,
-        columnName: c.getColumn().getName(),
-      }));
-      const columnName = getTable().getColumnOrThrow(column).getName();
-
-      props.onPreparedStatementCreated?.({
-        tableName: props.name,
-        columnName,
-        primaryKeys,
-        value,
-      });
     },
   });
 

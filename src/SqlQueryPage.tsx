@@ -43,6 +43,7 @@ export function SqlQueryPage(props: { query: string }) {
         <Match when={rowsQuery.data}>
           {(rows) => (
             <DataTableProvider
+              reload={rowsQuery.refetch}
               structure={structure()}
               rows={rows()}
               name={tableName() || "Query Result"}

@@ -3,9 +3,7 @@ import { useCommandsContext } from "./commands/CommandsContext";
 import { createWatcher } from "./commands/createWatcher";
 import { Dialog, DialogContent } from "./components/ui/dialog";
 import { QueryHistory } from "./database/QueryHistoryProvider";
-import { useDatabase } from "./database/useDatabase";
 import { Editor } from "./editor/Editor";
-import { useRegisterKeybindCommandOnMount } from "./keybinds/useRegisterKeybindCommand";
 import { useRegisterKeybindToggle } from "./keybinds/useRegisterKeybindToggle";
 import { useSchemaContext } from "./SchemaProvider";
 import { useSelectedTableContext } from "./SelectedTableProvider";
@@ -16,22 +14,11 @@ import { useTableCount } from "./useTableCount";
 import { useTableRows } from "./useTableRows";
 import { useTableStructure } from "./useTableStructure";
 
-type PreparedStatement = {
-  tableName: string;
-  columnName: string;
-  primaryKeys: { value: unknown; columnName: string }[];
-  value: unknown;
-};
-
 export function TablePage() {
   const { schema } = useSchemaContext();
   const { selectedTable } = useSelectedTableContext();
-  const [preparedStatements, setPreparedStatements] = createSignal<
-    PreparedStatement[]
-  >([]);
   const [selectionToEdit, setSelectionToEdit] = createSignal<VisualSelection>();
   const commandContext = useCommandsContext();
-  const database = useDatabase();
 
   const showQueryHistory = useRegisterKeybindToggle({
     command: "ToggleQueryHistory",
@@ -56,28 +43,6 @@ export function TablePage() {
     structureQuery.refetch();
   }
 
-  useRegisterKeybindCommandOnMount({
-    keybindExpression: "w",
-    command: "WriteChanges",
-    description: "Write pending cell changes to the database.",
-    async action() {
-      const statements = preparedStatements();
-      try {
-        for (const statement of statements) {
-          const sqlStatement = `
-            UPDATE "${statement.tableName}"
-            SET "${statement.columnName}" = '${statement.value}'
-            WHERE ${statement.primaryKeys.map((p) => `"${p.columnName}" = '${p.value}'`).join(" AND ")};`;
-          await database.execute(sqlStatement);
-        }
-      } finally {
-        // We want to do this if the update fails or succeeds
-        setPreparedStatements([]);
-        reload();
-      }
-    },
-  });
-
   createWatcher(count, ({ next }) =>
     commandContext.addCommandLineSuffix(
       <div class="text-zinc-500">
@@ -100,13 +65,11 @@ export function TablePage() {
         <Match when={rowsQuery.data}>
           {(rows) => (
             <DataTableProvider
+              reload={reload}
               structure={structureData()}
               rows={rows()}
               name={selectedTable()}
               onEditSelection={setSelectionToEdit}
-              onPreparedStatementCreated={(data) => {
-                setPreparedStatements((statements) => [...statements, data]);
-              }}
             >
               <DataTable reload={reload} />
             </DataTableProvider>
