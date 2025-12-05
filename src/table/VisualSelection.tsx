@@ -50,8 +50,6 @@ export class VisualSelection {
       return [this.current];
     }
 
-    const cells: Cell[] = [];
-
     const startRow = Math.min(
       this.start.getRow().index,
       this.#current.getRow().index,
@@ -73,11 +71,8 @@ export class VisualSelection {
         });
 
         cell.updateData(cellValue);
-        cells.push(cell);
       }
     }
-
-    return cells;
   }
 
   intersectingCellsToString({

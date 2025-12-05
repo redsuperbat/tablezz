@@ -99,26 +99,16 @@ export function TablePage() {
                     rowDelimiter,
                   })}
                   onExit={(data) => {
-                    try {
-                      const cells = selection()
-                        .updateIntersectingCells({
-                          stringifiedCells: data,
-                          columnDelimiter,
-                          rowDelimiter,
-                        })
-                        .filter((c) => c.isDirty);
+                    selection().updateIntersectingCells({
+                      stringifiedCells: data,
+                      columnDelimiter,
+                      rowDelimiter,
+                    });
 
-                      for (const cell of cells) {
-                        commandContext.triggerCommand(
-                          `CellEdit ${cell.getColumn().index} ${cell.getRow().index} '${cell.toString()}'`,
-                        );
-                      }
-                    } finally {
-                      if (selection().isSelecting) {
-                        commandContext.triggerCommand("VisualModeExit");
-                      }
-                      setSelectionToEdit(undefined);
+                    if (selection().isSelecting) {
+                      commandContext.triggerCommand("VisualModeExit");
                     }
+                    setSelectionToEdit(undefined);
                   }}
                 />
               );
