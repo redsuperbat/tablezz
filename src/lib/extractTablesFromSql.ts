@@ -1,53 +1,72 @@
 import { astVisitor, parse, type Statement } from "pgsql-ast-parser";
 
+export type ExtractedColumn = {
+  name: string;
+  alias?: string;
+};
+
 export type ExtractedTable = {
   table: string;
   schema?: string;
+  columns: ExtractedColumn[] | null; // null means infer from data
 };
 
-/**
- * Extracts table names from a SQL query using PostgreSQL AST parsing.
- * Returns an array of tables referenced in the query (FROM, JOIN, INSERT INTO, UPDATE, DELETE FROM, etc.)
- */
-export function extractTablesFromSql(sql: string): ExtractedTable[] {
-  const tables: ExtractedTable[] = [];
-  const seen = new Set<string>();
-
+export function extractTableFromSql(sql: string): ExtractedTable | null {
   let statements: Statement[];
   try {
     statements = parse(sql);
   } catch {
-    // If parsing fails, return empty array
-    return [];
+    return null;
   }
+  const statement = statements[0];
+
+  if (!statement) {
+    return null;
+  }
+
+  let table: { name: string; schema?: string } | null = null;
 
   const visitor = astVisitor(() => ({
     tableRef: (t) => {
-      const key = t.schema ? `${t.schema}.${t.name}` : t.name;
-      if (!seen.has(key)) {
-        seen.add(key);
-        tables.push({
-          table: t.name,
-          schema: t.schema ?? undefined,
-        });
-      }
+      if (table !== null) return;
+      table = { name: t.name, schema: t.schema ?? undefined };
     },
   }));
 
-  for (const statement of statements) {
-    visitor.statement(statement);
+  visitor.statement(statement);
+
+  if (table === null) {
+    return null;
   }
 
-  return tables;
-}
+  const extractedTable = table as { name: string; schema?: string };
+  let columns: ExtractedColumn[] | null = null;
+  if (statement?.type === "select" && statement.columns?.length) {
+    columns = [];
+    for (const col of statement.columns) {
+      const expr = col.expr;
 
-/**
- * Extracts the first/primary table from a SQL query.
- * For SELECT queries, this is typically the main table in the FROM clause.
- */
-export function extractPrimaryTableFromSql(
-  sql: string,
-): ExtractedTable | undefined {
-  const tables = extractTablesFromSql(sql);
-  return tables[0];
+      if (expr.type === "ref" && expr.name === "*") {
+        columns = null;
+        break;
+      }
+
+      if (expr.type === "ref") {
+        columns.push({
+          name: expr.name,
+          alias: col.alias?.name,
+        });
+        continue;
+      }
+
+      columns = null;
+      break;
+    }
+  }
+
+  return {
+    table: extractedTable.name,
+    schema: extractedTable.schema,
+    columns,
+  };
 }

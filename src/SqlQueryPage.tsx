@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/solid-query";
 import { Match, Switch } from "solid-js";
 import { useDatabase } from "./database/useDatabase";
-import { extractPrimaryTableFromSql } from "./lib/extractTablesFromSql";
+import { extractTableFromSql } from "./lib/extractTablesFromSql";
 import { DataTable } from "./table/DataTable";
 import { DataTableProvider } from "./table/DataTableProvider";
 import { useTableStructure } from "./useTableStructure";
@@ -14,21 +14,21 @@ export function SqlQueryPage(props: { query: string }) {
     queryKey: ["sql-query", props.query],
   }));
 
-  const extractedTable = () => extractPrimaryTableFromSql(props.query);
+  const extractedTable = () => extractTableFromSql(props.query);
 
   const tableName = () => extractedTable()?.table ?? "";
 
   const structureQuery = useTableStructure(tableName);
 
-  // Use parsed table structure if available, otherwise fall back to inferring from result keys
   const structure = () => {
     const parsedStructure = structureQuery.data;
 
     if (parsedStructure && parsedStructure.length > 0) {
-      return parsedStructure;
+      const columns = extractedTable()?.columns?.map((c) => c.name) ?? [];
+      return parsedStructure.filter((s) => columns.includes(s.columnName));
     }
 
-    // Fallback: infer columns from query result
+    // infer columns from query result if no parsed structure could be determined
     return Object.keys(rowsQuery.data?.at(0) ?? {}).map((k) => ({
       columnName: k,
       dataType: "text" as const,
