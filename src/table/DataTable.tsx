@@ -65,7 +65,7 @@ export function DataTable(props: { reload: () => void }) {
             <For each={getTable().getColumns()}>
               {(column) => (
                 <th class="px-3 py-2 text-left font-medium text-base text-zinc-600">
-                  {column.getName()}
+                  {column.name()}
                 </th>
               )}
             </For>

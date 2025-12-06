@@ -5,7 +5,8 @@ import type { PostgresDataType } from "@/useTableStructure";
 export abstract class DataType {
   abstract toString(data: unknown): string;
   abstract display(data: unknown): JSXElement;
-  abstract fromString(value: string): unknown;
+  abstract fromString(data: string): unknown;
+  abstract toSqlValue(data: unknown): string;
 
   fileExtension(): string {
     return ".txt";
@@ -29,8 +30,12 @@ class JsonCellData extends DataType {
     return JSON.stringify(data);
   }
 
-  fromString(value: string): unknown {
-    return JSON.parse(value);
+  fromString(data: string): unknown {
+    return JSON.parse(data);
+  }
+
+  toSqlValue(data: unknown): string {
+    return JSON.stringify(data);
   }
 
   override fileExtension(): string {
@@ -59,14 +64,21 @@ class ArrayCellData extends DataType {
     return `{${data.join(",")}}`;
   }
 
-  fromString(value: string): unknown {
-    if (value.startsWith("{") && value.endsWith("}")) {
-      const inner = value.slice(1, -1);
+  toSqlValue(data: unknown): string {
+    if (!Array.isArray(data)) {
+      return String(data);
+    }
+    return `{${data.join(",")}}`;
+  }
+
+  fromString(data: string): unknown {
+    if (data.startsWith("{") && data.endsWith("}")) {
+      const inner = data.slice(1, -1);
       if (inner === "") return [];
       return inner.split(",");
     }
 
-    return JSON.parse(value);
+    throw new Error("Malformed array data");
   }
 }
 
@@ -94,12 +106,20 @@ class WithoutNullish extends DataType {
     return this.#inner.display(data);
   }
 
-  fromString(value: string): unknown {
-    if (value === "null") {
+  toSqlValue(data: unknown): string {
+    if (data == null) {
+      return "null";
+    }
+
+    return this.#inner.toSqlValue(data);
+  }
+
+  fromString(data: string): unknown {
+    if (data === "null") {
       return null;
     }
 
-    return this.#inner.fromString(value);
+    return this.#inner.fromString(data);
   }
 
   override isPrimary(): boolean {
@@ -123,6 +143,10 @@ class ZonedDateTimeCellData extends DataType {
     return Temporal.Instant.from(isoString).toZonedDateTimeISO("UTC");
   }
 
+  toSqlValue(data: unknown): string {
+    return this.toString(data);
+  }
+
   display(data: unknown): string {
     return this.#toTemporal(data).toLocaleString();
   }
@@ -131,8 +155,8 @@ class ZonedDateTimeCellData extends DataType {
     return this.#toTemporal(data).toString();
   }
 
-  fromString(value: string): unknown {
-    return value;
+  fromString(data: string): unknown {
+    return data;
   }
 }
 
@@ -149,8 +173,12 @@ class PlainDateTimeCellData extends DataType {
     return this.#toTemporal(data).toString();
   }
 
-  fromString(value: string): unknown {
-    return value;
+  fromString(data: string): unknown {
+    return data;
+  }
+
+  toSqlValue(data: unknown): string {
+    return this.toString(data);
   }
 }
 
@@ -167,8 +195,12 @@ class PlainTimeCellData extends DataType {
     return this.display(data);
   }
 
-  fromString(value: string): unknown {
-    return value;
+  fromString(data: string): unknown {
+    return data;
+  }
+
+  toSqlValue(data: unknown): string {
+    return this.toString(data);
   }
 }
 
@@ -192,8 +224,12 @@ class DefaultCellData extends DataType {
     return String(data);
   }
 
-  fromString(value: string): unknown {
-    return value;
+  fromString(data: string): unknown {
+    return data;
+  }
+
+  toSqlValue(data: unknown): string {
+    return this.toString(data);
   }
 }
 

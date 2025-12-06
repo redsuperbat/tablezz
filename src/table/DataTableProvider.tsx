@@ -126,20 +126,22 @@ export function DataTableProvider(props: {
 
       try {
         for (const cell of modifiedCells) {
-          const columnName = cell.getColumn().getName();
+          const column = cell.getColumn();
+          const columnName = column.name();
           const primaryKeys = cell
             .getRow()
             .getCells()
             .filter((c) => c.isPrimary())
             .map((c) => ({
-              columnName: c.getColumn().getName(),
-              value: c.originalData,
+              columnName: c.getColumn().name(),
+              value: c.getColumn().getDataType().toSqlValue(c.originalData),
             }));
 
           const sqlStatement = `
             UPDATE "${props.name}"
-            SET "${columnName}" = '${cell.data}'
-            WHERE ${primaryKeys.map((p) => `"${p.columnName}" = '${p.value}'`).join(" AND ")};`;
+            SET "${columnName}" = ${column.getDataType().toSqlValue(cell.data)}
+            WHERE ${primaryKeys.map((p) => `"${p.columnName}" = ${p.value}`).join(" AND ")};`;
+
           await database.execute(sqlStatement);
         }
       } finally {

@@ -64,8 +64,12 @@ export class Cell {
     return this.getColumn().getDataType().toString(this.data);
   }
 
+  toSqlValue() {
+    return this.getColumn().getDataType().toSqlValue(this.data);
+  }
+
   /**
-   * Returns the current initial unmodified value of the cell
+   * Returns the original unmodified value of the cell
    **/
   get originalData() {
     return this.#data.at(0);
