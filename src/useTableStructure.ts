@@ -61,6 +61,7 @@ export type TableStructure = {
   columnName: string;
   dataType: PostgresDataType;
   isPrimary: boolean;
+  isNullable: boolean;
 };
 
 export function useTableStructure(tableName: () => string) {

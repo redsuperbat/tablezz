@@ -23,6 +23,7 @@ pub struct ColumnInfo {
     pub column_name: String,
     pub data_type: String,
     pub is_primary: bool,
+    pub is_nullable: bool,
 }
 
 #[derive(Default)]
@@ -182,7 +183,8 @@ pub async fn table_structure(
                  AND a.attnum = ANY(c.conkey)
                  AND c.contype = 'p'),
                 false
-            ) AS is_primary
+            ) AS is_primary,
+            NOT a.attnotnull AS is_nullable
         FROM pg_attribute a
         JOIN pg_class c ON a.attrelid = c.oid
         JOIN pg_namespace n ON c.relnamespace = n.oid
@@ -204,6 +206,7 @@ pub async fn table_structure(
             column_name: row.get("column_name"),
             data_type: row.get("data_type"),
             is_primary: row.get("is_primary"),
+            is_nullable: row.get("is_nullable"),
         })
         .collect();
 
