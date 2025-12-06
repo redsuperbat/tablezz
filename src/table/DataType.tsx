@@ -1,4 +1,5 @@
 import type { JSXElement } from "solid-js";
+import { iife } from "@/lib/iife";
 import type { PostgresDataType } from "@/useTableStructure";
 
 export abstract class DataType {
@@ -79,17 +80,35 @@ class ArrayDataType extends DataType {
   }
 }
 
-class NullDataType extends DataType {
-  toSqlValue(): string {
-    return "null";
+class WithNull extends DataType {
+  #inner: DataType;
+
+  constructor(inner: DataType) {
+    super();
+    this.#inner = inner;
   }
 
-  display(): string {
-    return "null";
+  toSqlValue(value: unknown): string {
+    if (value === null) {
+      return "null";
+    }
+    return this.#inner.toSqlValue(value);
   }
 
-  toString(): string {
-    return "null";
+  display(value: unknown) {
+    if (value === null) {
+      return "null";
+    }
+
+    return this.#inner.display(value);
+  }
+
+  toString(value: unknown): string {
+    if (value === null) {
+      return "null";
+    }
+
+    return this.#inner.toString(value);
   }
 
   fromString(): unknown {
@@ -161,38 +180,47 @@ export function createDataType(
   type: PostgresDataType,
   isNullable: boolean,
 ): DataType {
-  // Array data type
-  if (type.endsWith("[]")) {
-    const elementType = createDataType(type.slice(0, -2) as PostgresDataType);
-    return new ArrayDataType(elementType);
+  const inner = iife(() => {
+    if (type.endsWith("[]")) {
+      const elementType = createDataType(
+        type.slice(0, -2) as PostgresDataType,
+        // We cannot have nullable elements in arrays
+        false,
+      );
+      return new ArrayDataType(elementType);
+    }
+
+    switch (type) {
+      case "json":
+      case "jsonb":
+        return new JsonDataType();
+
+      // Treat dates as text for now
+      case "date":
+      case "time":
+      case "time without time zone":
+      case "time with time zone":
+      case "timestamp":
+      case "timestamp without time zone":
+      case "timestamp with time zone":
+      case "uuid":
+      case "text":
+        return new TextDataType();
+
+      case "integer":
+      case "numeric":
+      case "bigint":
+      case "smallint":
+        return new NumberDataType();
+
+      default:
+        return new DefaultDataType();
+    }
+  });
+
+  if (isNullable) {
+    return new WithNull(inner);
   }
 
-  switch (type) {
-    case "json":
-    case "jsonb":
-      return new JsonDataType();
-
-    // Treat dates as text for now
-    case "date":
-    case "time":
-    case "time without time zone":
-    case "time with time zone":
-    case "timestamp":
-    case "timestamp without time zone":
-    case "timestamp with time zone":
-    case "uuid":
-    case "text":
-      return new TextDataType();
-
-    case "integer":
-    case "numeric":
-    case "bigint":
-    case "smallint":
-      return new NumberDataType();
-
-    default:
-      return new DefaultDataType();
-  }
+  return inner;
 }
-
-export const NullType = new NullDataType();
