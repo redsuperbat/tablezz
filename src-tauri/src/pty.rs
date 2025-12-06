@@ -2,12 +2,28 @@ use portable_pty::{CommandBuilder, MasterPty, NativePtySystem, PtySize, PtySyste
 use std::env;
 use std::fs;
 use std::io::{Read, Write};
+use std::process::Command;
 use std::sync::{Arc, Mutex};
 use tauri::{Emitter, State};
 
 pub struct PtyState {
     pub writer: Arc<Mutex<Box<dyn Write + Send>>>,
     pub master: Arc<Mutex<Box<dyn MasterPty + Send>>>,
+}
+
+fn get_shell_path() -> Option<String> {
+    let shell = env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
+
+    let output = Command::new(&shell)
+        .args(["-l", "-c", "echo $PATH"])
+        .output()
+        .ok()?;
+
+    if output.status.success() {
+        Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    } else {
+        None
+    }
 }
 
 #[tauri::command]
@@ -30,7 +46,17 @@ pub fn create_pty(
         })
         .map_err(|e| e.to_string())?;
 
-    let mut cmd = CommandBuilder::new(editor);
+    let mut cmd = CommandBuilder::new(&editor);
+
+    if let Some(shell_path) = get_shell_path() {
+        let current_path = env::var("PATH").unwrap_or_default();
+        if current_path.is_empty() {
+            cmd.env("PATH", shell_path);
+        } else {
+            cmd.env("PATH", format!("{}:{}", shell_path, current_path));
+        }
+    }
+
     let ext = extension.unwrap_or_else(|| ".txt".to_string());
 
     let temp_file = {
@@ -47,7 +73,6 @@ pub fn create_pty(
     let mut reader = pair.master.try_clone_reader().map_err(|e| e.to_string())?;
     let writer = pair.master.take_writer().map_err(|e| e.to_string())?;
 
-    // Spawn thread to read PTY output
     let window_clone_output = window.clone();
     let window_clone_exit = window.clone();
     std::thread::spawn(move || {
