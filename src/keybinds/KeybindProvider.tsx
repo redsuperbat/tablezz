@@ -1,5 +1,6 @@
 import { createSignal, getOwner, onMount, runWithOwner } from "solid-js";
 import { useCommandsContext } from "@/commands/CommandsContext";
+import { createWatcher } from "@/commands/createWatcher";
 import { useConfig } from "@/config/ConfigurationProvider";
 import { createSolidContext } from "@/createSolidContext";
 import type { Keybind } from "./Keybind";
@@ -51,7 +52,7 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
 
     const checker = ast.map(
       (keybind) => (e: KeyEvent) =>
-        new KeybindChecker(e, config.leaderKey).check(keybind),
+        new KeybindChecker(e, config().leaderKey).check(keybind),
     );
 
     return { checker, ast };
@@ -79,9 +80,25 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
     });
   };
 
-  onMount(() => {
-    const configurationKeybinds = Object.entries(config.keybinds || {});
+  createWatcher(config, ({ next, prev }) => {
+    if (prev) {
+      const configurationKeybinds = Object.entries(prev.keybinds);
+      for (const [keybindExpression, command] of configurationKeybinds) {
+        if (typeof command === "string") {
+          unregisterKeybind({
+            command,
+            keybindExpression,
+          });
+        } else {
+          unregisterKeybind({
+            command: command.command,
+            keybindExpression,
+          });
+        }
+      }
+    }
 
+    const configurationKeybinds = Object.entries(next.keybinds);
     for (const [keybindExpression, command] of configurationKeybinds) {
       if (typeof command === "string") {
         registerKeybind({

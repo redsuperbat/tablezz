@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/solid-query";
 import { BaseDirectory, watch } from "@tauri-apps/plugin-fs";
 import {
+  type Accessor,
   createContext,
   Match,
   onMount,
@@ -8,6 +9,7 @@ import {
   Switch,
   useContext,
 } from "solid-js";
+import { message } from "@/commands/Messages";
 import { useDisposables } from "@/lib/useDisposables";
 import {
   type Configuration,
@@ -16,7 +18,7 @@ import {
 } from "./ConfigurationService";
 
 interface ConfigurationContext {
-  config: Configuration;
+  config: Accessor<Configuration>;
 }
 const ConfigurationContext = createContext<ConfigurationContext | null>(null);
 
@@ -30,19 +32,26 @@ export function ConfigurationProvider(props: ParentProps) {
   }));
 
   onMount(() => {
-    watch(configurationFilename, () => configQuery.refetch(), {
-      baseDir: BaseDirectory.Home,
-    }).then((w) => disposables.add(w));
+    watch(
+      configurationFilename,
+      () => {
+        configQuery.refetch();
+        message.info("Reloaded configuration");
+      },
+      {
+        baseDir: BaseDirectory.Home,
+      },
+    ).then((w) => disposables.add(w));
   });
 
   return (
     <Switch>
       <Match when={configQuery.data}>
-        <ConfigurationContext.Provider
-          value={{ config: configQuery.data as Configuration }}
-        >
-          {props.children}
-        </ConfigurationContext.Provider>
+        {(config) => (
+          <ConfigurationContext.Provider value={{ config }}>
+            {props.children}
+          </ConfigurationContext.Provider>
+        )}
       </Match>
       <Match when={!configQuery.data}>Loading...</Match>
     </Switch>

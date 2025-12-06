@@ -3,15 +3,18 @@ import { z } from "zod";
 import { tryCatch } from "@/lib/tryCatch";
 
 const configuration = z.object({
-  leaderKey: z.string().default("Space"),
-  leaderKeyTimeoutMs: z.number().default(1000),
+  leaderKey: z.string().describe("The leader key").default("Space"),
   keybinds: z
     .record(
       z.string(),
       z.string().or(z.object({ command: z.string(), description: z.string() })),
     )
+    .describe("Configure custom keybinds which trigger predefined commands")
     .default({}),
-  editor: z.string().default("nvim"),
+  editor: z
+    .string()
+    .describe("The terminal editor which will be invoked when editing cells")
+    .default("nvim"),
 });
 
 export type Configuration = z.infer<typeof configuration>;
