@@ -16,7 +16,7 @@ import { createCounterWithBoundaries } from "@/lib/counter";
 import type { PostgresDataType } from "@/useTableStructure";
 import { Cell } from "./Cell";
 import { Column } from "./Column";
-import { DataTypeFactory } from "./DataType";
+import { createDataType } from "./DataType";
 import { Row } from "./Row";
 import { Table } from "./Table";
 import { VisualSelection } from "./VisualSelection";
@@ -36,6 +36,7 @@ export function DataTableProvider(props: {
     columnName: string;
     dataType: PostgresDataType;
     isPrimary: boolean;
+    isNullable: boolean;
   }[];
   onEditSelection?(selection: VisualSelection): void;
   children: JSXElement;
@@ -49,7 +50,8 @@ export function DataTableProvider(props: {
         new Column({
           name: c.columnName,
           isPrimary: c.isPrimary,
-          dataTypeFactory: new DataTypeFactory(c.dataType),
+          isNullable: c.isNullable,
+          dataType: createDataType(c.dataType, c.isNullable),
           index,
         }),
     ),
@@ -132,7 +134,7 @@ export function DataTableProvider(props: {
             .filter((c) => c.isPrimary())
             .map((c) => ({
               columnName: c.getColumn().name,
-              value: c.getDataTypeWithValue(c.originalData).toSqlValue(),
+              value: c.getDataType().toSqlValue(c.originalData),
             }));
 
           const sqlStatement = `

@@ -24,11 +24,7 @@ export class Cell {
   }
 
   getDataType() {
-    return this.getColumn().getDataType(this.data);
-  }
-
-  getDataTypeWithValue(value: unknown) {
-    return this.getColumn().getDataType(value);
+    return this.getColumn().getDataType();
   }
 
   setRenderer(renderer: () => void) {
@@ -66,15 +62,15 @@ export class Cell {
   }
 
   display() {
-    return this.getDataType().display();
+    return this.getDataType().display(this.data);
   }
 
   toString() {
-    return this.getDataType().toString();
+    return this.getDataType().toString(this.data);
   }
 
   toSqlValue() {
-    return this.getDataType().toSqlValue();
+    return this.getDataType().toSqlValue(this.data);
   }
 
   /**

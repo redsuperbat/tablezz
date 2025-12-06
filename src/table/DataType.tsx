@@ -2,10 +2,10 @@ import type { JSXElement } from "solid-js";
 import type { PostgresDataType } from "@/useTableStructure";
 
 export abstract class DataType {
-  abstract toString(): string;
-  abstract display(): JSXElement;
+  abstract toString(data: unknown): string;
+  abstract display(data: unknown): JSXElement;
   abstract fromString(value: string): unknown;
-  abstract toSqlValue(): string;
+  abstract toSqlValue(data: unknown): string;
 
   fileExtension(): string {
     return ".txt";
@@ -13,31 +13,24 @@ export abstract class DataType {
 }
 
 class JsonDataType extends DataType {
-  #data: unknown;
-
-  constructor(data: unknown) {
-    super();
-    this.#data = data;
-  }
-
-  display() {
+  display(data: unknown) {
     return (
       <code>
-        <pre>{JSON.stringify(this.#data, null, 2)}</pre>
+        <pre>{JSON.stringify(data, null, 2)}</pre>
       </code>
     );
   }
 
-  toString(): string {
-    return JSON.stringify(this.#data);
+  toString(data: unknown): string {
+    return JSON.stringify(data);
   }
 
   fromString(value: string): unknown {
     return JSON.parse(value);
   }
 
-  toSqlValue(): string {
-    return `'${JSON.stringify(this.#data)}'`;
+  toSqlValue(data: unknown): string {
+    return `'${JSON.stringify(data)}'`;
   }
 
   override fileExtension(): string {
@@ -46,36 +39,40 @@ class JsonDataType extends DataType {
 }
 
 class ArrayDataType extends DataType {
-  #data: DataType[];
+  #elementType: DataType;
 
-  constructor(data: DataType[]) {
+  constructor(elementType: DataType) {
     super();
-    this.#data = data;
+    this.#elementType = elementType;
   }
 
-  display() {
+  display(data: unknown) {
     return (
       <code>
-        <pre>{this.toString()}</pre>
+        <pre>{this.toString(data)}</pre>
       </code>
     );
   }
 
-  toString(): string {
-    return `{${this.#data.map((d) => d.toString()).join(",")}}`;
+  toString(data: unknown): string {
+    if (!Array.isArray(data)) {
+      throw new Error("Expected array data");
+    }
+    return `{${data.map((d) => this.#elementType.toString(d)).join(",")}}`;
   }
 
-  toSqlValue(): string {
-    return `{${this.#data.map((d) => d.toSqlValue()).join(",")}}`;
+  toSqlValue(data: unknown): string {
+    if (!Array.isArray(data)) {
+      throw new Error("Expected array data");
+    }
+    return `'{${data.map((d) => this.#elementType.toSqlValue(d)).join(",")}}'`;
   }
 
-  fromString(data: string): unknown[] {
-    if (data.startsWith("{") && data.endsWith("}")) {
-      const inner = data.slice(1, -1);
+  fromString(value: string): unknown[] {
+    if (value.startsWith("{") && value.endsWith("}")) {
+      const inner = value.slice(1, -1);
       if (inner === "") return [];
-      return inner
-        .split(",")
-        .map((value, index) => this.#data[index]?.fromString(value));
+      return inner.split(",").map((v) => this.#elementType.fromString(v));
     }
 
     throw new Error("Malformed array data");
@@ -101,131 +98,101 @@ class NullDataType extends DataType {
 }
 
 class NumberDataType extends DataType {
-  #data: number;
+  display(data: unknown): string {
+    return this.toString(data);
+  }
 
-  constructor(data: unknown) {
-    super();
+  toString(data: unknown): string {
     if (typeof data !== "number") {
-      throw new Error(`Invalid data type for text data ${typeof data}`);
+      throw new Error(`Invalid data type for number: ${typeof data}`);
     }
-    this.#data = data;
+    return data.toString();
   }
 
-  display(): string {
-    return this.toString();
+  fromString(value: string): unknown {
+    return Number(value);
   }
 
-  toString(): string {
-    return this.#data.toString();
-  }
-
-  fromString(data: string): unknown {
-    return Number(data);
-  }
-
-  toSqlValue(): string {
-    return this.toString();
+  toSqlValue(data: unknown): string {
+    return this.toString(data);
   }
 }
 
 class TextDataType extends DataType {
-  #data: string;
+  display(data: unknown): string {
+    return this.toString(data);
+  }
 
-  constructor(data: unknown) {
-    super();
+  toString(data: unknown): string {
     if (typeof data !== "string") {
-      throw new Error(`Invalid data type for text data ${typeof data}`);
+      throw new Error(`Invalid data type for text: ${typeof data}`);
     }
-    this.#data = data;
-  }
-
-  display(): string {
-    return this.#data;
-  }
-
-  toString(): string {
-    return this.#data;
-  }
-
-  fromString(data: string): unknown {
     return data;
   }
 
-  toSqlValue(): string {
-    return `'${this.#data}'`;
+  fromString(value: string): unknown {
+    return value;
+  }
+
+  toSqlValue(data: unknown): string {
+    return `'${this.toString(data)}'`;
   }
 }
 
 class DefaultDataType extends DataType {
-  #data: unknown;
-
-  constructor(data: unknown) {
-    super();
-    this.#data = data;
+  display(data: unknown): string {
+    return this.toString(data);
   }
 
-  display(): string {
-    return this.toString();
+  toString(data: unknown): string {
+    return String(data);
   }
 
-  toString(): string {
-    return String(this.#data);
+  fromString(value: string): unknown {
+    return value;
   }
 
-  fromString(data: string): unknown {
-    return data;
-  }
-
-  toSqlValue(): string {
-    return this.toString();
+  toSqlValue(data: unknown): string {
+    return this.toString(data);
   }
 }
 
-export class DataTypeFactory {
-  #type: PostgresDataType;
-
-  constructor(dataType: PostgresDataType) {
-    this.#type = dataType;
+export function createDataType(
+  type: PostgresDataType,
+  isNullable: boolean,
+): DataType {
+  // Array data type
+  if (type.endsWith("[]")) {
+    const elementType = createDataType(type.slice(0, -2) as PostgresDataType);
+    return new ArrayDataType(elementType);
   }
 
-  make(data: unknown): DataType {
-    if (data === null) {
-      return new NullDataType();
-    }
+  switch (type) {
+    case "json":
+    case "jsonb":
+      return new JsonDataType();
 
-    // Array data type
-    if (this.#type.endsWith("[]") && Array.isArray(data)) {
-      const elementsDataTypeFactory = new DataTypeFactory(
-        this.#type.slice(0, -2),
-      );
-      const dataTypes = data.map((d) => elementsDataTypeFactory.make(d));
-      return new ArrayDataType(dataTypes);
-    }
+    // Treat dates as text for now
+    case "date":
+    case "time":
+    case "time without time zone":
+    case "time with time zone":
+    case "timestamp":
+    case "timestamp without time zone":
+    case "timestamp with time zone":
+    case "uuid":
+    case "text":
+      return new TextDataType();
 
-    switch (this.#type) {
-      case "json":
-      case "jsonb":
-        return new JsonDataType(data);
-      // Treat dates as text for now
-      case "date":
-      case "time":
-      case "time without time zone":
-      case "time with time zone":
-      case "timestamp":
-      case "timestamp without time zone":
-      case "timestamp with time zone":
-      case "uuid":
-      case "text":
-        return new TextDataType(data);
+    case "integer":
+    case "numeric":
+    case "bigint":
+    case "smallint":
+      return new NumberDataType();
 
-      case "integer":
-      case "numeric":
-      case "bigint":
-      case "smallint":
-        return new NumberDataType(data);
-
-      default:
-        return new DefaultDataType(data);
-    }
+    default:
+      return new DefaultDataType();
   }
 }
+
+export const NullType = new NullDataType();

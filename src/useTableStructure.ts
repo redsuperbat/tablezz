@@ -71,7 +71,12 @@ export function useTableStructure(tableName: () => string) {
   return useQuery<TableStructure[]>(() => ({
     queryFn: async () => {
       const result = await invoke<
-        { columnName: string; dataType: PostgresDataType; isPrimary: boolean }[]
+        {
+          columnName: string;
+          dataType: PostgresDataType;
+          isPrimary: boolean;
+          isNullable: boolean;
+        }[]
       >("table_structure", {
         db: url(),
         schema: schema(),
@@ -80,6 +85,6 @@ export function useTableStructure(tableName: () => string) {
 
       return result;
     },
-    queryKey: ["table-structure", schema(), tableName()],
+    queryKey: ["table-structure", schema(), tableName(), url()],
   }));
 }
