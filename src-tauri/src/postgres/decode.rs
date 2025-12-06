@@ -1,3 +1,4 @@
+use pgvector::Vector;
 use serde_json::Value as JsonValue;
 use sqlx::{postgres::PgValueRef, TypeInfo, Value, ValueRef};
 use time::{Date, OffsetDateTime, PrimitiveDateTime, Time};
@@ -32,6 +33,7 @@ pub fn to_json(v: PgValueRef) -> Result<JsonValue, Error> {
         "JSON" | "JSONB" => ValueRef::to_owned(&v).try_decode().unwrap_or_default(),
         "BYTEA" => decode_bytea(&v),
         "VOID" => JsonValue::Null,
+        "vector" => decode_vector(&v),
 
         // catch-all for user-defined types (enums, domains, composites, etc.)
         other => {
@@ -67,19 +69,31 @@ fn decode_array(v: &PgValueRef<'_>, inner_type: &str) -> JsonValue {
         "INT2" => ValueRef::to_owned(v)
             .try_decode::<Vec<i16>>()
             .map(|arr| {
-                JsonValue::Array(arr.into_iter().map(|i| JsonValue::Number(i.into())).collect())
+                JsonValue::Array(
+                    arr.into_iter()
+                        .map(|i| JsonValue::Number(i.into()))
+                        .collect(),
+                )
             })
             .unwrap_or(JsonValue::Null),
         "INT4" => ValueRef::to_owned(v)
             .try_decode::<Vec<i32>>()
             .map(|arr| {
-                JsonValue::Array(arr.into_iter().map(|i| JsonValue::Number(i.into())).collect())
+                JsonValue::Array(
+                    arr.into_iter()
+                        .map(|i| JsonValue::Number(i.into()))
+                        .collect(),
+                )
             })
             .unwrap_or(JsonValue::Null),
         "INT8" => ValueRef::to_owned(v)
             .try_decode::<Vec<i64>>()
             .map(|arr| {
-                JsonValue::Array(arr.into_iter().map(|i| JsonValue::Number(i.into())).collect())
+                JsonValue::Array(
+                    arr.into_iter()
+                        .map(|i| JsonValue::Number(i.into()))
+                        .collect(),
+                )
             })
             .unwrap_or(JsonValue::Null),
         "BOOL" => ValueRef::to_owned(v)
@@ -191,5 +205,12 @@ fn decode_bytea(v: &PgValueRef<'_>) -> JsonValue {
                     .collect(),
             )
         })
+        .unwrap_or(JsonValue::Null)
+}
+
+fn decode_vector(v: &PgValueRef<'_>) -> JsonValue {
+    ValueRef::to_owned(v)
+        .try_decode::<Vector>()
+        .map(|vec| JsonValue::Array(vec.to_vec().into_iter().map(JsonValue::from).collect()))
         .unwrap_or(JsonValue::Null)
 }
