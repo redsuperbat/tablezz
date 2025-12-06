@@ -7,6 +7,7 @@ import {
   useContext,
 } from "solid-js";
 import z from "zod";
+import { message } from "@/commands/Messages";
 import { useDatabase } from "@/database/useDatabase";
 import {
   useRegisterKeybindCommand,
@@ -137,6 +138,13 @@ export function DataTableProvider(props: {
               columnName: c.getColumn().name,
               value: c.getDataType().toSqlValue(c.originalData),
             }));
+
+          if (primaryKeys.length === 0) {
+            message.error(
+              `Can't update, no primary key in table "${props.name}"`,
+            );
+            continue;
+          }
 
           const sqlStatement = `
             UPDATE "${props.name}"
