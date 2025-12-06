@@ -163,6 +163,39 @@ class TextDataType extends DataType {
   }
 }
 
+class VectorDataType extends DataType {
+  display(data: unknown) {
+    if (!Array.isArray(data)) {
+      throw new Error("Expected array data for vector");
+    }
+    return (
+      <code>
+        <pre>[{data.join(", ")}]</pre>
+      </code>
+    );
+  }
+
+  toString(data: unknown): string {
+    if (!Array.isArray(data)) {
+      throw new Error("Expected array data for vector");
+    }
+    return `[${data.join(",")}]`;
+  }
+
+  fromString(value: string): number[] {
+    if (value.startsWith("[") && value.endsWith("]")) {
+      const inner = value.slice(1, -1);
+      if (inner === "") return [];
+      return inner.split(",").map((v) => Number(v.trim()));
+    }
+    throw new Error("Malformed vector data");
+  }
+
+  toSqlValue(data: unknown): string {
+    return `'${this.toString(data)}'`;
+  }
+}
+
 class DefaultDataType extends DataType {
   display(data: unknown): string {
     return this.toString(data);
@@ -217,6 +250,9 @@ export function createDataType(
       case "bigint":
       case "smallint":
         return new NumberDataType();
+
+      case "vector":
+        return new VectorDataType();
 
       default:
         return new DefaultDataType();
