@@ -1,6 +1,4 @@
 import type { JSXElement } from "solid-js";
-import { Temporal } from "temporal-polyfill";
-import { iife } from "@/lib/iife";
 import type { PostgresDataType } from "@/useTableStructure";
 
 export abstract class DataType {
@@ -14,7 +12,7 @@ export abstract class DataType {
   }
 }
 
-class JsonCellData extends DataType {
+class JsonDataType extends DataType {
   #data: unknown;
 
   constructor(data: unknown) {
@@ -47,141 +45,82 @@ class JsonCellData extends DataType {
   }
 }
 
-class ArrayCellData extends DataType {
-  #data: unknown[];
+class ArrayDataType extends DataType {
+  #data: DataType[];
 
-  constructor(data: unknown) {
+  constructor(data: DataType[]) {
     super();
-    if (!Array.isArray(data)) {
-      throw new Error("Array data type was not an array");
-    }
     this.#data = data;
   }
 
   display() {
     return (
       <code>
-        <pre>{JSON.stringify(this.#data, null, 2)}</pre>
+        <pre>{this.toString()}</pre>
       </code>
     );
   }
 
   toString(): string {
-    return `{${this.#data.join(",")}}`;
+    return `{${this.#data.map((d) => d.toString()).join(",")}}`;
   }
 
   toSqlValue(): string {
-    return `{${this.#data.join(",")}}`;
+    return `{${this.#data.map((d) => d.toSqlValue()).join(",")}}`;
   }
 
-  fromString(data: string): string[] {
+  fromString(data: string): unknown[] {
     if (data.startsWith("{") && data.endsWith("}")) {
       const inner = data.slice(1, -1);
       if (inner === "") return [];
-      return inner.split(",");
+      return inner
+        .split(",")
+        .map((value, index) => this.#data[index]?.fromString(value));
     }
 
     throw new Error("Malformed array data");
   }
 }
 
-class WithoutNullish extends DataType {
-  #inner: DataType;
-  #data: unknown;
+class NullDataType extends DataType {
+  toSqlValue(): string {
+    return "null";
+  }
 
-  constructor(inner: DataType, data: unknown) {
+  display(): string {
+    return "null";
+  }
+
+  toString(): string {
+    return "null";
+  }
+
+  fromString(): unknown {
+    return null;
+  }
+}
+
+class NumberDataType extends DataType {
+  #data: number;
+
+  constructor(data: unknown) {
     super();
-    this.#inner = inner;
+    if (typeof data !== "number") {
+      throw new Error(`Invalid data type for text data ${typeof data}`);
+    }
     this.#data = data;
   }
 
-  toString(): string {
-    if (this.#data == null) {
-      return "null";
-    }
-
-    return this.#inner.toString();
-  }
-
-  display(): JSXElement {
-    if (this.#data == null) {
-      return null;
-    }
-
-    return this.#inner.display();
-  }
-
-  toSqlValue(): string {
-    if (this.#data == null) {
-      return "null";
-    }
-
-    return this.#inner.toSqlValue();
-  }
-
-  fromString(data: string): unknown {
-    if (data === "null") {
-      return null;
-    }
-
-    return this.#inner.fromString(data);
-  }
-
-  override fileExtension() {
-    return this.#inner.fileExtension();
-  }
-}
-
-class ZonedDateTimeCellData extends DataType {
-  #data: Temporal.ZonedDateTime;
-
-  constructor(data: unknown) {
-    super();
-    // Convert to ISO 8601 format
-    const isoString = String(data)
-      .replace(" ", "T")
-      .replace(/([+-]\d{2}:\d{2}):\d{2}$/, "$1")
-      .replace(/T(\d):/, "T0$1:") // Pad single-digit hours
-      .replaceAll(" ", "");
-
-    this.#data = Temporal.Instant.from(isoString).toZonedDateTimeISO("UTC");
-  }
-
-  toSqlValue(): string {
+  display(): string {
     return this.toString();
   }
 
-  display(): string {
-    return this.#data.toLocaleString();
-  }
-
   toString(): string {
     return this.#data.toString();
   }
 
   fromString(data: string): unknown {
-    return data;
-  }
-}
-
-class PlainDateTimeCellData extends DataType {
-  #data: Temporal.PlainDateTime;
-
-  constructor(data: unknown) {
-    super();
-    this.#data = Temporal.PlainDateTime.from(normalizeIsoDatetime(String(data)));
-  }
-
-  display(): string {
-    return this.#data.toLocaleString();
-  }
-
-  toString(): string {
-    return this.#data.toString();
-  }
-
-  fromString(data: string): unknown {
-    return data;
+    return Number(data);
   }
 
   toSqlValue(): string {
@@ -189,20 +128,23 @@ class PlainDateTimeCellData extends DataType {
   }
 }
 
-class PlainTimeCellData extends DataType {
-  #data: Temporal.PlainTime;
+class TextDataType extends DataType {
+  #data: string;
 
   constructor(data: unknown) {
     super();
-    this.#data = Temporal.PlainTime.from(String(data));
+    if (typeof data !== "string") {
+      throw new Error(`Invalid data type for text data ${typeof data}`);
+    }
+    this.#data = data;
   }
 
   display(): string {
-    return this.#data.toString();
+    return this.#data;
   }
 
   toString(): string {
-    return this.#data.toString();
+    return this.#data;
   }
 
   fromString(data: string): unknown {
@@ -210,11 +152,11 @@ class PlainTimeCellData extends DataType {
   }
 
   toSqlValue(): string {
-    return this.toString();
+    return `'${this.#data}'`;
   }
 }
 
-class DefaultCellData extends DataType {
+class DefaultDataType extends DataType {
   #data: unknown;
 
   constructor(data: unknown) {
@@ -239,16 +181,6 @@ class DefaultCellData extends DataType {
   }
 }
 
-function normalizeIsoDatetime(s: string): string {
-  // Replace Postgres space with T
-  let out = s.replace(" ", "T");
-
-  // Pad single-digit hour (T9: → T09:)
-  out = out.replace(/T(\d)(:)/, (_, hour, colon) => `T0${hour}${colon}`);
-
-  return out;
-}
-
 export class DataTypeFactory {
   #type: PostgresDataType;
 
@@ -257,34 +189,43 @@ export class DataTypeFactory {
   }
 
   make(data: unknown): DataType {
-    const inner: DataType = iife(() => {
-      switch (this.#type) {
-        case "json":
-        case "jsonb":
-          return new JsonCellData(data);
-        case "date":
-        case "time":
-        case "time without time zone":
-          return new PlainTimeCellData(data);
+    if (data === null) {
+      return new NullDataType();
+    }
 
-        case "time with time zone":
-          return new ZonedDateTimeCellData(data);
+    // Array data type
+    if (this.#type.endsWith("[]") && Array.isArray(data)) {
+      const elementsDataTypeFactory = new DataTypeFactory(
+        this.#type.slice(0, -2),
+      );
+      const dataTypes = data.map((d) => elementsDataTypeFactory.make(d));
+      return new ArrayDataType(dataTypes);
+    }
 
-        case "timestamp":
-        case "timestamp without time zone":
-          return new PlainDateTimeCellData(data);
+    switch (this.#type) {
+      case "json":
+      case "jsonb":
+        return new JsonDataType(data);
+      // Treat dates as text for now
+      case "date":
+      case "time":
+      case "time without time zone":
+      case "time with time zone":
+      case "timestamp":
+      case "timestamp without time zone":
+      case "timestamp with time zone":
+      case "uuid":
+      case "text":
+        return new TextDataType(data);
 
-        case "timestamp with time zone":
-          return new ZonedDateTimeCellData(data);
+      case "integer":
+      case "numeric":
+      case "bigint":
+      case "smallint":
+        return new NumberDataType(data);
 
-        case "ARRAY":
-          return new ArrayCellData(data);
-
-        default:
-          return new DefaultCellData(data);
-      }
-    });
-
-    return new WithoutNullish(inner, data);
+      default:
+        return new DefaultDataType(data);
+    }
   }
 }

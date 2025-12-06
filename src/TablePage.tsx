@@ -87,8 +87,7 @@ export function TablePage() {
               const extension = selection()
                 .getAllIntersectingCells()
                 .at(0)
-                ?.getColumn()
-                .getDataType()
+                ?.getDataType()
                 .fileExtension();
 
               return (
