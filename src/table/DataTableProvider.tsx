@@ -52,6 +52,7 @@ export function DataTableProvider(props: {
           isPrimary: c.isPrimary,
           isNullable: c.isNullable,
           dataType: createDataType(c.dataType, c.isNullable),
+          rawType: c.dataType,
           index,
         }),
     ),

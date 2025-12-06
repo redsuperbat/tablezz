@@ -1,10 +1,66 @@
-import { createSignal, For } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
 import z from "zod";
+import { Binary, Braces, Calendar, Hash, Key, List, Type } from "lucide-solid";
 import { message } from "@/commands/Messages";
 import { useRegisterKeybindCommandOnMount } from "@/keybinds/useRegisterKeybindCommand";
+import type { PostgresDataType } from "@/useTableStructure";
 import type { Cell } from "./Cell";
+import type { Column } from "./Column";
 import { TableCell } from "./DataTableCell";
 import { useTableEditorContext } from "./DataTableProvider";
+
+function getDataTypeIcon(dataType: PostgresDataType) {
+  const baseType = dataType.replace(/\[\]$/, "") as PostgresDataType;
+  const isArray = dataType.endsWith("[]");
+
+  if (isArray) {
+    return List;
+  }
+
+  switch (baseType) {
+    case "json":
+    case "jsonb":
+      return Braces;
+    case "integer":
+    case "numeric":
+    case "bigint":
+    case "smallint":
+      return Hash;
+    case "date":
+    case "time":
+    case "time without time zone":
+    case "time with time zone":
+    case "timestamp(3)":
+    case "timestamp(3) without time zone":
+    case "timestamp(3) with time zone":
+      return Calendar;
+    case "vector":
+      return Binary;
+    case "text":
+    case "uuid":
+    default:
+      return Type;
+  }
+}
+
+function ColumnHeader(props: { column: Column }) {
+  const DataTypeIcon = getDataTypeIcon(props.column.rawType);
+
+  return (
+    <th class="px-3 py-2 text-left font-medium text-base text-zinc-600">
+      <div class="flex items-center gap-1.5">
+        <Show when={props.column.isPrimary}>
+          <Key class="w-3.5 h-3.5 text-amber-500" />
+        </Show>
+        <DataTypeIcon class="w-3.5 h-3.5 text-zinc-400" />
+        <span>{props.column.name}</span>
+        <Show when={props.column.isNullable}>
+          <span class="text-blue-400 text-xs font-semibold">?</span>
+        </Show>
+      </div>
+    </th>
+  );
+}
 
 export function DataTable(props: { reload: () => void }) {
   const { currentCell, visualSelection, getTable } = useTableEditorContext();
@@ -63,11 +119,7 @@ export function DataTable(props: { reload: () => void }) {
         <thead class="sticky top-0 z-10 bg-zinc-100/95 backdrop-blur-sm">
           <tr class="border-zinc-300 border-b">
             <For each={getTable().getColumns()}>
-              {(column) => (
-                <th class="px-3 py-2 text-left font-medium text-base text-zinc-600">
-                  {column.name}
-                </th>
-              )}
+              {(column) => <ColumnHeader column={column} />}
             </For>
           </tr>
         </thead>
