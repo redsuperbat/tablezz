@@ -1,19 +1,16 @@
 import type { JSXElement } from "solid-js";
 import { Temporal } from "temporal-polyfill";
+import { iife } from "@/lib/iife";
 import type { PostgresDataType } from "@/useTableStructure";
 
 export abstract class DataType {
-  abstract toString(data: unknown): string;
-  abstract display(data: unknown): JSXElement;
-  abstract fromString(data: string): unknown;
-  abstract toSqlValue(data: unknown): string;
+  abstract toString(): string;
+  abstract display(): JSXElement;
+  abstract fromString(): unknown;
+  abstract toSqlValue(): string;
 
   fileExtension(): string {
     return ".txt";
-  }
-
-  isPrimary(): boolean {
-    return false;
   }
 }
 
@@ -35,7 +32,7 @@ class JsonCellData extends DataType {
   }
 
   toSqlValue(data: unknown): string {
-    return JSON.stringify(data);
+    return `'${JSON.stringify(data)}'`;
   }
 
   override fileExtension(): string {
@@ -122,10 +119,6 @@ class WithoutNullish extends DataType {
     return this.#inner.fromString(data);
   }
 
-  override isPrimary(): boolean {
-    return this.#inner.isPrimary();
-  }
-
   override fileExtension() {
     return this.#inner.fileExtension();
   }
@@ -205,17 +198,6 @@ class PlainTimeCellData extends DataType {
 }
 
 class DefaultCellData extends DataType {
-  #isPrimary: boolean;
-
-  constructor(isPrimary: boolean) {
-    super();
-    this.#isPrimary = isPrimary;
-  }
-
-  override isPrimary(): boolean {
-    return this.#isPrimary;
-  }
-
   display(data: unknown): string {
     return this.toString(data);
   }
@@ -243,42 +225,42 @@ function normalizeIsoDatetime(s: string): string {
   return out;
 }
 
-export namespace DataType {
-  export function fromPostgresDataType({
-    type,
-    isPrimary,
-  }: {
-    type: PostgresDataType;
-    isPrimary: boolean;
-  }): DataType {
-    const inner = () => {
-      switch (type) {
+export class DataTypeFactory {
+  #type: PostgresDataType;
+
+  constructor(dataType: PostgresDataType) {
+    this.#type = dataType;
+  }
+
+  make(data: unknown): DataType {
+    const inner = iife(() => {
+      switch (this.#type) {
         case "json":
         case "jsonb":
-          return new JsonCellData();
+          return new JsonCellData(data);
         case "date":
         case "time":
         case "time without time zone":
-          return new PlainTimeCellData();
+          return new PlainTimeCellData(data);
 
         case "time with time zone":
-          return new ZonedDateTimeCellData();
+          return new ZonedDateTimeCellData(data);
 
         case "timestamp":
         case "timestamp without time zone":
-          return new PlainDateTimeCellData();
+          return new PlainDateTimeCellData(data);
 
         case "timestamp with time zone":
-          return new ZonedDateTimeCellData();
+          return new ZonedDateTimeCellData(data);
 
         case "ARRAY":
-          return new ArrayCellData();
+          return new ArrayCellData(data);
 
         default:
-          return new DefaultCellData(isPrimary);
+          return new DefaultCellData(data);
       }
-    };
+    });
 
-    return new WithoutNullish(inner());
+    return new WithoutNullish(inner);
   }
 }

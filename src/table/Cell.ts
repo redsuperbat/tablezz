@@ -23,6 +23,14 @@ export class Cell {
     this.#data = [opts.data];
   }
 
+  get #dataType() {
+    return this.getColumn().getDataType(this.data);
+  }
+
+  getDataTypeWithValue(value: unknown) {
+    return this.getColumn().getDataType(value);
+  }
+
   setRenderer(renderer: () => void) {
     this.#forceRerender = renderer;
   }
@@ -32,7 +40,7 @@ export class Cell {
       return;
     }
 
-    this.#data.push(this.getColumn().getDataType().fromString(value));
+    this.#data.push(this.#dataType.fromString());
     this.#isDirty = true;
     this.#forceRerender?.();
   }
@@ -41,6 +49,7 @@ export class Cell {
     if (this.#data.length === 1) {
       return;
     }
+
     this.#data.pop();
     this.#isDirty = this.#data.length !== 1;
     this.#forceRerender?.();
@@ -57,15 +66,15 @@ export class Cell {
   }
 
   display() {
-    return this.getColumn().getDataType().display(this.data);
+    return this.#dataType.display();
   }
 
   toString() {
-    return this.getColumn().getDataType().toString(this.data);
+    return this.#dataType.toString();
   }
 
   toSqlValue() {
-    return this.getColumn().getDataType().toSqlValue(this.data);
+    return this.#dataType.toSqlValue();
   }
 
   /**
@@ -84,7 +93,7 @@ export class Cell {
   }
 
   isPrimary() {
-    return this.getColumn().getDataType().isPrimary();
+    return this.getColumn().isPrimary;
   }
 
   equals(cell?: Cell) {

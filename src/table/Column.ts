@@ -1,21 +1,29 @@
-import type { DataType } from "./DataType";
+import type { DataTypeFactory } from "./DataType";
 
 export class Column {
   readonly index: number;
   readonly name: string;
-  #dataType: DataType;
+  readonly isPrimary: boolean;
+  #dataTypeFactory: DataTypeFactory;
 
   constructor({
     name,
     index,
-    dataType,
-  }: { name: string; dataType: DataType; index: number }) {
+    dataTypeFactory,
+    isPrimary,
+  }: {
+    name: string;
+    dataTypeFactory: DataTypeFactory;
+    index: number;
+    isPrimary: boolean;
+  }) {
+    this.isPrimary = isPrimary;
     this.name = name;
-    this.#dataType = dataType;
+    this.#dataTypeFactory = dataTypeFactory;
     this.index = index;
   }
 
-  getDataType() {
-    return this.#dataType;
+  getDataType(data: unknown) {
+    return this.#dataTypeFactory.make(data);
   }
 }

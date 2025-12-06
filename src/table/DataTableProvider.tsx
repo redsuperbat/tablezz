@@ -16,7 +16,7 @@ import { createCounterWithBoundaries } from "@/lib/counter";
 import type { PostgresDataType } from "@/useTableStructure";
 import { Cell } from "./Cell";
 import { Column } from "./Column";
-import { DataType } from "./DataType";
+import { DataTypeFactory } from "./DataType";
 import { Row } from "./Row";
 import { Table } from "./Table";
 import { VisualSelection } from "./VisualSelection";
@@ -48,10 +48,8 @@ export function DataTableProvider(props: {
       (c, index) =>
         new Column({
           name: c.columnName,
-          dataType: DataType.fromPostgresDataType({
-            type: c.dataType,
-            isPrimary: c.isPrimary,
-          }),
+          isPrimary: c.isPrimary,
+          dataTypeFactory: new DataTypeFactory(c.dataType),
           index,
         }),
     ),
@@ -127,19 +125,19 @@ export function DataTableProvider(props: {
       try {
         for (const cell of modifiedCells) {
           const column = cell.getColumn();
-          const columnName = column.name();
+          const columnName = column.name;
           const primaryKeys = cell
             .getRow()
             .getCells()
             .filter((c) => c.isPrimary())
             .map((c) => ({
-              columnName: c.getColumn().name(),
-              value: c.getColumn().getDataType().toSqlValue(c.originalData),
+              columnName: c.getColumn().name,
+              value: c.getDataTypeWithValue(c.originalData).toSqlValue(),
             }));
 
           const sqlStatement = `
             UPDATE "${props.name}"
-            SET "${columnName}" = ${column.getDataType().toSqlValue(cell.data)}
+            SET "${columnName}" = ${cell.toSqlValue()}
             WHERE ${primaryKeys.map((p) => `"${p.columnName}" = ${p.value}`).join(" AND ")};`;
 
           await database.execute(sqlStatement);
