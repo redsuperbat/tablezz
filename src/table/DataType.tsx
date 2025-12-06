@@ -92,6 +92,7 @@ class WithNull extends DataType {
     if (value === null) {
       return "null";
     }
+
     return this.#inner.toSqlValue(value);
   }
 
@@ -111,8 +112,12 @@ class WithNull extends DataType {
     return this.#inner.toString(value);
   }
 
-  fromString(): unknown {
-    return null;
+  fromString(value: string): unknown {
+    if (value === "null") {
+      return null;
+    }
+
+    return this.#inner.fromString(value);
   }
 }
 
@@ -200,9 +205,9 @@ export function createDataType(
       case "time":
       case "time without time zone":
       case "time with time zone":
-      case "timestamp":
-      case "timestamp without time zone":
-      case "timestamp with time zone":
+      case "timestamp(3)":
+      case "timestamp(3) without time zone":
+      case "timestamp(3) with time zone":
       case "uuid":
       case "text":
         return new TextDataType();
