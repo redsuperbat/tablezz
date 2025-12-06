@@ -40,7 +40,7 @@ export class Cell {
       return;
     }
 
-    this.#data.push(this.#dataType.fromString());
+    this.#data.push(this.#dataType.fromString(value));
     this.#isDirty = true;
     this.#forceRerender?.();
   }

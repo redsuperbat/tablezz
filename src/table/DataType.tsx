@@ -6,7 +6,7 @@ import type { PostgresDataType } from "@/useTableStructure";
 export abstract class DataType {
   abstract toString(): string;
   abstract display(): JSXElement;
-  abstract fromString(): unknown;
+  abstract fromString(value: string): unknown;
   abstract toSqlValue(): string;
 
   fileExtension(): string {
@@ -15,24 +15,31 @@ export abstract class DataType {
 }
 
 class JsonCellData extends DataType {
-  display(data: unknown) {
+  #data: unknown;
+
+  constructor(data: unknown) {
+    super();
+    this.#data = data;
+  }
+
+  display() {
     return (
       <code>
-        <pre>{JSON.stringify(data, null, 2)}</pre>
+        <pre>{JSON.stringify(this.#data, null, 2)}</pre>
       </code>
     );
   }
 
-  toString(data: unknown): string {
-    return JSON.stringify(data);
+  toString(): string {
+    return JSON.stringify(this.#data);
   }
 
-  fromString(data: string): unknown {
-    return JSON.parse(data);
+  fromString(value: string): unknown {
+    return JSON.parse(value);
   }
 
-  toSqlValue(data: unknown): string {
-    return `'${JSON.stringify(data)}'`;
+  toSqlValue(): string {
+    return `'${JSON.stringify(this.#data)}'`;
   }
 
   override fileExtension(): string {
@@ -41,34 +48,33 @@ class JsonCellData extends DataType {
 }
 
 class ArrayCellData extends DataType {
-  display(data: unknown) {
-    if (!Array.isArray(data)) {
-      return String(data);
-    }
+  #data: unknown[];
 
+  constructor(data: unknown) {
+    super();
+    if (!Array.isArray(data)) {
+      throw new Error("Array data type was not an array");
+    }
+    this.#data = data;
+  }
+
+  display() {
     return (
       <code>
-        <pre>{JSON.stringify(data, null, 2)}</pre>
+        <pre>{JSON.stringify(this.#data, null, 2)}</pre>
       </code>
     );
   }
 
-  toString(data: unknown): string {
-    if (!Array.isArray(data)) {
-      return String(data);
-    }
-
-    return `{${data.join(",")}}`;
+  toString(): string {
+    return `{${this.#data.join(",")}}`;
   }
 
-  toSqlValue(data: unknown): string {
-    if (!Array.isArray(data)) {
-      return String(data);
-    }
-    return `{${data.join(",")}}`;
+  toSqlValue(): string {
+    return `{${this.#data.join(",")}}`;
   }
 
-  fromString(data: string): unknown {
+  fromString(data: string): string[] {
     if (data.startsWith("{") && data.endsWith("}")) {
       const inner = data.slice(1, -1);
       if (inner === "") return [];
@@ -81,34 +87,36 @@ class ArrayCellData extends DataType {
 
 class WithoutNullish extends DataType {
   #inner: DataType;
+  #data: unknown;
 
-  constructor(inner: DataType) {
+  constructor(inner: DataType, data: unknown) {
     super();
     this.#inner = inner;
+    this.#data = data;
   }
 
-  toString(data: unknown): string {
-    if (data == null) {
+  toString(): string {
+    if (this.#data == null) {
       return "null";
     }
 
-    return this.#inner.toString(data);
+    return this.#inner.toString();
   }
 
-  display(data: unknown): JSXElement {
-    if (data == null) {
+  display(): JSXElement {
+    if (this.#data == null) {
       return null;
     }
 
-    return this.#inner.display(data);
+    return this.#inner.display();
   }
 
-  toSqlValue(data: unknown): string {
-    if (data == null) {
+  toSqlValue(): string {
+    if (this.#data == null) {
       return "null";
     }
 
-    return this.#inner.toSqlValue(data);
+    return this.#inner.toSqlValue();
   }
 
   fromString(data: string): unknown {
@@ -125,7 +133,10 @@ class WithoutNullish extends DataType {
 }
 
 class ZonedDateTimeCellData extends DataType {
-  #toTemporal(data: unknown) {
+  #data: Temporal.ZonedDateTime;
+
+  constructor(data: unknown) {
+    super();
     // Convert to ISO 8601 format
     const isoString = String(data)
       .replace(" ", "T")
@@ -133,19 +144,19 @@ class ZonedDateTimeCellData extends DataType {
       .replace(/T(\d):/, "T0$1:") // Pad single-digit hours
       .replaceAll(" ", "");
 
-    return Temporal.Instant.from(isoString).toZonedDateTimeISO("UTC");
+    this.#data = Temporal.Instant.from(isoString).toZonedDateTimeISO("UTC");
   }
 
-  toSqlValue(data: unknown): string {
-    return this.toString(data);
+  toSqlValue(): string {
+    return this.toString();
   }
 
-  display(data: unknown): string {
-    return this.#toTemporal(data).toLocaleString();
+  display(): string {
+    return this.#data.toLocaleString();
   }
 
-  toString(data: unknown): string {
-    return this.#toTemporal(data).toString();
+  toString(): string {
+    return this.#data.toString();
   }
 
   fromString(data: string): unknown {
@@ -154,64 +165,77 @@ class ZonedDateTimeCellData extends DataType {
 }
 
 class PlainDateTimeCellData extends DataType {
-  #toTemporal(data: unknown) {
-    return Temporal.PlainDateTime.from(normalizeIsoDatetime(String(data)));
+  #data: Temporal.PlainDateTime;
+
+  constructor(data: unknown) {
+    super();
+    this.#data = Temporal.PlainDateTime.from(normalizeIsoDatetime(String(data)));
   }
 
-  display(data: unknown): string {
-    return this.#toTemporal(data).toLocaleString();
+  display(): string {
+    return this.#data.toLocaleString();
   }
 
-  toString(data: unknown): string {
-    return this.#toTemporal(data).toString();
+  toString(): string {
+    return this.#data.toString();
   }
 
   fromString(data: string): unknown {
     return data;
   }
 
-  toSqlValue(data: unknown): string {
-    return this.toString(data);
+  toSqlValue(): string {
+    return this.toString();
   }
 }
 
 class PlainTimeCellData extends DataType {
-  #toTemporal(data: unknown) {
-    return Temporal.PlainTime.from(String(data));
+  #data: Temporal.PlainTime;
+
+  constructor(data: unknown) {
+    super();
+    this.#data = Temporal.PlainTime.from(String(data));
   }
 
-  display(data: unknown): string {
-    return this.#toTemporal(data).toString();
+  display(): string {
+    return this.#data.toString();
   }
 
-  toString(data: unknown): string {
-    return this.display(data);
+  toString(): string {
+    return this.#data.toString();
   }
 
   fromString(data: string): unknown {
     return data;
   }
 
-  toSqlValue(data: unknown): string {
-    return this.toString(data);
+  toSqlValue(): string {
+    return this.toString();
   }
 }
 
 class DefaultCellData extends DataType {
-  display(data: unknown): string {
-    return this.toString(data);
+  #data: unknown;
+
+  constructor(data: unknown) {
+    super();
+    this.#data = data;
   }
 
-  toString(data: unknown): string {
-    return String(data);
+  display(): string {
+    return this.toString();
+  }
+
+  toString(): string {
+    return String(this.#data);
   }
 
   fromString(data: string): unknown {
     return data;
   }
 
-  toSqlValue(data: unknown): string {
-    return this.toString(data);
+  toSqlValue(): string {
+    return this.toString();
   }
 }
 
@@ -233,7 +257,7 @@ export class DataTypeFactory {
   }
 
   make(data: unknown): DataType {
-    const inner = iife(() => {
+    const inner: DataType = iife(() => {
       switch (this.#type) {
         case "json":
         case "jsonb":
@@ -261,6 +285,6 @@ export class DataTypeFactory {
       }
     });
 
-    return new WithoutNullish(inner);
+    return new WithoutNullish(inner, data);
   }
 }
