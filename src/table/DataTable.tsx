@@ -1,6 +1,5 @@
 import { createSignal, For } from "solid-js";
 import z from "zod";
-import { useCommandsContext } from "@/commands/CommandsContext";
 import { message } from "@/commands/Messages";
 import { useRegisterKeybindCommandOnMount } from "@/keybinds/useRegisterKeybindCommand";
 import type { Cell } from "./Cell";
@@ -9,7 +8,6 @@ import { useTableEditorContext } from "./DataTableProvider";
 
 export function DataTable(props: { reload: () => void }) {
   const { currentCell, visualSelection, getTable } = useTableEditorContext();
-  const commandsContext = useCommandsContext();
   const [openedCell, setOpenedCell] = createSignal<Cell>();
 
   useRegisterKeybindCommandOnMount({
@@ -34,7 +32,7 @@ export function DataTable(props: { reload: () => void }) {
       });
       navigator.clipboard.writeText(values);
       message.info("Copied to clipboard");
-      commandsContext.triggerCommand("VisualModeExit");
+      visualSelection().exit();
     },
   });
 

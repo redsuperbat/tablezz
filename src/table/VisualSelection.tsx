@@ -5,15 +5,24 @@ export class VisualSelection {
   #start?: Cell;
   #current: Cell;
   #table: Table;
+  #exit: () => void;
 
   constructor({
     start,
     current,
     table,
-  }: { start?: Cell; current: Cell; table: Table }) {
+    exit,
+  }: { start?: Cell; current: Cell; table: Table; exit: () => void }) {
     this.#start = start;
     this.#current = current;
     this.#table = table;
+    this.#exit = exit;
+  }
+
+  exit() {
+    if (this.isSelecting) {
+      this.#exit();
+    }
   }
 
   get isSelecting() {

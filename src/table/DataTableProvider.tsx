@@ -7,7 +7,6 @@ import {
   useContext,
 } from "solid-js";
 import z from "zod";
-import { useCommandsContext } from "@/commands/CommandsContext";
 import { useDatabase } from "@/database/useDatabase";
 import {
   useRegisterKeybindCommand,
@@ -42,7 +41,6 @@ export function DataTableProvider(props: {
   children: JSXElement;
   reload: () => void;
 }) {
-  const commandContext = useCommandsContext();
   const database = useDatabase();
 
   const columns = createMemo(() =>
@@ -111,6 +109,7 @@ export function DataTableProvider(props: {
       start: visualModeStartCell(),
       current: getTable().getRow(row.value())?.getCell(column.value()) as Cell,
       table: getTable(),
+      exit: () => setVisualModeStartCell(undefined),
     });
   });
 
@@ -163,7 +162,7 @@ export function DataTableProvider(props: {
         description: "Exit visual selection mode.",
         action() {
           disposable.dispose();
-          setVisualModeStartCell(undefined);
+          visualSelection().exit();
         },
       });
     },
@@ -176,10 +175,7 @@ export function DataTableProvider(props: {
     action() {
       const selection = visualSelection();
       selection.getAllIntersectingCells().forEach((c) => c.undo());
-
-      if (selection.isSelecting) {
-        commandContext.triggerCommand("VisualModeExit");
-      }
+      selection.exit();
     },
   });
 
@@ -190,10 +186,7 @@ export function DataTableProvider(props: {
     action() {
       const selection = visualSelection();
       selection.getAllIntersectingCells().forEach((c) => c.reset());
-
-      if (selection.isSelecting) {
-        commandContext.triggerCommand("VisualModeExit");
-      }
+      selection.exit();
     },
   });
 

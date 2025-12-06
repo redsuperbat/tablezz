@@ -105,9 +105,7 @@ export function TablePage() {
                       rowDelimiter,
                     });
 
-                    if (selection().isSelecting) {
-                      commandContext.triggerCommand("VisualModeExit");
-                    }
+                    selection().exit();
                     setSelectionToEdit(undefined);
                   }}
                 />

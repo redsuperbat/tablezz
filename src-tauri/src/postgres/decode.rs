@@ -10,8 +10,14 @@ pub fn to_json(v: PgValueRef) -> Result<JsonValue, Error> {
     }
 
     let type_info = v.type_info();
+    let type_name = type_info.name();
 
-    let res = match type_info.name() {
+    // Handle array types (ending with [])
+    if let Some(inner_type) = type_name.strip_suffix("[]") {
+        return Ok(decode_array(&v, inner_type));
+    }
+
+    let res = match type_name {
         "CHAR" | "VARCHAR" | "TEXT" | "NAME" => decode_string(&v),
         "FLOAT4" => decode_f32(&v),
         "FLOAT8" => decode_f64(&v),
@@ -28,19 +34,73 @@ pub fn to_json(v: PgValueRef) -> Result<JsonValue, Error> {
         "VOID" => JsonValue::Null,
 
         // catch-all for user-defined types (enums, domains, composites, etc.)
-        _ => {
+        other => {
+            eprintln!("Unknown type: {}", other);
             // Try decoding as raw bytes -> string (works for enums)
             match v.as_bytes() {
                 Ok(bytes) => match std::str::from_utf8(bytes) {
                     Ok(s) => JsonValue::String(s.to_string()),
                     Err(_) => JsonValue::Null,
                 },
-                Err(_) => return Err(Error::UnsupportedDatatype(type_info.name().to_string())),
+                Err(_) => return Err(Error::UnsupportedDatatype(type_name.to_string())),
             }
         }
     };
 
     Ok(res)
+}
+
+fn decode_array(v: &PgValueRef<'_>, inner_type: &str) -> JsonValue {
+    match inner_type {
+        "CHAR" | "VARCHAR" | "TEXT" | "NAME" => ValueRef::to_owned(v)
+            .try_decode::<Vec<String>>()
+            .map(|arr| JsonValue::Array(arr.into_iter().map(JsonValue::String).collect()))
+            .unwrap_or(JsonValue::Null),
+        "FLOAT4" => ValueRef::to_owned(v)
+            .try_decode::<Vec<f32>>()
+            .map(|arr| JsonValue::Array(arr.into_iter().map(JsonValue::from).collect()))
+            .unwrap_or(JsonValue::Null),
+        "FLOAT8" => ValueRef::to_owned(v)
+            .try_decode::<Vec<f64>>()
+            .map(|arr| JsonValue::Array(arr.into_iter().map(JsonValue::from).collect()))
+            .unwrap_or(JsonValue::Null),
+        "INT2" => ValueRef::to_owned(v)
+            .try_decode::<Vec<i16>>()
+            .map(|arr| {
+                JsonValue::Array(arr.into_iter().map(|i| JsonValue::Number(i.into())).collect())
+            })
+            .unwrap_or(JsonValue::Null),
+        "INT4" => ValueRef::to_owned(v)
+            .try_decode::<Vec<i32>>()
+            .map(|arr| {
+                JsonValue::Array(arr.into_iter().map(|i| JsonValue::Number(i.into())).collect())
+            })
+            .unwrap_or(JsonValue::Null),
+        "INT8" => ValueRef::to_owned(v)
+            .try_decode::<Vec<i64>>()
+            .map(|arr| {
+                JsonValue::Array(arr.into_iter().map(|i| JsonValue::Number(i.into())).collect())
+            })
+            .unwrap_or(JsonValue::Null),
+        "BOOL" => ValueRef::to_owned(v)
+            .try_decode::<Vec<bool>>()
+            .map(|arr| JsonValue::Array(arr.into_iter().map(JsonValue::Bool).collect()))
+            .unwrap_or(JsonValue::Null),
+        "UUID" => ValueRef::to_owned(v)
+            .try_decode::<Vec<sqlx::types::Uuid>>()
+            .map(|arr| {
+                JsonValue::Array(
+                    arr.into_iter()
+                        .map(|u| JsonValue::String(u.to_string()))
+                        .collect(),
+                )
+            })
+            .unwrap_or(JsonValue::Null),
+        _ => {
+            eprintln!("Unknown array inner type: {}", inner_type);
+            JsonValue::Null
+        }
+    }
 }
 
 fn decode_string(v: &PgValueRef<'_>) -> JsonValue {

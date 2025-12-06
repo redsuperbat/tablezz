@@ -38,6 +38,38 @@ class JsonCellData extends DataType {
   }
 }
 
+class ArrayCellData extends DataType {
+  display(data: unknown) {
+    if (!Array.isArray(data)) {
+      return String(data);
+    }
+
+    return (
+      <code>
+        <pre>{JSON.stringify(data, null, 2)}</pre>
+      </code>
+    );
+  }
+
+  toString(data: unknown): string {
+    if (!Array.isArray(data)) {
+      return String(data);
+    }
+
+    return `{${data.join(",")}}`;
+  }
+
+  fromString(value: string): unknown {
+    if (value.startsWith("{") && value.endsWith("}")) {
+      const inner = value.slice(1, -1);
+      if (inner === "") return [];
+      return inner.split(",");
+    }
+
+    return JSON.parse(value);
+  }
+}
+
 class WithoutNullish extends DataType {
   #inner: DataType;
 
@@ -197,13 +229,15 @@ export namespace DataType {
           return new ZonedDateTimeCellData();
 
         case "timestamp":
-        case "timestamp without time zone": {
+        case "timestamp without time zone":
           return new PlainDateTimeCellData();
-        }
 
-        case "timestamp with time zone": {
+        case "timestamp with time zone":
           return new ZonedDateTimeCellData();
-        }
+
+        case "ARRAY":
+          return new ArrayCellData();
+
         default:
           return new DefaultCellData(isPrimary);
       }
