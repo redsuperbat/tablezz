@@ -23,7 +23,7 @@ export class Cell {
     this.#data = [opts.data];
   }
 
-  get #dataType() {
+  getDataType() {
     return this.getColumn().getDataType(this.data);
   }
 
@@ -40,7 +40,7 @@ export class Cell {
       return;
     }
 
-    this.#data.push(this.#dataType.fromString(value));
+    this.#data.push(this.getDataType().fromString(value));
     this.#isDirty = true;
     this.#forceRerender?.();
   }
@@ -66,15 +66,15 @@ export class Cell {
   }
 
   display() {
-    return this.#dataType.display();
+    return this.getDataType().display();
   }
 
   toString() {
-    return this.#dataType.toString();
+    return this.getDataType().toString();
   }
 
   toSqlValue() {
-    return this.#dataType.toSqlValue();
+    return this.getDataType().toSqlValue();
   }
 
   /**
