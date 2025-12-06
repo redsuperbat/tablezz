@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/solid-query";
-import { useDatabase } from "./database/useDatabase";
+import { invoke } from "@tauri-apps/api/core";
+import { useConnectionCredentials } from "./ConnectionCredentialsProvider";
 import { useSchemaContext } from "./SchemaProvider";
 
-export type PostgresDataType =
+export type PostgresPrimitiveTypes =
   | "smallint"
   | "integer"
   | "bigint"
@@ -49,8 +50,12 @@ export type PostgresDataType =
   | "circle"
   | "tsvector"
   | "tsquery"
-  | "ARRAY"
   | "USER-DEFINED";
+
+export type PostgresDataType =
+  | PostgresPrimitiveTypes
+  | `${PostgresPrimitiveTypes}[]`
+  | (string & {});
 
 export type TableStructure = {
   columnName: string;
@@ -60,57 +65,20 @@ export type TableStructure = {
 
 export function useTableStructure(tableName: () => string) {
   const { schema } = useSchemaContext();
-  const database = useDatabase();
-
-  const primaryKeysQuery = useQuery(() => ({
-    queryFn: async () => {
-      const response = await database.select<
-        {
-          column_name: string;
-        }[]
-      >(
-        `
-          SELECT c.column_name
-          FROM information_schema.table_constraints tc
-          JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_name) 
-          JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema
-            AND tc.table_name = c.table_name AND ccu.column_name = c.column_name
-          WHERE constraint_type = 'PRIMARY KEY' and tc.table_name = '${tableName()}';`,
-      );
-
-      return response.map((r) => ({
-        columnName: r.column_name,
-      }));
-    },
-
-    queryKey: ["primary-keys", tableName()],
-  }));
+  const { url } = useConnectionCredentials();
 
   return useQuery<TableStructure[]>(() => ({
-    enabled: !!primaryKeysQuery.data,
     queryFn: async () => {
-      const primaryKeys = primaryKeysQuery.data ?? [];
-      const response = await database.select<
-        { column_name: string; data_type: PostgresDataType }[]
-      >(
-        `
-          SELECT column_name, data_type
-          FROM information_schema.columns
-          WHERE table_schema = '${schema()}' AND table_name = '${tableName()}';`,
-      );
-
-      return response.map((r) => {
-        const isPrimary = primaryKeys.some(
-          (k) => k.columnName === r.column_name,
-        );
-
-        return {
-          columnName: r.column_name,
-          dataType: r.data_type,
-          isPrimary,
-        };
+      const result = await invoke<
+        { columnName: string; dataType: PostgresDataType; isPrimary: boolean }[]
+      >("table_structure", {
+        db: url(),
+        schema: schema(),
+        tableName: tableName(),
       });
+
+      return result;
     },
-    queryKey: ["table-structure", schema(), tableName(), primaryKeysQuery.data],
+    queryKey: ["table-structure", schema(), tableName()],
   }));
 }

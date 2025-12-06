@@ -13,7 +13,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             pty::create_pty,
             pty::write_to_pty,
-            pty::resize_pty
+            pty::resize_pty,
+            postgres::table_structure,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

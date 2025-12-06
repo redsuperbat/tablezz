@@ -17,6 +17,14 @@ use std::collections::HashMap;
 
 use crate::postgres;
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ColumnInfo {
+    pub column_name: String,
+    pub data_type: String,
+    pub is_primary: bool,
+}
+
 #[derive(Default)]
 pub struct DbInstances(pub RwLock<HashMap<String, Pool<Postgres>>>);
 
@@ -152,6 +160,56 @@ pub async fn select(
     Ok(values)
 }
 
+#[command]
+pub async fn table_structure(
+    db_instances: State<'_, DbInstances>,
+    db: String,
+    schema: String,
+    table_name: String,
+) -> Result<Vec<ColumnInfo>, Error> {
+    let instances = db_instances.0.read().await;
+    let pool = instances.get(&db).ok_or(Error::DatabaseNotLoaded(db))?;
+
+    // Query using format_type() to get proper type names like "integer[]" instead of "ARRAY"
+    let rows = sqlx::query(
+        r#"
+        SELECT
+            a.attname AS column_name,
+            format_type(a.atttypid, a.atttypmod) AS data_type,
+            COALESCE(
+                (SELECT true FROM pg_constraint c
+                 WHERE c.conrelid = a.attrelid
+                 AND a.attnum = ANY(c.conkey)
+                 AND c.contype = 'p'),
+                false
+            ) AS is_primary
+        FROM pg_attribute a
+        JOIN pg_class c ON a.attrelid = c.oid
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE c.relname = $1
+          AND n.nspname = $2
+          AND a.attnum > 0
+          AND NOT a.attisdropped
+        ORDER BY a.attnum
+        "#,
+    )
+    .bind(&table_name)
+    .bind(&schema)
+    .fetch_all(pool)
+    .await?;
+
+    let columns: Vec<ColumnInfo> = rows
+        .iter()
+        .map(|row| ColumnInfo {
+            column_name: row.get("column_name"),
+            data_type: row.get("data_type"),
+            is_primary: row.get("is_primary"),
+        })
+        .collect();
+
+    Ok(columns)
+}
+
 pub struct Builder {}
 
 impl Builder {
@@ -161,7 +219,7 @@ impl Builder {
 
     pub fn build<R: Runtime>(self) -> TauriPlugin<R> {
         PluginBuilder::new("sql")
-            .invoke_handler(tauri::generate_handler![load, execute, select, close])
+            .invoke_handler(tauri::generate_handler![load, execute, select, close,])
             .setup(|app, _| {
                 let instances = DbInstances::default();
                 app.manage(instances);
