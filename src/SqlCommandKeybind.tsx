@@ -4,10 +4,12 @@ import z from "zod";
 import { message } from "./commands/Messages";
 import { useRegisterCommandOnMount } from "./commands/useRegisterCommand";
 import { useDatabase } from "./database/useDatabase";
+import { useEditor } from "./editor/useEditor";
 import { useRegisterKeybindCommandOnMount } from "./keybinds/useRegisterKeybindCommand";
 
 export function SqlCommandKeybind() {
   const database = useDatabase();
+  const editor = useEditor();
   const queryClient = useQueryClient();
 
   useRegisterKeybindCommandOnMount({
@@ -36,6 +38,13 @@ export function SqlCommandKeybind() {
     description: "Execute a SQL statement without returning results.",
     actionArgs: [z.string().min(1).meta({ title: "<sql>" }).optional()],
     async action(sql) {
+      if (sql === undefined) {
+        sql = await editor.open({
+          initialContent: `-- Add your sql statement below \n\n\n`,
+          extension: ".sql",
+        });
+      }
+
       try {
         await database.execute(sql);
         queryClient.invalidateQueries();
