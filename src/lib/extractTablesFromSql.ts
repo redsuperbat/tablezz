@@ -27,6 +27,10 @@ export function extractTableFromSql(sql: string): ExtractedTable | null {
   let table: { name: string; schema?: string } | null = null;
 
   const visitor = astVisitor(() => ({
+    fromTable: (t) => {
+      if (table !== null) return;
+      table = { name: t.name.name, schema: t.name.schema ?? undefined };
+    },
     tableRef: (t) => {
       if (table !== null) return;
       table = { name: t.name, schema: t.schema ?? undefined };
