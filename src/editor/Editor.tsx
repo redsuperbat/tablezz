@@ -6,11 +6,11 @@ import "@xterm/xterm/css/xterm.css";
 import { onCleanup, onMount } from "solid-js";
 import { useConfig } from "@/config/ConfigurationProvider";
 
-async function waitForFonts() {
+async function waitForFonts(fontFamily: string) {
   // xterm calculates character dimensions on open(), so the font must be ready.
   await document.fonts.ready;
   try {
-    await document.fonts.load("16px 'Fira Code'");
+    await document.fonts.load(`16px '${fontFamily}'`);
   } catch {}
 }
 
@@ -39,7 +39,7 @@ export function Editor(props: {
   const { config } = useConfig();
 
   let terminalRef: HTMLDivElement | undefined;
-  const term = new Terminal({ fontFamily: "Fira Code" });
+  const term = new Terminal({ fontFamily: config().terminalFont });
   const fitAddon = new FitAddon();
   const disposables = new Set<() => void>();
 
@@ -85,7 +85,7 @@ export function Editor(props: {
     async function init() {
       if (!ref) return;
 
-      await waitForFonts();
+      await waitForFonts(config().terminalFont);
       await waitForDimensions(ref);
 
       term.open(ref);
@@ -127,7 +127,7 @@ export function Editor(props: {
         rows: dims.rows,
         initialContent: props.initialContent,
         extension: props.extension,
-        editor: config.editor,
+        editor: config().editor,
       });
 
       ptyCreated = true;

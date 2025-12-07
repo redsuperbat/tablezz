@@ -15,6 +15,10 @@ const configuration = z.object({
     .string()
     .describe("The terminal editor which will be invoked when editing cells")
     .default("nvim"),
+  terminalFont: z
+    .string()
+    .describe("Font family for the terminal editor")
+    .default("Fira Code"),
 });
 
 export type Configuration = z.infer<typeof configuration>;

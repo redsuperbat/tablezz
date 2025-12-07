@@ -34,7 +34,7 @@ export function SqlCommandKeybind() {
   useRegisterCommandOnMount({
     command: "SqlExecute",
     description: "Execute a SQL statement without returning results.",
-    actionArgs: [z.string().min(1).meta({ title: "<sql>" })],
+    actionArgs: [z.string().min(1).meta({ title: "<sql>" }).optional()],
     async action(sql) {
       try {
         await database.execute(sql);
