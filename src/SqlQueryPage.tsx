@@ -24,7 +24,11 @@ export function SqlQueryPage(props: { query: string }) {
     const parsedStructure = structureQuery.data;
 
     if (parsedStructure && parsedStructure.length > 0) {
-      const columns = extractedTable()?.columns?.map((c) => c.name) ?? [];
+      const columns = extractedTable()?.columns?.map((c) => c.name);
+      // null/undefined columns means SELECT * - return all columns
+      if (!columns) {
+        return parsedStructure;
+      }
       return parsedStructure.filter((s) => columns.includes(s.columnName));
     }
 
