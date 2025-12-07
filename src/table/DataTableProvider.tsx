@@ -63,10 +63,10 @@ export function DataTableProvider(props: {
     return props.rows.map((row, rowIndex) => {
       const cells = Object.entries(row as object)
         .values()
-        .map(([name, data], columnIndex) => {
-          const dataType = props.structure.find((s) => s.columnName === name);
+        .map(([name, data]) => {
+          const column = columns().find((c) => c.name === name);
 
-          if (!dataType) {
+          if (!column) {
             return;
           }
 
@@ -75,7 +75,7 @@ export function DataTableProvider(props: {
             // these functions never recurse indefinitely since there is
             // a cache layer handling base cases
             getTable: () => getTable(),
-            getColumn: () => columns().at(columnIndex) as Column,
+            getColumn: () => column,
             getRow: () => rows().at(rowIndex) as Row,
             data,
           });
