@@ -4,6 +4,7 @@ import { CommandsProvider } from "./commands/CommandsContext";
 import { ConfigurationProvider } from "./config/ConfigurationProvider";
 import { QueryHistoryProvider } from "./database/QueryHistoryProvider";
 import { DatabaseConnectionProvider } from "./database/useDatabase";
+import { EditorProvider } from "./editor/useEditor";
 import { KeybindHelp } from "./keybinds/KeybindHelp";
 import { KeybindProvider } from "./keybinds/KeybindProvider";
 import { Picker } from "./Picker";
@@ -25,21 +26,23 @@ export function App() {
             >
               <KeybindHelp />
 
-              <ConnectionCredentialsProvider>
-                <QueryHistoryProvider>
-                  <DatabaseConnectionProvider>
-                    <SqlCommandKeybind />
-                    <RouteProvider>
-                      <SchemaProvider>
-                        <SelectedTableProvider>
-                          <Picker />
-                          <Router />
-                        </SelectedTableProvider>
-                      </SchemaProvider>
-                    </RouteProvider>
-                  </DatabaseConnectionProvider>
-                </QueryHistoryProvider>
-              </ConnectionCredentialsProvider>
+              <EditorProvider>
+                <ConnectionCredentialsProvider>
+                  <QueryHistoryProvider>
+                    <DatabaseConnectionProvider>
+                      <SqlCommandKeybind />
+                      <RouteProvider>
+                        <SchemaProvider>
+                          <SelectedTableProvider>
+                            <Picker />
+                            <Router />
+                          </SelectedTableProvider>
+                        </SchemaProvider>
+                      </RouteProvider>
+                    </DatabaseConnectionProvider>
+                  </QueryHistoryProvider>
+                </ConnectionCredentialsProvider>
+              </EditorProvider>
 
               <CommandLine />
             </div>

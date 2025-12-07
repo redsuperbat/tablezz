@@ -1,15 +1,13 @@
-import { createSignal, Match, Show, Switch } from "solid-js";
+import { Match, Show, Switch } from "solid-js";
 import { useCommandsContext } from "./commands/CommandsContext";
 import { createWatcher } from "./commands/createWatcher";
-import { Dialog, DialogContent } from "./components/ui/dialog";
 import { QueryHistory } from "./database/QueryHistoryProvider";
-import { Editor } from "./editor/Editor";
+import { useEditor } from "./editor/useEditor";
 import { useRegisterKeybindToggle } from "./keybinds/useRegisterKeybindToggle";
 import { useSchemaContext } from "./SchemaProvider";
 import { useSelectedTableContext } from "./SelectedTableProvider";
 import { DataTable } from "./table/DataTable";
 import { DataTableProvider } from "./table/DataTableProvider";
-import type { VisualSelection } from "./table/VisualSelection";
 import { useTableCount } from "./useTableCount";
 import { useTableRows } from "./useTableRows";
 import { useTableStructure } from "./useTableStructure";
@@ -17,7 +15,7 @@ import { useTableStructure } from "./useTableStructure";
 export function TablePage() {
   const { schema } = useSchemaContext();
   const { selectedTable } = useSelectedTableContext();
-  const [selectionToEdit, setSelectionToEdit] = createSignal<VisualSelection>();
+  const editor = useEditor();
   const commandContext = useCommandsContext();
 
   const showQueryHistory = useRegisterKeybindToggle({
@@ -69,50 +67,35 @@ export function TablePage() {
               structure={structureData()}
               rows={rows()}
               name={selectedTable()}
-              onEditSelection={setSelectionToEdit}
+              onEditSelection={async (selection) => {
+                const extension = selection
+                  .getAllIntersectingCells()
+                  .at(0)
+                  ?.getDataType()
+                  .fileExtension();
+
+                const data = await editor.open({
+                  initialContent: selection.intersectingCellsToString({
+                    columnDelimiter,
+                    rowDelimiter,
+                  }),
+                  extension,
+                });
+
+                selection.updateIntersectingCells({
+                  stringifiedCells: data,
+                  columnDelimiter,
+                  rowDelimiter,
+                });
+
+                selection.exit();
+              }}
             >
               <DataTable reload={reload} />
             </DataTableProvider>
           )}
         </Match>
       </Switch>
-
-      <Dialog modal open={!!selectionToEdit()}>
-        <DialogContent
-          onEscapeKeyDown={(e) => e.preventDefault()}
-          class="flex h-[80vh] max-w-[80vw] flex-col justify-start border-none p-0 shadow-none"
-        >
-          <Show when={selectionToEdit()}>
-            {(selection) => {
-              const extension = selection()
-                .getAllIntersectingCells()
-                .at(0)
-                ?.getDataType()
-                .fileExtension();
-
-              return (
-                <Editor
-                  extension={extension}
-                  initialContent={selection().intersectingCellsToString({
-                    columnDelimiter,
-                    rowDelimiter,
-                  })}
-                  onExit={(data) => {
-                    selection().updateIntersectingCells({
-                      stringifiedCells: data,
-                      columnDelimiter,
-                      rowDelimiter,
-                    });
-
-                    selection().exit();
-                    setSelectionToEdit(undefined);
-                  }}
-                />
-              );
-            }}
-          </Show>
-        </DialogContent>
-      </Dialog>
 
       <Show when={showQueryHistory.value()}>
         <QueryHistory />
