@@ -1,6 +1,6 @@
+import { Binary, Braces, Calendar, Hash, Key, List, Type } from "lucide-solid";
 import { createSignal, For, Show } from "solid-js";
 import z from "zod";
-import { Binary, Braces, Calendar, Hash, Key, List, Type } from "lucide-solid";
 import { message } from "@/commands/Messages";
 import { useRegisterKeybindCommandOnMount } from "@/keybinds/useRegisterKeybindCommand";
 import type { PostgresDataType } from "@/useTableStructure";
@@ -36,8 +36,6 @@ function getDataTypeIcon(dataType: PostgresDataType) {
       return Calendar;
     case "vector":
       return Binary;
-    case "text":
-    case "uuid":
     default:
       return Type;
   }
@@ -50,12 +48,12 @@ function ColumnHeader(props: { column: Column }) {
     <th class="px-3 py-2 text-left font-medium text-base text-zinc-600">
       <div class="flex items-center gap-1.5">
         <Show when={props.column.isPrimary}>
-          <Key class="w-3.5 h-3.5 text-amber-500" />
+          <Key class="h-3.5 w-3.5 text-amber-500" />
         </Show>
-        <DataTypeIcon class="w-3.5 h-3.5 text-zinc-400" />
+        <DataTypeIcon class="h-3.5 w-3.5 text-zinc-400" />
         <span>{props.column.name}</span>
         <Show when={props.column.isNullable}>
-          <span class="text-blue-400 text-xs font-semibold">?</span>
+          <span class="font-semibold text-blue-400 text-xs">?</span>
         </Show>
       </div>
     </th>
@@ -83,8 +81,8 @@ export function DataTable(props: { reload: () => void }) {
     action() {
       const values = visualSelection().intersectingCellsToString({
         // Use these delimiters since it's useful for excel
-        columnDelimiter: "\n",
-        rowDelimiter: "\t",
+        columnDelimiter: "\t",
+        rowDelimiter: "\n",
       });
       navigator.clipboard.writeText(values);
       message.info("Copied to clipboard");
