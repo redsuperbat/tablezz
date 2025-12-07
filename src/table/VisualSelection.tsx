@@ -5,24 +5,31 @@ export class VisualSelection {
   #start?: Cell;
   #current: Cell;
   #table: Table;
-  #exit: () => void;
+  #onExit: () => void;
+  #onEnter: () => void;
 
-  constructor({
-    start,
-    current,
-    table,
-    exit,
-  }: { start?: Cell; current: Cell; table: Table; exit: () => void }) {
-    this.#start = start;
-    this.#current = current;
-    this.#table = table;
-    this.#exit = exit;
+  constructor(opts: {
+    start: Cell | undefined;
+    current: Cell;
+    table: Table;
+    onExit: () => void;
+    onEnter: () => void;
+  }) {
+    this.#start = opts.start;
+    this.#current = opts.current;
+    this.#table = opts.table;
+    this.#onExit = opts.onExit;
+    this.#onEnter = opts.onEnter;
   }
 
   exit() {
     if (this.isSelecting) {
-      this.#exit();
+      this.#onExit();
     }
+  }
+
+  enter() {
+    this.#onEnter();
   }
 
   get isSelecting() {

@@ -9,6 +9,7 @@ import {
 import z from "zod";
 import { message } from "@/commands/Messages";
 import { useDatabase } from "@/database/useDatabase";
+import { useKeybindContext } from "@/keybinds/KeybindProvider";
 import {
   useRegisterKeybindCommand,
   useRegisterKeybindCommandOnMount,
@@ -92,6 +93,7 @@ export function DataTableProvider(props: {
   );
 
   const [visualModeStartCell, setVisualModeStartCell] = createSignal<Cell>();
+  const keybindContext = useKeybindContext();
   const registerKeybindCommand = useRegisterKeybindCommand();
 
   const visibleRows = 10;
@@ -106,16 +108,34 @@ export function DataTableProvider(props: {
     min: 0,
   });
 
+  const currentCell = () =>
+    getTable().getRow(row.value())?.getCell(column.value()) as Cell;
+
   const visualSelection = createMemo(() => {
     return new VisualSelection({
       start: visualModeStartCell(),
-      current: getTable().getRow(row.value())?.getCell(column.value()) as Cell,
+      current: currentCell(),
       table: getTable(),
-      exit: () => setVisualModeStartCell(undefined),
+      onExit() {
+        keybindContext.unregisterKeybind({
+          keybindExpression: "Escape | v",
+          command: "VisualModeExit",
+        });
+        setVisualModeStartCell(undefined);
+      },
+      onEnter() {
+        const disposable = registerKeybindCommand({
+          keybindExpression: "Escape | v",
+          command: "VisualModeExit",
+          description: "Exit visual selection mode.",
+          action() {
+            disposable.dispose();
+            visualSelection().exit();
+          },
+        });
+      },
     });
   });
-
-  const currentCell = () => visualSelection().current;
 
   useRegisterKeybindCommandOnMount({
     keybindExpression: "w",
@@ -165,17 +185,8 @@ export function DataTableProvider(props: {
     description: "Enter visual selection mode.",
     keybindExpression: "v",
     action() {
+      visualSelection().enter();
       setVisualModeStartCell(currentCell());
-
-      const disposable = registerKeybindCommand({
-        keybindExpression: "Escape | v",
-        command: "VisualModeExit",
-        description: "Exit visual selection mode.",
-        action() {
-          disposable.dispose();
-          visualSelection().exit();
-        },
-      });
     },
   });
 
