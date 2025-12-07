@@ -10,14 +10,13 @@ import { TableCell } from "./DataTableCell";
 import { useTableEditorContext } from "./DataTableProvider";
 
 function getDataTypeIcon(dataType: PostgresDataType) {
-  const baseType = dataType.replace(/\[\]$/, "") as PostgresDataType;
   const isArray = dataType.endsWith("[]");
 
   if (isArray) {
     return List;
   }
 
-  switch (baseType) {
+  switch (dataType) {
     case "json":
     case "jsonb":
       return Braces;
