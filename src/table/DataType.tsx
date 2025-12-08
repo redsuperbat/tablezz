@@ -5,6 +5,7 @@ import type { PostgresDataType } from "@/useTableStructure";
 export abstract class DataType {
   abstract toString(data: unknown): string;
   abstract display(data: unknown): JSXElement;
+  abstract cellRender(data: unknown): JSXElement;
   abstract fromString(value: string): unknown;
   abstract toSqlValue(data: unknown): string;
 
@@ -20,6 +21,11 @@ class JsonDataType extends DataType {
         <pre>{JSON.stringify(data, null, 2)}</pre>
       </code>
     );
+  }
+
+  cellRender(data: unknown): JSXElement {
+    const str = JSON.stringify(data);
+    return str.length > 1000 ? str.slice(0, 1000) : str;
   }
 
   toString(data: unknown): string {
@@ -53,6 +59,10 @@ class ArrayDataType extends DataType {
         <pre>{this.toString(data)}</pre>
       </code>
     );
+  }
+
+  cellRender(data: unknown): JSXElement {
+    return this.toString(data);
   }
 
   toString(data: unknown): string {
@@ -104,6 +114,14 @@ class WithNull extends DataType {
     return this.#inner.display(value);
   }
 
+  cellRender(value: unknown): JSXElement {
+    if (value === null) {
+      return "null";
+    }
+
+    return this.#inner.cellRender(value);
+  }
+
   toString(value: unknown): string {
     if (value === null) {
       return "null";
@@ -126,6 +144,10 @@ class NumberDataType extends DataType {
     return this.toString(data);
   }
 
+  cellRender(data: unknown): JSXElement {
+    return this.toString(data);
+  }
+
   toString(data: unknown): string {
     if (typeof data !== "number") {
       throw new Error(`Invalid data type for number: ${typeof data}`);
@@ -144,6 +166,10 @@ class NumberDataType extends DataType {
 
 class TextDataType extends DataType {
   display(data: unknown): string {
+    return this.toString(data);
+  }
+
+  cellRender(data: unknown): JSXElement {
     return this.toString(data);
   }
 
@@ -175,6 +201,10 @@ class VectorDataType extends DataType {
     );
   }
 
+  cellRender(data: unknown): JSXElement {
+    return this.toString(data);
+  }
+
   toString(data: unknown): string {
     if (!Array.isArray(data)) {
       throw new Error("Expected array data for vector");
@@ -198,6 +228,10 @@ class VectorDataType extends DataType {
 
 class DefaultDataType extends DataType {
   display(data: unknown): string {
+    return this.toString(data);
+  }
+
+  cellRender(data: unknown): JSXElement {
     return this.toString(data);
   }
 
