@@ -261,21 +261,34 @@ export function DataTableProvider(props: {
   const manualQuery = useManualQueryContext();
 
   useRegisterKeybindCommandOnMount({
+    command: "GoBackward",
+    keybindExpression: "Control + o",
+    action() {
+      row.reset();
+      column.reset();
+      manualQuery.pop();
+    },
+  });
+
+  useRegisterKeybindCommandOnMount({
     command: "GoToForeignKeyRelation",
     description: "Move to the entry where the cursor is at",
     keybindExpression: "g > d",
     action() {
       const cell = currentCell();
-      const column = cell.getColumn();
+      const cellColumn = cell.getColumn();
 
-      if (column.foreignKey === null) {
+      if (cellColumn.foreignKey === null) {
         return;
       }
 
       const value = cell.toSqlValue();
 
+      row.reset();
+      column.reset();
+
       manualQuery.add(
-        `SELECT * FROM "${column.foreignKey.table}" WHERE "${column.foreignKey.column}" = ${value}`,
+        `SELECT * FROM "${cellColumn.foreignKey.table}" WHERE "${cellColumn.foreignKey.column}" = ${value}`,
       );
     },
   });

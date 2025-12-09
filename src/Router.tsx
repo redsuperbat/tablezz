@@ -3,7 +3,6 @@ import z from "zod";
 import { useRegisterCommandOnMount } from "./commands/useRegisterCommand";
 import { createSolidContext } from "./createSolidContext";
 import { useEditor } from "./editor/useEditor";
-import { useRegisterKeybindCommandOnMount } from "./keybinds/useRegisterKeybindCommand";
 import { useManualQueryContext } from "./ManualQueryContext";
 import { SqlQueryPage } from "./SqlQueryPage";
 import { TablePage } from "./TablePage";
@@ -19,14 +18,6 @@ export const [RouteProvider, , useRouter] = createSolidContext(() => {
 export function Router() {
   const editor = useEditor();
   const manualQuery = useManualQueryContext();
-
-  useRegisterKeybindCommandOnMount({
-    command: "GoBackward",
-    keybindExpression: "Control + o",
-    action() {
-      manualQuery.pop();
-    },
-  });
 
   useRegisterCommandOnMount({
     command: "SqlQuery",
