@@ -37,7 +37,7 @@ export function SqlQueryPage(props: { query: string }) {
       columnName: k,
       dataType: "text" as const,
       isPrimary: false,
-      isForeignKey: false,
+      foreignKey: null,
       isNullable: true,
     }));
   };

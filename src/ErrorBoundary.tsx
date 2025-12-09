@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/solid-query";
 import { type JSX, ErrorBoundary as SolidErrorBoundary } from "solid-js";
 import { Button } from "./components/ui/button";
 
@@ -7,14 +8,15 @@ interface ErrorBoundaryProps {
 }
 
 export function ErrorBoundary(props: ErrorBoundaryProps) {
+  const queryClient = useQueryClient();
+
   return (
     <SolidErrorBoundary
       fallback={(err: Error, reset) =>
         props.fallback?.(err, reset) ?? (
-          <div>
-            <h2>Error: {err.message}</h2>
-            <pre>{err.stack}</pre>
-            <Button onClick={reset}>Reset</Button>
+          <div class="grid h-screen w-screen place-content-center">
+            <h2>Tablezz internal error occurred</h2>
+            <Button onclick={() => queryClient.resetQueries()}>Reset</Button>
           </div>
         )
       }

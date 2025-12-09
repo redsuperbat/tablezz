@@ -7,6 +7,8 @@ import {
   useContext,
 } from "solid-js";
 import z from "zod";
+import { useCommandsContext } from "@/commands/CommandsContext";
+import { createWatcher } from "@/commands/createWatcher";
 import { message } from "@/commands/Messages";
 import { useKeybindContext } from "@/keybinds/KeybindProvider";
 import {
@@ -14,8 +16,10 @@ import {
   useRegisterKeybindCommandOnMount,
 } from "@/keybinds/useRegisterKeybindCommand";
 import { createCounterWithBoundaries } from "@/lib/counter";
+import { useManualQueryContext } from "@/ManualQueryContext";
 import { useBatchExecute } from "@/useBatchExecute";
-import type { PostgresDataType } from "@/useTableStructure";
+import { useTableCount } from "@/useTableCount";
+import type { ForeignKey, PostgresDataType } from "@/useTableStructure";
 import { Cell } from "./Cell";
 import { Column } from "./Column";
 import { createDataType } from "./DataType";
@@ -39,7 +43,7 @@ export function DataTableProvider(props: {
     dataType: PostgresDataType;
     isPrimary: boolean;
     isNullable: boolean;
-    isForeignKey: boolean;
+    foreignKey: ForeignKey | null;
   }[];
   onEditSelection?(selection: VisualSelection): void;
   children: JSXElement;
@@ -54,7 +58,7 @@ export function DataTableProvider(props: {
           name: c.columnName,
           isPrimary: c.isPrimary,
           isNullable: c.isNullable,
-          isForeignKey: c.isForeignKey,
+          foreignKey: c.foreignKey,
           dataType: createDataType(c.dataType, c.isNullable),
           rawType: c.dataType,
           index,
@@ -254,15 +258,48 @@ export function DataTableProvider(props: {
     },
   });
 
+  const manualQuery = useManualQueryContext();
+
   useRegisterKeybindCommandOnMount({
-    command: "MoveToTop",
+    command: "GoToForeignKeyRelation",
+    description: "Move to the entry where the cursor is at",
+    keybindExpression: "g > d",
+    action() {
+      const cell = currentCell();
+      const column = cell.getColumn();
+
+      if (column.foreignKey === null) {
+        return;
+      }
+
+      const value = cell.toSqlValue();
+
+      manualQuery.add(
+        `SELECT * FROM "${column.foreignKey.table}" WHERE "${column.foreignKey.column}" = ${value}`,
+      );
+    },
+  });
+
+  const count = useTableCount(() => props.name);
+  const commandContext = useCommandsContext();
+
+  createWatcher(count, ({ next }) =>
+    commandContext.addCommandLineSuffix(
+      <div class="text-zinc-500">
+        {props.name} · {props.rows.length}/{next} rows
+      </div>,
+    ),
+  );
+
+  useRegisterKeybindCommandOnMount({
+    command: "GoToBottom",
     description: "Move to the last row of the table.",
     keybindExpression: "G",
     action: row.setToMax,
   });
 
   useRegisterKeybindCommandOnMount({
-    command: "MoveDownHalf",
+    command: "GoDownHalf",
     description: "Move down by half a page.",
     keybindExpression: "Control + d",
     action() {
@@ -271,7 +308,7 @@ export function DataTableProvider(props: {
   });
 
   useRegisterKeybindCommandOnMount({
-    command: "MoveUpHalf",
+    command: "GoUpHalf",
     description: "Move up by half a page.",
     keybindExpression: "Control + u",
     action() {
@@ -280,9 +317,9 @@ export function DataTableProvider(props: {
   });
 
   useRegisterKeybindCommandOnMount({
-    command: "MoveToBottom",
+    command: "GoToTop",
     description: "Move to the first row of the table.",
-    keybindExpression: "g",
+    keybindExpression: "g > g",
     action: row.reset,
   });
 

@@ -3,7 +3,8 @@ import z from "zod";
 import { useRegisterCommandOnMount } from "./commands/useRegisterCommand";
 import { createSolidContext } from "./createSolidContext";
 import { useEditor } from "./editor/useEditor";
-import { useRegisterKeybindCommand } from "./keybinds/useRegisterKeybindCommand";
+import { useRegisterKeybindCommandOnMount } from "./keybinds/useRegisterKeybindCommand";
+import { useManualQueryContext } from "./ManualQueryContext";
 import { SqlQueryPage } from "./SqlQueryPage";
 import { TablePage } from "./TablePage";
 
@@ -17,24 +18,21 @@ export const [RouteProvider, , useRouter] = createSolidContext(() => {
 
 export function Router() {
   const editor = useEditor();
-  const [manualQuery, setManualQuery] = createSignal<string>();
-  const registerKeybindCommand = useRegisterKeybindCommand();
+  const manualQuery = useManualQueryContext();
+
+  useRegisterKeybindCommandOnMount({
+    command: "GoBackward",
+    keybindExpression: "Control + o",
+    action() {
+      manualQuery.pop();
+    },
+  });
 
   useRegisterCommandOnMount({
     command: "SqlQuery",
     description: "Run a custom SQL query and display the results.",
     actionArgs: [z.string().min(1).meta({ title: "<sql>" }).optional()],
     async action(sql) {
-      const disposable = registerKeybindCommand({
-        command: "SqlQueryReset",
-        description: "Clear the current SQL query and return to table view.",
-        keybindExpression: "Escape",
-        action() {
-          disposable.dispose();
-          setManualQuery(undefined);
-        },
-      });
-
       if (sql === undefined) {
         sql = await editor.open({
           initialContent: "",
@@ -42,16 +40,16 @@ export function Router() {
         });
       }
 
-      setManualQuery(sql);
+      manualQuery.add(sql);
     },
   });
 
   return (
     <Switch>
-      <Match when={!manualQuery()}>
+      <Match when={manualQuery.isEmpty()}>
         <TablePage />
       </Match>
-      <Match when={manualQuery()}>
+      <Match when={manualQuery.value().at(-1)}>
         {(query) => <SqlQueryPage query={query()} />}
       </Match>
     </Switch>

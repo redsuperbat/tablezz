@@ -19,12 +19,19 @@ use crate::postgres;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct ForeignKey {
+    pub table: String,
+    pub column: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ColumnInfo {
     pub column_name: String,
     pub data_type: String,
     pub is_primary: bool,
     pub is_nullable: bool,
-    pub is_foreign_key: bool,
+    pub foreign_key: Option<ForeignKey>,
 }
 
 #[derive(Default)]
@@ -186,13 +193,21 @@ pub async fn table_structure(
                 false
             ) AS is_primary,
             NOT a.attnotnull AS is_nullable,
-            COALESCE(
-                (SELECT true FROM pg_constraint c
-                 WHERE c.conrelid = a.attrelid
-                 AND a.attnum = ANY(c.conkey)
-                 AND c.contype = 'f'),
-                false
-            ) AS is_foreign_key
+            (SELECT fc.relname FROM pg_constraint con
+             JOIN pg_class fc ON fc.oid = con.confrelid
+             WHERE con.conrelid = a.attrelid
+             AND a.attnum = ANY(con.conkey)
+             AND con.contype = 'f'
+             LIMIT 1
+            ) AS foreign_table_name,
+            (SELECT fa.attname FROM pg_constraint con
+             JOIN pg_attribute fa ON fa.attrelid = con.confrelid
+               AND fa.attnum = con.confkey[array_position(con.conkey, a.attnum)]
+             WHERE con.conrelid = a.attrelid
+             AND a.attnum = ANY(con.conkey)
+             AND con.contype = 'f'
+             LIMIT 1
+            ) AS foreign_column_name
         FROM pg_attribute a
         JOIN pg_class c ON a.attrelid = c.oid
         JOIN pg_namespace n ON c.relnamespace = n.oid
@@ -210,12 +225,19 @@ pub async fn table_structure(
 
     let columns: Vec<ColumnInfo> = rows
         .iter()
-        .map(|row| ColumnInfo {
-            column_name: row.get("column_name"),
-            data_type: row.get("data_type"),
-            is_primary: row.get("is_primary"),
-            is_nullable: row.get("is_nullable"),
-            is_foreign_key: row.get("is_foreign_key"),
+        .map(|row| {
+            let foreign_table_name: Option<String> = row.get("foreign_table_name");
+            let foreign_column_name: Option<String> = row.get("foreign_column_name");
+
+            ColumnInfo {
+                column_name: row.get("column_name"),
+                data_type: row.get("data_type"),
+                is_primary: row.get("is_primary"),
+                is_nullable: row.get("is_nullable"),
+                foreign_key: foreign_table_name.zip(foreign_column_name).map(
+                    |(table, column)| ForeignKey { table, column },
+                ),
+            }
         })
         .collect();
 

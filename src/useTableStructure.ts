@@ -57,12 +57,17 @@ export type PostgresDataType =
   | `${PostgresPrimitiveTypes}[]`
   | (string & {});
 
+export type ForeignKey = {
+  table: string;
+  column: string;
+};
+
 export type TableStructure = {
   columnName: string;
   dataType: PostgresDataType;
   isPrimary: boolean;
   isNullable: boolean;
-  isForeignKey: boolean;
+  foreignKey: ForeignKey | null;
 };
 
 export function useTableStructure(tableName: () => string) {
@@ -77,7 +82,7 @@ export function useTableStructure(tableName: () => string) {
           dataType: PostgresDataType;
           isPrimary: boolean;
           isNullable: boolean;
-          isForeignKey: boolean;
+          foreignKey: ForeignKey | null;
         }[]
       >("table_structure", {
         db: url(),

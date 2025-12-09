@@ -50,7 +50,7 @@ function ColumnHeader(props: { column: Column }) {
         <Show when={props.column.isPrimary}>
           <Key class="h-3.5 w-3.5 text-amber-500" />
         </Show>
-        <Show when={props.column.isForeignKey}>
+        <Show when={props.column.foreignKey}>
           <Link2 class="h-3.5 w-3.5 text-blue-500" />
         </Show>
         <DataTypeIcon class="h-3.5 w-3.5 text-zinc-400" />

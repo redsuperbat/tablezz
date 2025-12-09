@@ -1,22 +1,16 @@
 import { Match, Show, Switch } from "solid-js";
-import { useCommandsContext } from "./commands/CommandsContext";
-import { createWatcher } from "./commands/createWatcher";
 import { QueryHistory } from "./database/QueryHistoryProvider";
 import { useEditor } from "./editor/useEditor";
 import { useRegisterKeybindToggle } from "./keybinds/useRegisterKeybindToggle";
-import { useSchemaContext } from "./SchemaProvider";
 import { useSelectedTableContext } from "./SelectedTableProvider";
 import { DataTable } from "./table/DataTable";
 import { DataTableProvider } from "./table/DataTableProvider";
-import { useTableCount } from "./useTableCount";
 import { useTableRows } from "./useTableRows";
 import { useTableStructure } from "./useTableStructure";
 
 export function TablePage() {
-  const { schema } = useSchemaContext();
   const { selectedTable } = useSelectedTableContext();
   const editor = useEditor();
-  const commandContext = useCommandsContext();
 
   const showQueryHistory = useRegisterKeybindToggle({
     command: "ToggleQueryHistory",
@@ -34,20 +28,12 @@ export function TablePage() {
   const structureQuery = useTableStructure(selectedTable);
   const structureData = () => structureQuery.data ?? [];
   const rowsQuery = useTableRows(selectedTable, structureData);
-  const count = useTableCount(selectedTable);
 
   function reload() {
     rowsQuery.refetch();
     structureQuery.refetch();
   }
 
-  createWatcher(count, ({ next }) =>
-    commandContext.addCommandLineSuffix(
-      <div class="text-zinc-500">
-        {schema()}.{selectedTable()} · {rowsQuery.data?.length}/{next} rows
-      </div>,
-    ),
-  );
   const columnDelimiter = "\x1F";
   const rowDelimiter = "\x1F\n";
 
