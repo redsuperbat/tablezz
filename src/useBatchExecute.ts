@@ -6,7 +6,7 @@ export function useBatchExecute() {
 
   return {
     exec: async (statements: string[]) => {
-      await invoke("batch_execute", { db: url(), statements });
+      return await invoke("batch_execute", { db: url(), statements });
     },
   };
 }

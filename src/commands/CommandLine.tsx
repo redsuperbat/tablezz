@@ -87,7 +87,7 @@ function AutocompleteOptions(props: {
   });
 
   return (
-    <div class="-left-2 absolute bottom-full flex max-h-52 flex-col-reverse overflow-y-auto border border-zinc-200 bg-white p-1 shadow-lg">
+    <div class="-left-2 absolute bottom-full z-50 flex max-h-52 flex-col-reverse overflow-y-auto border border-zinc-200 bg-white p-1 shadow-lg">
       <For each={props.filteredCommands}>
         {(c, index) => (
           <AutocompleteOption

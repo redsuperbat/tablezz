@@ -3,14 +3,14 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import z from "zod";
 import { message } from "./commands/Messages";
 import { useRegisterCommandOnMount } from "./commands/useRegisterCommand";
-import { useDatabase } from "./database/useDatabase";
 import { useEditor } from "./editor/useEditor";
 import { useRegisterKeybindCommandOnMount } from "./keybinds/useRegisterKeybindCommand";
+import { useBatchExecute } from "./useBatchExecute";
 
-export function SqlCommandKeybind() {
-  const database = useDatabase();
+export function GlobalKeybinds() {
   const editor = useEditor();
   const queryClient = useQueryClient();
+  const batchExecute = useBatchExecute();
 
   useRegisterKeybindCommandOnMount({
     keybindExpression: "Meta + Enter",
@@ -40,13 +40,17 @@ export function SqlCommandKeybind() {
     async action(sql) {
       if (sql === undefined) {
         sql = await editor.open({
-          initialContent: `-- Add your sql statement below \n\n\n`,
+          initialContent: "",
           extension: ".sql",
         });
       }
 
+      if (sql.length === 0) {
+        return;
+      }
+
       try {
-        await database.execute(sql);
+        await batchExecute.exec([sql]);
         queryClient.invalidateQueries();
       } catch (error) {
         message.error(String(error));
