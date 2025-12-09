@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/solid-query";
 import { Match, Switch } from "solid-js";
 import { useDatabase } from "./database/useDatabase";
 import { extractTableFromSql } from "./lib/extractTablesFromSql";
+import { LoadingSpinner } from "./SuspenseBoundary";
 import { DataTable } from "./table/DataTable";
 import { DataTableProvider } from "./table/DataTableProvider";
 import { useTableStructure } from "./useTableStructure";
@@ -42,10 +43,16 @@ export function SqlQueryPage(props: { query: string }) {
     }));
   };
 
+  const isLoading = () => rowsQuery.isLoading || structureQuery.isLoading;
+  const error = () => rowsQuery.error || structureQuery.error;
+
   return (
     <div class="grid h-full overflow-hidden">
       <Switch>
-        <Match when={rowsQuery.error}>{(error) => error().message}</Match>
+        <Match when={error()}>{(error) => error().message}</Match>
+        <Match when={isLoading()}>
+          <LoadingSpinner />
+        </Match>
         <Match when={rowsQuery.data}>
           {(rows) => (
             <DataTableProvider
