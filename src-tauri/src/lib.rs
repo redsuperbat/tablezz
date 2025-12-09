@@ -15,6 +15,7 @@ pub fn run() {
             pty::write_to_pty,
             pty::resize_pty,
             postgres::table_structure,
+            postgres::batch_execute,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

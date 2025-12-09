@@ -8,13 +8,13 @@ import {
 } from "solid-js";
 import z from "zod";
 import { message } from "@/commands/Messages";
-import { useDatabase } from "@/database/useDatabase";
 import { useKeybindContext } from "@/keybinds/KeybindProvider";
 import {
   useRegisterKeybindCommand,
   useRegisterKeybindCommandOnMount,
 } from "@/keybinds/useRegisterKeybindCommand";
 import { createCounterWithBoundaries } from "@/lib/counter";
+import { useBatchExecute } from "@/useBatchExecute";
 import type { PostgresDataType } from "@/useTableStructure";
 import { Cell } from "./Cell";
 import { Column } from "./Column";
@@ -45,7 +45,7 @@ export function DataTableProvider(props: {
   children: JSXElement;
   reload: () => void;
 }) {
-  const database = useDatabase();
+  const batchExecute = useBatchExecute();
 
   const columns = createMemo(() =>
     props.structure.map(
@@ -153,58 +153,60 @@ export function DataTableProvider(props: {
         .getRows()
         .filter((r) => r.isDeleted);
 
+      const statements: string[] = [];
+
+      for (const cell of modifiedCells) {
+        const column = cell.getColumn();
+        const columnName = column.name;
+        const primaryKeys = cell
+          .getRow()
+          .getCells()
+          .filter((c) => c.isPrimary())
+          .map((c) => ({
+            columnName: c.getColumn().name,
+            value: c.getDataType().toSqlValue(c.originalData),
+          }));
+
+        if (primaryKeys.length === 0) {
+          message.error(
+            `Can't update, no primary key in table "${props.name}"`,
+          );
+          continue;
+        }
+
+        statements.push(
+          `UPDATE "${props.name}" SET "${columnName}" = ${cell.toSqlValue()} WHERE ${primaryKeys.map((p) => `"${p.columnName}" = ${p.value}`).join(" AND ")}`,
+        );
+      }
+
+      for (const row of deletedRows) {
+        const primaryKeys = row
+          .getCells()
+          .filter((c) => c.isPrimary())
+          .map((c) => ({
+            columnName: c.getColumn().name,
+            value: c.getDataType().toSqlValue(c.originalData),
+          }));
+
+        if (primaryKeys.length === 0) {
+          message.error(
+            `Can't delete row, no primary key in table "${props.name}"`,
+          );
+          continue;
+        }
+
+        statements.push(
+          `DELETE FROM "${props.name}" WHERE ${primaryKeys.map((p) => `"${p.columnName}" = ${p.value}`).join(" AND ")}`,
+        );
+      }
+
+      if (statements.length === 0) {
+        return;
+      }
+
       try {
-        for (const cell of modifiedCells) {
-          const column = cell.getColumn();
-          const columnName = column.name;
-          const primaryKeys = cell
-            .getRow()
-            .getCells()
-            .filter((c) => c.isPrimary())
-            .map((c) => ({
-              columnName: c.getColumn().name,
-              value: c.getDataType().toSqlValue(c.originalData),
-            }));
-
-          if (primaryKeys.length === 0) {
-            message.error(
-              `Can't update, no primary key in table "${props.name}"`,
-            );
-            continue;
-          }
-
-          const sqlStatement = `
-            UPDATE "${props.name}"
-            SET "${columnName}" = ${cell.toSqlValue()}
-            WHERE ${primaryKeys.map((p) => `"${p.columnName}" = ${p.value}`).join(" AND ")};`;
-
-          await database.execute(sqlStatement);
-        }
-
-        for (const row of deletedRows) {
-          const primaryKeys = row
-            .getCells()
-            .filter((c) => c.isPrimary())
-            .map((c) => ({
-              columnName: c.getColumn().name,
-              value: c.getDataType().toSqlValue(c.originalData),
-            }));
-
-          if (primaryKeys.length === 0) {
-            message.error(
-              `Can't delete row, no primary key in table "${props.name}"`,
-            );
-            continue;
-          }
-
-          const sqlStatement = `
-            DELETE FROM "${props.name}"
-            WHERE ${primaryKeys.map((p) => `"${p.columnName}" = ${p.value}`).join(" AND ")};`;
-
-          await database.execute(sqlStatement);
-        }
+        await batchExecute.exec(statements);
       } finally {
-        // We want to do this if the update fails or succeeds
         props.reload();
       }
     },

@@ -222,6 +222,27 @@ pub async fn table_structure(
     Ok(columns)
 }
 
+/// Execute multiple statements in a single transaction
+#[command]
+pub async fn batch_execute(
+    db_instances: State<'_, DbInstances>,
+    db: String,
+    statements: Vec<String>,
+) -> Result<(), Error> {
+    let instances = db_instances.0.read().await;
+    let pool = instances.get(&db).ok_or(Error::DatabaseNotLoaded(db))?;
+
+    let mut tx = pool.begin().await?;
+
+    for statement in statements {
+        sqlx::query(&statement).execute(&mut *tx).await?;
+    }
+
+    tx.commit().await?;
+
+    Ok(())
+}
+
 pub struct Builder {}
 
 impl Builder {
@@ -231,7 +252,7 @@ impl Builder {
 
     pub fn build<R: Runtime>(self) -> TauriPlugin<R> {
         PluginBuilder::new("sql")
-            .invoke_handler(tauri::generate_handler![load, execute, select, close,])
+            .invoke_handler(tauri::generate_handler![load, execute, select, close])
             .setup(|app, _| {
                 let instances = DbInstances::default();
                 app.manage(instances);
