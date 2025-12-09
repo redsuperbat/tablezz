@@ -206,6 +206,7 @@ export function DataTableProvider(props: {
 
       try {
         await batchExecute.exec(statements);
+        message.info(`Successfully updated`);
       } finally {
         props.reload();
       }
