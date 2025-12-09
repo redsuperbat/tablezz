@@ -51,12 +51,6 @@ export class Cell {
     this.#forceRerender?.();
   }
 
-  reset() {
-    this.#data = [this.#data.at(0)];
-    this.#isDirty = false;
-    this.#forceRerender?.();
-  }
-
   get isDirty() {
     return this.#isDirty;
   }

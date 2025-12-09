@@ -23,8 +23,13 @@ export class Row {
     return this.#deleted;
   }
 
-  toggleDeleted() {
-    this.#deleted = !this.#deleted;
+  restore() {
+    this.#deleted = false;
+    this.#forceRerender?.();
+  }
+
+  markForDeletion() {
+    this.#deleted = true;
     this.#forceRerender?.();
   }
 

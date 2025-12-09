@@ -1,6 +1,5 @@
 import { Match, Show, Switch } from "solid-js";
 import { QueryHistory } from "./database/QueryHistoryProvider";
-import { useEditor } from "./editor/useEditor";
 import { useRegisterKeybindToggle } from "./keybinds/useRegisterKeybindToggle";
 import { useSelectedTableContext } from "./SelectedTableProvider";
 import { DataTable } from "./table/DataTable";
@@ -10,7 +9,6 @@ import { useTableStructure } from "./useTableStructure";
 
 export function TablePage() {
   const { selectedTable } = useSelectedTableContext();
-  const editor = useEditor();
 
   const showQueryHistory = useRegisterKeybindToggle({
     command: "ToggleQueryHistory",
@@ -34,9 +32,6 @@ export function TablePage() {
     structureQuery.refetch();
   }
 
-  const columnDelimiter = "\x1F";
-  const rowDelimiter = "\x1F\n";
-
   return (
     <div
       class="grid h-full overflow-hidden"
@@ -53,29 +48,6 @@ export function TablePage() {
               structure={structureData()}
               rows={rows()}
               name={selectedTable()}
-              onEditSelection={async (selection) => {
-                const extension = selection
-                  .getAllIntersectingCells()
-                  .at(0)
-                  ?.getDataType()
-                  .fileExtension();
-
-                const data = await editor.open({
-                  initialContent: selection.intersectingCellsToString({
-                    columnDelimiter,
-                    rowDelimiter,
-                  }),
-                  extension,
-                });
-
-                selection.updateIntersectingCells({
-                  stringifiedCells: data,
-                  columnDelimiter,
-                  rowDelimiter,
-                });
-
-                selection.exit();
-              }}
             >
               <DataTable reload={reload} />
             </DataTableProvider>

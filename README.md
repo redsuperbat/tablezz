@@ -1,16 +1,10 @@
 # Tablezz
 
-Tablezz is a keyboard-centric PostgreSQL table viewer built with Tauri, Solid.js, and Rust.
+Tablezz is a keyboard-centric PostgreSQL table viewer built with Tauri.
 
 ## Configuration
 
-Configuration is stored in a JSON file at:
-
-```
-~/.config/tablezz/config.json
-```
-
-or
+Configuration is stored in a JSON format at:
 
 ```
 ~/tablezz/config.json

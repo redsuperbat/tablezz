@@ -10,6 +10,7 @@ import z from "zod";
 import { useCommandsContext } from "@/commands/CommandsContext";
 import { createWatcher } from "@/commands/createWatcher";
 import { message } from "@/commands/Messages";
+import { useEditor } from "@/editor/useEditor";
 import { useKeybindContext } from "@/keybinds/KeybindProvider";
 import {
   useRegisterKeybindCommand,
@@ -25,6 +26,7 @@ import { Column } from "./Column";
 import { createDataType } from "./DataType";
 import { Row } from "./Row";
 import { Table } from "./Table";
+import { UndoTree } from "./UndoTree";
 import { VisualSelection } from "./VisualSelection";
 
 interface TableEditorContext {
@@ -45,7 +47,6 @@ export function DataTableProvider(props: {
     isNullable: boolean;
     foreignKey: ForeignKey | null;
   }[];
-  onEditSelection?(selection: VisualSelection): void;
   children: JSXElement;
   reload: () => void;
 }) {
@@ -97,6 +98,8 @@ export function DataTableProvider(props: {
   const getTable = createMemo(
     () => new Table({ rows: rows(), columns: columns(), name: props.name }),
   );
+
+  const undoTree = new UndoTree();
 
   const [visualModeStartCell, setVisualModeStartCell] = createSignal<Cell>();
   const keybindContext = useKeybindContext();
@@ -228,6 +231,15 @@ export function DataTableProvider(props: {
   });
 
   useRegisterKeybindCommandOnMount({
+    command: "Undo",
+    description: "Undo latest changes",
+    keybindExpression: "u",
+    action() {
+      undoTree.undo();
+    },
+  });
+
+  useRegisterKeybindCommandOnMount({
     command: "SelectionUndo",
     description: "Undo changes in the selected cells.",
     keybindExpression: "s > u",
@@ -238,23 +250,44 @@ export function DataTableProvider(props: {
     },
   });
 
-  useRegisterKeybindCommandOnMount({
-    command: "SelectionReset",
-    description: "Reset selected cells to their original values.",
-    keybindExpression: "s > r",
-    action() {
-      const selection = visualSelection();
-      selection.getAllIntersectingCells().forEach((c) => c.reset());
-      selection.exit();
-    },
-  });
+  const editor = useEditor();
 
   useRegisterKeybindCommandOnMount({
     command: "OpenCellEditor",
     description: "Open the cell editor for the current selection.",
     keybindExpression: "c",
-    action() {
-      props.onEditSelection?.(visualSelection());
+    async action() {
+      const columnDelimiter = "\x1F";
+      const rowDelimiter = "\x1F\n";
+      const selection = visualSelection();
+
+      const intersectingCells = selection.getAllIntersectingCells();
+
+      const extension = intersectingCells.at(0)?.getDataType().fileExtension();
+
+      const initialContent = selection.intersectingCellsToString({
+        columnDelimiter,
+        rowDelimiter,
+      });
+
+      const data = await editor.open({
+        initialContent,
+        extension,
+      });
+
+      selection.updateIntersectingCells({
+        stringifiedCells: data,
+        columnDelimiter,
+        rowDelimiter,
+      });
+
+      undoTree.addChange({
+        undo() {
+          intersectingCells.forEach((c) => c.undo());
+        },
+      });
+
+      selection.exit();
     },
   });
 
@@ -337,6 +370,24 @@ export function DataTableProvider(props: {
   });
 
   useRegisterKeybindCommandOnMount({
+    command: "GoToLeftEnd",
+    description: "Move the cursor to the left end of the table.",
+    keybindExpression: "^",
+    action() {
+      column.reset();
+    },
+  });
+
+  useRegisterKeybindCommandOnMount({
+    command: "GoToRightEnd",
+    description: "Move the cursor to the right end of the table.",
+    keybindExpression: "$",
+    action() {
+      column.setToMax();
+    },
+  });
+
+  useRegisterKeybindCommandOnMount({
     command: "MoveCellRight",
     description: "Move the cursor right by one or more cells.",
     keybindExpression: "l",
@@ -382,7 +433,17 @@ export function DataTableProvider(props: {
     description: "Mark the selected rows for deletion.",
     action() {
       const selection = visualSelection();
-      selection.getAllIntersectingRows().forEach((r) => r.toggleDeleted());
+      const rows = selection.getAllIntersectingRows();
+
+      if (rows.every((r) => r.isDeleted)) {
+        return selection.exit();
+      }
+
+      rows.forEach((r) => r.markForDeletion());
+      undoTree.addChange({
+        undo: () => rows.forEach((r) => r.restore()),
+      });
+
       selection.exit();
     },
   });
