@@ -65,6 +65,10 @@ export class Cell {
     return this.getDataType().display(this.data);
   }
 
+  cellRender() {
+    return this.getDataType().cellRender(this.data);
+  }
+
   toString() {
     return this.getDataType().toString(this.data);
   }

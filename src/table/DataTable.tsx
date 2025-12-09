@@ -1,5 +1,5 @@
-import { Binary, Braces, Calendar, Hash, Key, List, Type } from "lucide-solid";
-import { createSignal, For, Show } from "solid-js";
+import { Binary, Braces, Calendar, Hash, Key, Link2, List, Type } from "lucide-solid";
+import { createSignal, For, onMount, Show } from "solid-js";
 import z from "zod";
 import { message } from "@/commands/Messages";
 import { useRegisterKeybindCommandOnMount } from "@/keybinds/useRegisterKeybindCommand";
@@ -8,6 +8,7 @@ import type { Cell } from "./Cell";
 import type { Column } from "./Column";
 import { TableCell } from "./DataTableCell";
 import { useTableEditorContext } from "./DataTableProvider";
+import type { Row } from "./Row";
 
 function getDataTypeIcon(dataType: PostgresDataType) {
   const isArray = dataType.endsWith("[]");
@@ -49,6 +50,9 @@ function ColumnHeader(props: { column: Column }) {
         <Show when={props.column.isPrimary}>
           <Key class="h-3.5 w-3.5 text-amber-500" />
         </Show>
+        <Show when={props.column.isForeignKey}>
+          <Link2 class="h-3.5 w-3.5 text-blue-500" />
+        </Show>
         <DataTypeIcon class="h-3.5 w-3.5 text-zinc-400" />
         <span>{props.column.name}</span>
         <Show when={props.column.isNullable}>
@@ -56,6 +60,42 @@ function ColumnHeader(props: { column: Column }) {
         </Show>
       </div>
     </th>
+  );
+}
+
+function TableRow(props: {
+  row: Row;
+  openedCell?: Cell;
+  clearOpenedCell: () => void;
+}) {
+  const [rerender, forceRerender] = createSignal({});
+
+  onMount(() => {
+    props.row.setForceRerender(() => forceRerender({}));
+  });
+
+  const isDeleted = () => {
+    rerender();
+    return props.row.isDeleted;
+  };
+
+  return (
+    <tr
+      class="transition-colors hover:bg-zinc-50/50"
+      classList={{
+        "bg-red-500/10 line-through": isDeleted(),
+      }}
+    >
+      <For each={props.row.getCells()}>
+        {(cell) => (
+          <TableCell
+            clearOpenedCell={props.clearOpenedCell}
+            cell={cell}
+            openedCell={props.openedCell}
+          />
+        )}
+      </For>
+    </tr>
   );
 }
 
@@ -123,17 +163,11 @@ export function DataTable(props: { reload: () => void }) {
         <tbody class="bg-white">
           <For each={getTable().getRows()}>
             {(row) => (
-              <tr class="transition-colors hover:bg-zinc-50/50">
-                <For each={row.getCells()}>
-                  {(cell) => (
-                    <TableCell
-                      clearOpenedCell={() => setOpenedCell(undefined)}
-                      cell={cell}
-                      openedCell={openedCell()}
-                    />
-                  )}
-                </For>
-              </tr>
+              <TableRow
+                row={row}
+                openedCell={openedCell()}
+                clearOpenedCell={() => setOpenedCell(undefined)}
+              />
             )}
           </For>
         </tbody>

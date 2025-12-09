@@ -6,6 +6,7 @@ export class Column {
   readonly name: string;
   readonly isPrimary: boolean;
   readonly isNullable: boolean;
+  readonly isForeignKey: boolean;
   readonly rawType: PostgresDataType;
   #dataType: DataType;
 
@@ -16,6 +17,7 @@ export class Column {
     index: number;
     isPrimary: boolean;
     isNullable: boolean;
+    isForeignKey: boolean;
   }) {
     this.isPrimary = opts.isPrimary;
     this.name = opts.name;
@@ -23,6 +25,7 @@ export class Column {
     this.rawType = opts.rawType;
     this.index = opts.index;
     this.isNullable = opts.isNullable;
+    this.isForeignKey = opts.isForeignKey;
   }
 
   getDataType() {

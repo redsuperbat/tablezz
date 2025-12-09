@@ -39,6 +39,7 @@ export function DataTableProvider(props: {
     dataType: PostgresDataType;
     isPrimary: boolean;
     isNullable: boolean;
+    isForeignKey: boolean;
   }[];
   onEditSelection?(selection: VisualSelection): void;
   children: JSXElement;
@@ -53,6 +54,7 @@ export function DataTableProvider(props: {
           name: c.columnName,
           isPrimary: c.isPrimary,
           isNullable: c.isNullable,
+          isForeignKey: c.isForeignKey,
           dataType: createDataType(c.dataType, c.isNullable),
           rawType: c.dataType,
           index,
@@ -140,11 +142,16 @@ export function DataTableProvider(props: {
   useRegisterKeybindCommandOnMount({
     keybindExpression: "w",
     command: "WriteChanges",
-    description: "Write pending cell changes to the database.",
+    description:
+      "Write pending cell changes and row deletions to the database.",
     async action() {
       const modifiedCells = getTable()
         .getAllCells()
-        .filter((c) => c.isDirty);
+        .filter((c) => c.isDirty && !c.getRow().isDeleted);
+
+      const deletedRows = getTable()
+        .getRows()
+        .filter((r) => r.isDeleted);
 
       try {
         for (const cell of modifiedCells) {
@@ -169,6 +176,29 @@ export function DataTableProvider(props: {
           const sqlStatement = `
             UPDATE "${props.name}"
             SET "${columnName}" = ${cell.toSqlValue()}
+            WHERE ${primaryKeys.map((p) => `"${p.columnName}" = ${p.value}`).join(" AND ")};`;
+
+          await database.execute(sqlStatement);
+        }
+
+        for (const row of deletedRows) {
+          const primaryKeys = row
+            .getCells()
+            .filter((c) => c.isPrimary())
+            .map((c) => ({
+              columnName: c.getColumn().name,
+              value: c.getDataType().toSqlValue(c.originalData),
+            }));
+
+          if (primaryKeys.length === 0) {
+            message.error(
+              `Can't delete row, no primary key in table "${props.name}"`,
+            );
+            continue;
+          }
+
+          const sqlStatement = `
+            DELETE FROM "${props.name}"
             WHERE ${primaryKeys.map((p) => `"${p.columnName}" = ${p.value}`).join(" AND ")};`;
 
           await database.execute(sqlStatement);
@@ -290,6 +320,17 @@ export function DataTableProvider(props: {
     actionArgs: [z.coerce.number().optional().meta({ title: "<distance>" })],
     action(distance) {
       row.increment(distance);
+    },
+  });
+
+  useRegisterKeybindCommandOnMount({
+    keybindExpression: "d > d",
+    command: "DeleteRow",
+    description: "Mark the selected rows for deletion.",
+    action() {
+      const selection = visualSelection();
+      selection.getAllIntersectingRows().forEach((r) => r.toggleDeleted());
+      selection.exit();
     },
   });
 

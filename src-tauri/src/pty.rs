@@ -48,6 +48,9 @@ pub fn create_pty(
 
     let mut cmd = CommandBuilder::new(&editor);
 
+    // Set TERM so applications know terminal capabilities (cursor shapes, colors, etc.)
+    cmd.env("TERM", "xterm-256color");
+
     if let Some(shell_path) = get_shell_path() {
         let current_path = env::var("PATH").unwrap_or_default();
         if current_path.is_empty() {

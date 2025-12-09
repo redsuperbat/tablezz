@@ -1,4 +1,5 @@
 import type { Cell } from "./Cell";
+import type { Row } from "./Row";
 import type { Table } from "./Table";
 
 export class VisualSelection {
@@ -44,12 +45,22 @@ export class VisualSelection {
     return this.#start;
   }
 
+  getAllIntersectingRows(): Row[] {
+    if (!this.start) {
+      return [this.current.getRow()];
+    }
+
+    return this.#table.getRows().filter((r) => this.isIntersectingWithRow(r));
+  }
+
   getAllIntersectingCells(): Cell[] {
     if (!this.start) {
       return [this.current];
     }
 
-    return this.#table.getAllCells().filter((c) => this.isIntersectingWith(c));
+    return this.#table
+      .getAllCells()
+      .filter((c) => this.isIntersectingWithCell(c));
   }
 
   updateIntersectingCells({
@@ -116,7 +127,21 @@ export class VisualSelection {
       .join(rowDelimiter);
   }
 
-  isIntersectingWith(cell: Cell): boolean {
+  isIntersectingWithRow(row: Row): boolean {
+    if (!this.start) {
+      return false;
+    }
+
+    const startRowIndex = this.start.getRow().index;
+    const currentRowIndex = this.#current.getRow().index;
+
+    const minRow = Math.min(startRowIndex, currentRowIndex);
+    const maxRow = Math.max(startRowIndex, currentRowIndex);
+
+    return row.index >= minRow && row.index <= maxRow;
+  }
+
+  isIntersectingWithCell(cell: Cell): boolean {
     if (!this.start) {
       return false;
     }

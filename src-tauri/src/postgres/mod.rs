@@ -24,6 +24,7 @@ pub struct ColumnInfo {
     pub data_type: String,
     pub is_primary: bool,
     pub is_nullable: bool,
+    pub is_foreign_key: bool,
 }
 
 #[derive(Default)]
@@ -184,7 +185,14 @@ pub async fn table_structure(
                  AND c.contype = 'p'),
                 false
             ) AS is_primary,
-            NOT a.attnotnull AS is_nullable
+            NOT a.attnotnull AS is_nullable,
+            COALESCE(
+                (SELECT true FROM pg_constraint c
+                 WHERE c.conrelid = a.attrelid
+                 AND a.attnum = ANY(c.conkey)
+                 AND c.contype = 'f'),
+                false
+            ) AS is_foreign_key
         FROM pg_attribute a
         JOIN pg_class c ON a.attrelid = c.oid
         JOIN pg_namespace n ON c.relnamespace = n.oid
@@ -207,6 +215,7 @@ pub async fn table_structure(
             data_type: row.get("data_type"),
             is_primary: row.get("is_primary"),
             is_nullable: row.get("is_nullable"),
+            is_foreign_key: row.get("is_foreign_key"),
         })
         .collect();
 

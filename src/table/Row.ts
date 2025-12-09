@@ -2,6 +2,8 @@ import type { Cell } from "./Cell";
 
 export class Row {
   #cells: Cell[];
+  #deleted = false;
+  #forceRerender?: () => void;
   readonly index: number;
 
   constructor(cells: Cell[], index: number) {
@@ -15,5 +17,18 @@ export class Row {
 
   getCells() {
     return this.#cells;
+  }
+
+  get isDeleted() {
+    return this.#deleted;
+  }
+
+  toggleDeleted() {
+    this.#deleted = !this.#deleted;
+    this.#forceRerender?.();
+  }
+
+  setForceRerender(fn: () => void) {
+    this.#forceRerender = fn;
   }
 }

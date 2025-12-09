@@ -28,7 +28,7 @@ export function TableCell(props: {
 
   const isCurrent = () => currentCell().equals(props.cell);
 
-  const isActive = () => visualSelection().isIntersectingWith(props.cell);
+  const isActive = () => visualSelection().isIntersectingWithCell(props.cell);
 
   const isVisualStart = () => visualSelection().start?.equals(props.cell);
 
@@ -44,12 +44,12 @@ export function TableCell(props: {
 
   const cellToString = () => {
     rerender();
-    return props.cell.toString();
+    return props.cell.cellRender();
   };
 
   const displayCell = () => {
     rerender();
-    return props.cell.display();
+    return props.cell.toString();
   };
 
   const isDirty = () => {
@@ -77,7 +77,7 @@ export function TableCell(props: {
         <PopoverTrigger as="div" class="outline-none">
           <ConstrainedCell>{cellToString()}</ConstrainedCell>
         </PopoverTrigger>
-        <PopoverContent class="w-full max-w-6xl truncate break-words rounded-md border border-zinc-200 bg-white p-3 font-mono text-sm text-zinc-700 shadow-lg">
+        <PopoverContent class="w-full max-w-6xl break-words rounded-md border border-zinc-200 bg-white p-3 font-mono text-sm text-zinc-700 shadow-lg">
           {displayCell()}
         </PopoverContent>
       </Popover>
