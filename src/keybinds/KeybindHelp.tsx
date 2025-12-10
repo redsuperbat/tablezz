@@ -33,35 +33,65 @@ export function KeybindHelp() {
     },
   });
 
-  const columnCount = () => Math.ceil((potentialKeybinds()?.length ?? 0) / 10);
+  const columnCount = () =>
+    Math.min(3, Math.ceil((potentialKeybinds()?.length ?? 0) / 10));
+
+  const columns = () => {
+    const binds = potentialKeybinds();
+    if (!binds) return [];
+    type PotentialKeybind = (typeof binds)[number];
+    const cols = columnCount();
+
+    const rows = Math.ceil(binds.length / cols);
+    const result: PotentialKeybind[][] = [];
+
+    for (let col = 0; col < cols; col++) {
+      const column: PotentialKeybind[] = [];
+
+      for (let row = 0; row < rows; row++) {
+        const index = col * rows + row;
+
+        if (index < binds.length) {
+          const bind = binds[index];
+          if (!bind) continue;
+
+          column.push(bind);
+        }
+      }
+      result.push(column);
+    }
+
+    return result;
+  };
 
   return (
     <Show when={potentialKeybinds()}>
-      {(binds) => (
-        <div class="absolute right-2 bottom-2 z-50 border border-zinc-200 bg-white shadow-lg">
-          <div
-            class="grid font-mono text-sm"
-            style={{ "grid-template-columns": `repeat(${columnCount()}, 1fr)` }}
-          >
-            <For each={binds()}>
-              {(bind) => (
-                <div class="flex items-center gap-2 border-zinc-100 border-b border-l px-3 py-1.5 first:border-l-0">
-                  <span class="rounded bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-600">
-                    {bind.bind}
-                  </span>
-                  <span class="text-zinc-400">→</span>
-                  <div class="flex flex-col">
-                    <span class="text-zinc-700">{bind.command}</span>
-                    <span class="text-xs text-zinc-400">
+      <div class="absolute right-2 bottom-2 z-50 flex border border-zinc-200 bg-white font-mono text-sm shadow-lg">
+        <For each={columns()}>
+          {(column) => (
+            <div
+              class="grid border-zinc-100 border-l first:border-l-0"
+              style={{ "grid-template-columns": "auto 1fr" }}
+            >
+              <For each={column}>
+                {(bind) => (
+                  <>
+                    <span class="pt-1 pl-2 text-zinc-700">{bind.command}</span>
+                    <span class="px-2 pt-1 text-right">
+                      <span class="rounded bg-zinc-100 px-1 py-0.5 text-xs text-zinc-600">
+                        {bind.bind}
+                      </span>
+                    </span>
+                    <span class="col-span-2 border-zinc-100 border-b px-2 pb-1 text-xs text-zinc-400">
                       {bind.description}
                     </span>
-                  </div>
-                </div>
-              )}
-            </For>
-          </div>
-        </div>
-      )}
+                  </>
+                )}
+              </For>
+            </div>
+          )}
+        </For>
+      </div>
     </Show>
   );
 }
