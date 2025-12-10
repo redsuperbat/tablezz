@@ -1,4 +1,13 @@
-import { Binary, Braces, Calendar, Hash, Key, Link2, List, Type } from "lucide-solid";
+import {
+  Binary,
+  Braces,
+  Calendar,
+  Hash,
+  Key,
+  Link2,
+  List,
+  Type,
+} from "lucide-solid";
 import { createSignal, For, onMount, Show } from "solid-js";
 import z from "zod";
 import { message } from "@/commands/Messages";
@@ -67,6 +76,7 @@ function TableRow(props: {
   row: Row;
   openedCell?: Cell;
   clearOpenedCell: () => void;
+  ref?: (el: HTMLElement) => void;
 }) {
   const [rerender, forceRerender] = createSignal({});
 
@@ -81,7 +91,12 @@ function TableRow(props: {
 
   return (
     <tr
-      class="transition-colors hover:bg-zinc-50/50"
+      ref={(ref) => {
+        if (props.ref) {
+          console.log("MY PROPS HAVE REF");
+          props.ref(ref);
+        }
+      }}
       classList={{
         "bg-red-500/10 line-through": isDeleted(),
       }}
@@ -100,7 +115,13 @@ function TableRow(props: {
 }
 
 export function DataTable(props: { reload: () => void }) {
-  const { currentCell, visualSelection, getTable } = useTableEditorContext();
+  const {
+    currentCell,
+    visualSelection,
+    getTable,
+    setTableContainerRef,
+    setRowRef,
+  } = useTableEditorContext();
   const [openedCell, setOpenedCell] = createSignal<Cell>();
 
   useRegisterKeybindCommandOnMount({
@@ -151,7 +172,7 @@ export function DataTable(props: { reload: () => void }) {
   });
 
   return (
-    <div class="overflow-y-auto bg-zinc-50">
+    <div ref={setTableContainerRef} class="overflow-y-auto bg-zinc-50">
       <table class="w-full border-separate border-spacing-0">
         <thead class="sticky top-0 z-10 bg-zinc-100/95 backdrop-blur-sm">
           <tr class="border-zinc-300 border-b">
@@ -162,13 +183,18 @@ export function DataTable(props: { reload: () => void }) {
         </thead>
         <tbody class="bg-white">
           <For each={getTable().getRows()}>
-            {(row) => (
-              <TableRow
-                row={row}
-                openedCell={openedCell()}
-                clearOpenedCell={() => setOpenedCell(undefined)}
-              />
-            )}
+            {(row, index) => {
+              const ref = index() === 0 ? setRowRef : undefined;
+              console.log(ref);
+              return (
+                <TableRow
+                  ref={ref}
+                  row={row}
+                  openedCell={openedCell()}
+                  clearOpenedCell={() => setOpenedCell(undefined)}
+                />
+              );
+            }}
           </For>
         </tbody>
       </table>

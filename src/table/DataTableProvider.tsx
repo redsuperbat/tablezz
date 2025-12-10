@@ -17,6 +17,7 @@ import {
   useRegisterKeybindCommandOnMount,
 } from "@/keybinds/useRegisterKeybindCommand";
 import { createCounterWithBoundaries } from "@/lib/counter";
+import { useRef } from "@/lib/useRef";
 import { useManualQueryContext } from "@/ManualQueryContext";
 import { useBatchExecute } from "@/useBatchExecute";
 import { useTableCount } from "@/useTableCount";
@@ -33,6 +34,8 @@ interface TableEditorContext {
   currentCell: Accessor<Cell>;
   getTable: Accessor<Table>;
   visualSelection: Accessor<VisualSelection>;
+  setTableContainerRef: (el: HTMLElement) => void;
+  setRowRef: (el: HTMLElement) => void;
 }
 
 const TableEditorContext = createContext<TableEditorContext | null>(null);
@@ -105,7 +108,16 @@ export function DataTableProvider(props: {
   const keybindContext = useKeybindContext();
   const registerKeybindCommand = useRegisterKeybindCommand();
 
-  const visibleRows = 10;
+  const rowRef = useRef();
+  const tableContainerRef = useRef();
+
+  const visibleRows = () => {
+    const rowEl = rowRef.get();
+    const containerEl = tableContainerRef.get();
+    if (!containerEl || !rowEl) return 10; // fallback
+    const rowHeight = rowEl.offsetHeight || 37;
+    return Math.max(1, Math.floor(containerEl.clientHeight / rowHeight / 2));
+  };
 
   const row = createCounterWithBoundaries({
     max: () => getTable().getRows().length - 1,
@@ -349,7 +361,7 @@ export function DataTableProvider(props: {
     description: "Move down by half a page.",
     keybindExpression: "Control + d",
     action() {
-      row.increment(visibleRows);
+      row.increment(visibleRows());
     },
   });
 
@@ -358,7 +370,7 @@ export function DataTableProvider(props: {
     description: "Move up by half a page.",
     keybindExpression: "Control + u",
     action() {
-      row.decrement(visibleRows);
+      row.decrement(visibleRows());
     },
   });
 
@@ -454,6 +466,8 @@ export function DataTableProvider(props: {
         currentCell,
         visualSelection,
         getTable,
+        setTableContainerRef: tableContainerRef.set,
+        setRowRef: rowRef.set,
       }}
     >
       {props.children}
