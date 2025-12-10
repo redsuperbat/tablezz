@@ -1,6 +1,6 @@
-import createFuzzySearch from "@nozbe/microfuzz";
 import { type Accessor, createSignal, For, type Setter, Show } from "solid-js";
 import { createSolidContext } from "@/createSolidContext";
+import { cn } from "@/lib/cn";
 import type { PotentialKeybind } from "./KeybindProvider";
 import { useRegisterKeybindCommandOnMount } from "./useRegisterKeybindCommand";
 import { useRegisterKeybindToggle } from "./useRegisterKeybindToggle";
@@ -33,8 +33,53 @@ function KeybindHelpSearch(props: { onClose: () => void }) {
   );
 }
 
-function KeybindHelpBody(props: { potentialKeybinds: PotentialKeybind[] }) {
-  const { enableSearch } = useKeybindHelpContext();
+type KeybindWithMatch = {
+  item: PotentialKeybind;
+  isMatch: boolean;
+  matchRange: [number, number] | undefined;
+};
+
+function HighlightedText(props: {
+  text: string;
+  range: [number, number] | undefined;
+  class?: string;
+  highlightClass?: string;
+}) {
+  const parts = () => {
+    const range = props.range;
+    if (!range) {
+      return [{ text: props.text, highlight: false }];
+    }
+
+    const [start, end] = range;
+    const result: { text: string; highlight: boolean }[] = [];
+
+    if (start > 0) {
+      result.push({ text: props.text.slice(0, start), highlight: false });
+    }
+    result.push({ text: props.text.slice(start, end), highlight: true });
+    if (end < props.text.length) {
+      result.push({ text: props.text.slice(end), highlight: false });
+    }
+
+    return result;
+  };
+
+  return (
+    <span class={props.class}>
+      <For each={parts()}>
+        {(part) => (
+          <span class={part.highlight ? props.highlightClass : undefined}>
+            {part.text}
+          </span>
+        )}
+      </For>
+    </span>
+  );
+}
+
+function KeybindHelpBody(props: { keybindResults: KeybindWithMatch[] }) {
+  const { enableSearch, searchQuery } = useKeybindHelpContext();
 
   const isSearching = useRegisterKeybindToggle({
     command: "KeybindHelpSearch",
@@ -42,20 +87,21 @@ function KeybindHelpBody(props: { potentialKeybinds: PotentialKeybind[] }) {
     keybindExpression: "/",
   });
 
+  const isFiltering = () => searchQuery().length > 0;
+
   const columnCount = () =>
-    Math.min(3, Math.ceil((props.potentialKeybinds.length ?? 0) / 10));
+    Math.min(3, Math.ceil((props.keybindResults.length ?? 0) / 10));
 
   const columns = () => {
-    const binds = props.potentialKeybinds;
+    const binds = props.keybindResults;
     if (!binds) return [];
-    type PotentialKeybind = (typeof binds)[number];
     const cols = columnCount();
 
     const rows = Math.ceil(binds.length / cols);
-    const result: PotentialKeybind[][] = [];
+    const result: KeybindWithMatch[][] = [];
 
     for (let col = 0; col < cols; col++) {
-      const column: PotentialKeybind[] = [];
+      const column: KeybindWithMatch[] = [];
 
       for (let row = 0; row < rows; row++) {
         const index = col * rows + row;
@@ -86,18 +132,30 @@ function KeybindHelpBody(props: { potentialKeybinds: PotentialKeybind[] }) {
               style={{ "grid-template-columns": "auto 1fr" }}
             >
               <For each={column}>
-                {(bind) => (
-                  <>
-                    <span class="pt-1 pl-2 text-zinc-700">{bind.command}</span>
+                {(result) => (
+                  <div
+                    class={cn(
+                      "col-span-2 grid grid-cols-subgrid",
+                      isFiltering() &&
+                        !result.isMatch &&
+                        "opacity-40 grayscale",
+                    )}
+                  >
+                    <HighlightedText
+                      text={result.item.command}
+                      range={result.matchRange}
+                      class="pt-1 pl-2 text-zinc-700"
+                      highlightClass="text-blue-600 font-medium"
+                    />
                     <span class="px-2 pt-1 text-right">
                       <span class="rounded bg-zinc-100 px-1 py-0.5 text-xs text-zinc-600">
-                        {bind.bind}
+                        {result.item.bind}
                       </span>
                     </span>
                     <span class="col-span-2 border-zinc-100 border-b px-2 pb-1 text-xs text-zinc-400">
-                      {bind.description}
+                      {result.item.description}
                     </span>
-                  </>
+                  </div>
                 )}
               </For>
             </div>
@@ -124,18 +182,44 @@ export function KeybindHelp(props: {
 }) {
   const [searchQuery, setSearchQuery] = createSignal<string>("");
 
-  const potentialKeybinds = () => {
+  const keybindResults = (): KeybindWithMatch[] | undefined => {
     const binds = props.keybinds;
-    if (!binds) return;
+    if (!binds || binds.length === 0) return undefined;
 
-    const query = searchQuery();
-    if (!query) return binds;
+    const sortedBinds = [...binds].sort((a, b) =>
+      a.command.localeCompare(b.command),
+    );
 
-    const search = createFuzzySearch(binds, {
-      getText: (item) => [item.command],
+    const query = searchQuery().toLowerCase();
+    if (!query) {
+      return sortedBinds.map((item) => ({
+        item,
+        isMatch: false,
+        matchRange: undefined,
+      }));
+    }
+
+    return sortedBinds.map((item) => {
+      const lowerCommand = item.command.toLowerCase();
+      const matchIndex = lowerCommand.indexOf(query);
+
+      if (matchIndex !== -1) {
+        return {
+          item,
+          isMatch: true,
+          matchRange: [matchIndex, matchIndex + query.length] as [
+            number,
+            number,
+          ],
+        };
+      }
+
+      return {
+        item,
+        isMatch: false,
+        matchRange: undefined,
+      };
     });
-
-    return search(query).map((r) => r.item);
   };
 
   return (
@@ -144,8 +228,8 @@ export function KeybindHelp(props: {
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
     >
-      <Show when={potentialKeybinds()}>
-        {(binds) => <KeybindHelpBody potentialKeybinds={binds()} />}
+      <Show when={keybindResults()}>
+        {(results) => <KeybindHelpBody keybindResults={results()} />}
       </Show>
     </KeybindHelpProvider>
   );
