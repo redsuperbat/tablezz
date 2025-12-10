@@ -1,12 +1,25 @@
-import { type Accessor, createSignal, For, type Setter, Show } from "solid-js";
+import {
+  type Accessor,
+  createSignal,
+  For,
+  onMount,
+  type Setter,
+  Show,
+} from "solid-js";
 import { createSolidContext } from "@/createSolidContext";
 import { cn } from "@/lib/cn";
+import { useRef } from "@/lib/useRef";
 import type { PotentialKeybind } from "./KeybindProvider";
 import { useRegisterKeybindCommandOnMount } from "./useRegisterKeybindCommand";
 import { useRegisterKeybindToggle } from "./useRegisterKeybindToggle";
 
 function KeybindHelpSearch(props: { onClose: () => void }) {
   const { searchQuery, setSearchQuery } = useKeybindHelpContext();
+  const inputRef = useRef();
+
+  onMount(() => {
+    setTimeout(() => inputRef.get()?.focus(), 10);
+  });
 
   useRegisterKeybindCommandOnMount({
     command: "KeybindHelpSearchStop",
@@ -22,6 +35,7 @@ function KeybindHelpSearch(props: { onClose: () => void }) {
   return (
     <div class="border-zinc-200 border-b px-2 py-1">
       <input
+        ref={inputRef.set}
         type="text"
         placeholder="Search keybinds..."
         class="w-full bg-transparent text-zinc-700 outline-none placeholder:text-zinc-400"

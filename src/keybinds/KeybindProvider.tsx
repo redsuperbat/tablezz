@@ -7,6 +7,7 @@ import type { Keybind } from "./Keybind";
 import { KeybindChecker, type KeyEvent } from "./KeybindChecker";
 import { KeybindFormatter } from "./KeybindFormatter";
 import { KeybindParser, type KeyExpression } from "./KeybindParser";
+import { KeybindStack } from "./KeybindStack";
 import { KeybindTokenizer } from "./KeybindTokenizer";
 
 type CheckFn = (e: KeyEvent) => boolean;
@@ -16,8 +17,6 @@ interface RegisteredKeybind extends Keybind {
   ast: KeyExpression;
   commandDescription: string | undefined;
 }
-
-type KeybindMap = Map<string, RegisteredKeybind>;
 
 export type PotentialKeybind = {
   bind: string;
@@ -30,33 +29,28 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
   const commandsContext = useCommandsContext();
   const formatter = new KeybindFormatter();
 
-  const [configKeybinds, setConfigKeybinds] = createSignal<KeybindMap>(
-    new Map(),
+  const [configKeybinds, setConfigKeybinds] = createSignal(
+    new KeybindStack<RegisteredKeybind>(),
   );
-  const [componentKeybinds, setComponentKeybinds] = createSignal<KeybindMap>(
-    new Map(),
+  const [componentKeybinds, setComponentKeybinds] = createSignal(
+    new KeybindStack<RegisteredKeybind>(),
   );
 
   const [potentialKeybinds, setPotentialKeybinds] =
     createSignal<PotentialKeybind[]>();
 
   function allKeybinds() {
-    const componentMap = componentKeybinds();
-    const configMap = configKeybinds();
+    const componentTops = componentKeybinds().allTops();
+    const configTops = configKeybinds().allTops();
 
-    const merged = new Map(componentMap);
-    for (const [key, keybind] of configMap) {
-      merged.set(key, keybind);
-    }
+    // Config keybinds take precedence over component keybinds
+    const allTops = [...componentTops, ...configTops];
 
-    return merged
-      .values()
-      .map((k) => ({
-        bind: formatter.format(k.ast),
-        command: k.command,
-        description: k.commandDescription,
-      }))
-      .toArray();
+    return allTops.map((k) => ({
+      bind: formatter.format(k.ast),
+      command: k.command,
+      description: k.commandDescription,
+    }));
   }
 
   function showAllPotentialKeybinds() {
@@ -91,21 +85,23 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
     const compilation = compileKeybind(keybind.keybindExpression);
     const key = normalizeKeybindKey(keybind.keybindExpression);
 
-    setComponentKeybinds((map) =>
-      new Map(map).set(key, {
+    setComponentKeybinds((stack) => {
+      const next = stack.clone();
+      next.push(key, {
         ...keybind,
         check: compilation.checker,
         ast: compilation.ast,
         commandDescription: keybind.commandDescription,
-      }),
-    );
+      });
+      return next;
+    });
   };
 
   const unregisterKeybind = (keybind: Keybind) => {
     const key = normalizeKeybindKey(keybind.keybindExpression);
-    setComponentKeybinds((map) => {
-      const next = new Map(map);
-      next.delete(key);
+    setComponentKeybinds((stack) => {
+      const next = stack.clone();
+      next.remove(key, keybind.command);
       return next;
     });
   };
@@ -116,21 +112,23 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
     const { ast, checker } = compileKeybind(keybind.keybindExpression);
     const key = normalizeKeybindKey(keybind.keybindExpression);
 
-    setConfigKeybinds((map) =>
-      new Map(map).set(key, {
+    setConfigKeybinds((stack) => {
+      const next = stack.clone();
+      next.push(key, {
         ...keybind,
         check: checker,
         ast,
         commandDescription: keybind.commandDescription,
-      }),
-    );
+      });
+      return next;
+    });
   };
 
   const unregisterConfigKeybind = (keybind: Keybind) => {
     const key = normalizeKeybindKey(keybind.keybindExpression);
-    setConfigKeybinds((map) => {
-      const next = new Map(map);
-      next.delete(key);
+    setConfigKeybinds((stack) => {
+      const next = stack.clone();
+      next.remove(key, keybind.command);
       return next;
     });
   };
@@ -171,14 +169,11 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
     function checkAndTrigger(e: KeyboardEvent) {
       // Build the list of keybinds to check, with config keybinds first
       if (!potentialKeybinds) {
-        const configList = configKeybinds().values().toArray();
-        const componentList = componentKeybinds().values().toArray();
+        const configList = configKeybinds().allTops();
+        const componentList = componentKeybinds().allTops();
 
-        // We still reverse each list so recently registered take precedence within their category
-        potentialKeybinds = [
-          ...configList.reverse(),
-          ...componentList.reverse(),
-        ];
+        // Config keybinds take precedence, then component keybinds
+        potentialKeybinds = [...configList, ...componentList];
       }
 
       const keybindsToCheck = potentialKeybinds
