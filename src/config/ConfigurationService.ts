@@ -7,7 +7,12 @@ const configuration = z.object({
   keybinds: z
     .record(
       z.string(),
-      z.string().or(z.object({ command: z.string(), description: z.string() })),
+      z
+        .string()
+        .or(
+          z.object({ command: z.string(), description: z.string().optional() }),
+        )
+        .transform((k) => (typeof k === "string" ? { command: k } : k)),
     )
     .describe("Configure custom keybinds which trigger predefined commands")
     .default({}),

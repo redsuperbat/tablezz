@@ -17,20 +17,39 @@ interface RegisteredKeybind extends Keybind {
   commandDescription: string | undefined;
 }
 
+type KeybindMap = Map<string, RegisteredKeybind>;
+
+type PotentialKeybind = {
+  bind: string;
+  command: string;
+  description: string | undefined;
+};
+
 export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
   const { config } = useConfig();
   const commandsContext = useCommandsContext();
   const formatter = new KeybindFormatter();
-  const [keybinds, setKeybinds] = createSignal<Map<string, RegisteredKeybind>>(
+
+  const [configKeybinds, setConfigKeybinds] = createSignal<KeybindMap>(
     new Map(),
   );
+  const [componentKeybinds, setComponentKeybinds] = createSignal<KeybindMap>(
+    new Map(),
+  );
+
   const [potentialKeybinds, setPotentialKeybinds] =
-    createSignal<
-      { bind: string; command: string; description: string | undefined }[]
-    >();
+    createSignal<PotentialKeybind[]>();
 
   function showAllPotentialKeybinds() {
-    const potentialKeybinds = keybinds()
+    const componentMap = componentKeybinds();
+    const configMap = configKeybinds();
+
+    const merged = new Map(componentMap);
+    for (const [key, keybind] of configMap) {
+      merged.set(key, keybind);
+    }
+
+    const all = merged
       .values()
       .map((k) => ({
         bind: formatter.format(k.ast),
@@ -39,7 +58,7 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
       }))
       .toArray();
 
-    setPotentialKeybinds(potentialKeybinds);
+    setPotentialKeybinds(all);
   }
 
   function clearPotentialKeybinds() {
@@ -58,12 +77,18 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
     return { checker, ast };
   };
 
+  const normalizeKeybindKey = (keyExpression: string): string => {
+    return keyExpression.trim();
+  };
+
   const registerKeybind = (
     keybind: Keybind & { commandDescription: string | undefined },
   ) => {
     const compilation = compileKeybind(keybind.keybindExpression);
-    setKeybinds((map) =>
-      new Map(map).set(keybind.command, {
+    const key = normalizeKeybindKey(keybind.keybindExpression);
+
+    setComponentKeybinds((map) =>
+      new Map(map).set(key, {
         ...keybind,
         check: compilation.checker,
         ast: compilation.ast,
@@ -73,46 +98,58 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
   };
 
   const unregisterKeybind = (keybind: Keybind) => {
-    setKeybinds((map) => {
+    const key = normalizeKeybindKey(keybind.keybindExpression);
+    setComponentKeybinds((map) => {
       const next = new Map(map);
-      next.delete(keybind.command);
+      next.delete(key);
+      return next;
+    });
+  };
+
+  const registerConfigKeybind = (
+    keybind: Keybind & { commandDescription: string | undefined },
+  ) => {
+    const { ast, checker } = compileKeybind(keybind.keybindExpression);
+    const key = normalizeKeybindKey(keybind.keybindExpression);
+
+    setConfigKeybinds((map) =>
+      new Map(map).set(key, {
+        ...keybind,
+        check: checker,
+        ast,
+        commandDescription: keybind.commandDescription,
+      }),
+    );
+  };
+
+  const unregisterConfigKeybind = (keybind: Keybind) => {
+    const key = normalizeKeybindKey(keybind.keybindExpression);
+    setConfigKeybinds((map) => {
+      const next = new Map(map);
+      next.delete(key);
       return next;
     });
   };
 
   createWatcher(config, ({ next, prev }) => {
+    // If we have a previous value, we want to clear all the old keybinds before registering a new keybind
     if (prev) {
       const configurationKeybinds = Object.entries(prev.keybinds);
       for (const [keybindExpression, command] of configurationKeybinds) {
-        if (typeof command === "string") {
-          unregisterKeybind({
-            command,
-            keybindExpression,
-          });
-        } else {
-          unregisterKeybind({
-            command: command.command,
-            keybindExpression,
-          });
-        }
+        unregisterConfigKeybind({
+          command: command.command,
+          keybindExpression,
+        });
       }
     }
 
     const configurationKeybinds = Object.entries(next.keybinds);
     for (const [keybindExpression, command] of configurationKeybinds) {
-      if (typeof command === "string") {
-        registerKeybind({
-          command,
-          keybindExpression,
-          commandDescription: undefined,
-        });
-      } else {
-        registerKeybind({
-          command: command.command,
-          commandDescription: command.description,
-          keybindExpression,
-        });
-      }
+      registerConfigKeybind({
+        command: command.command,
+        commandDescription: command.description,
+        keybindExpression,
+      });
     }
   });
 
@@ -128,25 +165,24 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
     }
 
     function checkAndTrigger(e: KeyboardEvent) {
-      // We reverse the keybind because we want to potentially trigger them
-      // in the reverse order they were registered. If a keybind was registered
-      // after another one it should take precedence
+      // Build the list of keybinds to check, with config keybinds first
       if (!potentialKeybinds) {
-        potentialKeybinds = keybinds().values().toArray().reverse();
+        const configList = configKeybinds().values().toArray();
+        const componentList = componentKeybinds().values().toArray();
+
+        // We still reverse each list so recently registered take precedence within their category
+        potentialKeybinds = [
+          ...configList.reverse(),
+          ...componentList.reverse(),
+        ];
       }
 
-      const reverseKeybinds = potentialKeybinds.slice();
-
-      const keybindsToCheck = reverseKeybinds
+      const keybindsToCheck = potentialKeybinds
         .filter((k) => k.check[i] !== undefined)
         .sort((a, b) => {
-          const aNode = a.ast[i];
-          const bNode = b.ast[i];
-          const countModifiers = (node: KeyExpression[number] | undefined) => {
-            if (!node) return 0;
-            return node.kind === "combination" ? 1 : 0;
-          };
-          return countModifiers(bNode) - countModifiers(aNode);
+          const aNode = a.ast[i]?.kind === "combination" ? 1 : 0;
+          const bNode = b.ast[i]?.kind === "combination" ? 1 : 0;
+          return bNode - aNode;
         });
 
       if (!keybindsToCheck.length) {
@@ -227,11 +263,9 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
   });
 
   return {
-    keybinds,
     registerKeybind,
     potentialKeybinds,
     unregisterKeybind,
     showAllPotentialKeybinds,
-    clearPotentialKeybinds,
   };
 });
