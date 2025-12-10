@@ -7,8 +7,9 @@ import { DatabaseConnectionProvider } from "./database/useDatabase";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { EditorProvider } from "./editor/useEditor";
 import { GlobalKeybinds } from "./GlobalKeybinds";
-import { KeybindHelp } from "./keybinds/KeybindHelp";
+import { AllKeybindsHelp } from "./keybinds/AllKeybindsHelp";
 import { KeybindProvider } from "./keybinds/KeybindProvider";
+import { PotentialKeybindHelp } from "./keybinds/PotentialKeybindHelp";
 import { ManualQueryProvider } from "./ManualQueryContext";
 import { Picker } from "./Picker";
 import { RouteProvider, Router } from "./Router";
@@ -27,7 +28,8 @@ export function App() {
                 class="grid h-screen overflow-hidden"
                 style={{ "grid-template-rows": "1fr auto" }}
               >
-                <KeybindHelp />
+                <AllKeybindsHelp />
+                <PotentialKeybindHelp />
 
                 <EditorProvider>
                   <ConnectionCredentialsProvider>

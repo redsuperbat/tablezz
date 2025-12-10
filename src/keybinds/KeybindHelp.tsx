@@ -1,43 +1,52 @@
-import { For, Show } from "solid-js";
-import { useKeybindContext } from "./KeybindProvider";
-import {
-  useRegisterKeybindCommand,
-  useRegisterKeybindCommandOnMount,
-} from "./useRegisterKeybindCommand";
+import createFuzzySearch from "@nozbe/microfuzz";
+import { type Accessor, createSignal, For, type Setter, Show } from "solid-js";
+import { createSolidContext } from "@/createSolidContext";
+import type { PotentialKeybind } from "./KeybindProvider";
+import { useRegisterKeybindCommandOnMount } from "./useRegisterKeybindCommand";
+import { useRegisterKeybindToggle } from "./useRegisterKeybindToggle";
 
-export function KeybindHelp() {
-  const keybindContext = useKeybindContext();
-  const registerKeybindCommand = useRegisterKeybindCommand();
-
-  const potentialKeybinds = () =>
-    keybindContext
-      .potentialKeybinds()
-      ?.sort((a, b) => a.command.localeCompare(b.command));
+function KeybindHelpSearch(props: { onClose: () => void }) {
+  const { searchQuery, setSearchQuery } = useKeybindHelpContext();
 
   useRegisterKeybindCommandOnMount({
-    command: "KeybindHelpShow",
-    description: "Show available keyboard shortcuts.",
-    keybindExpression: "?",
+    command: "KeybindHelpSearchStop",
+    description: "Stop searching",
+    keybindExpression: "Escape",
     overrideInput: true,
     action() {
-      const disposable = registerKeybindCommand({
-        command: "KeybindHelpClose",
-        description: "Close the keyboard shortcuts help.",
-        keybindExpression: "Escape",
-        action() {
-          disposable.dispose();
-        },
-      });
-
-      keybindContext.showAllPotentialKeybinds();
+      props.onClose();
+      setSearchQuery("");
     },
   });
 
+  return (
+    <div class="border-zinc-200 border-b px-2 py-1">
+      <input
+        type="text"
+        placeholder="Search keybinds..."
+        class="w-full bg-transparent text-zinc-700 outline-none placeholder:text-zinc-400"
+        value={searchQuery()}
+        autofocus
+        onInput={(e) => setSearchQuery(e.currentTarget.value)}
+      />
+    </div>
+  );
+}
+
+function KeybindHelpBody(props: { potentialKeybinds: PotentialKeybind[] }) {
+  const { enableSearch } = useKeybindHelpContext();
+
+  const isSearching = useRegisterKeybindToggle({
+    command: "KeybindHelpSearch",
+    description: "Search keybinds",
+    keybindExpression: "/",
+  });
+
   const columnCount = () =>
-    Math.min(3, Math.ceil((potentialKeybinds()?.length ?? 0) / 10));
+    Math.min(3, Math.ceil((props.potentialKeybinds.length ?? 0) / 10));
 
   const columns = () => {
-    const binds = potentialKeybinds();
+    const binds = props.potentialKeybinds;
     if (!binds) return [];
     type PotentialKeybind = (typeof binds)[number];
     const cols = columnCount();
@@ -65,8 +74,11 @@ export function KeybindHelp() {
   };
 
   return (
-    <Show when={potentialKeybinds()}>
-      <div class="absolute right-2 bottom-2 z-50 flex border border-zinc-200 bg-white font-mono text-sm shadow-lg">
+    <div class="absolute right-2 bottom-2 z-50 flex flex-col border border-zinc-200 bg-white font-mono text-sm shadow-lg">
+      <Show when={isSearching.value() && enableSearch()}>
+        <KeybindHelpSearch onClose={() => isSearching.close()} />
+      </Show>
+      <div class="flex">
         <For each={columns()}>
           {(column) => (
             <div
@@ -92,6 +104,49 @@ export function KeybindHelp() {
           )}
         </For>
       </div>
-    </Show>
+    </div>
+  );
+}
+
+const [KeybindHelpProvider, , useKeybindHelpContext] = createSolidContext(
+  (props: {
+    searchQuery: Accessor<string>;
+    setSearchQuery: Setter<string>;
+    enableSearch: Accessor<boolean>;
+  }) => {
+    return props;
+  },
+);
+
+export function KeybindHelp(props: {
+  keybinds: PotentialKeybind[];
+  enableSearch?: boolean;
+}) {
+  const [searchQuery, setSearchQuery] = createSignal<string>("");
+
+  const potentialKeybinds = () => {
+    const binds = props.keybinds;
+    if (!binds) return;
+
+    const query = searchQuery();
+    if (!query) return binds;
+
+    const search = createFuzzySearch(binds, {
+      getText: (item) => [item.command],
+    });
+
+    return search(query).map((r) => r.item);
+  };
+
+  return (
+    <KeybindHelpProvider
+      enableSearch={() => props.enableSearch ?? false}
+      searchQuery={searchQuery}
+      setSearchQuery={setSearchQuery}
+    >
+      <Show when={potentialKeybinds()}>
+        {(binds) => <KeybindHelpBody potentialKeybinds={binds()} />}
+      </Show>
+    </KeybindHelpProvider>
   );
 }

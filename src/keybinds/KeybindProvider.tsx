@@ -19,7 +19,7 @@ interface RegisteredKeybind extends Keybind {
 
 type KeybindMap = Map<string, RegisteredKeybind>;
 
-type PotentialKeybind = {
+export type PotentialKeybind = {
   bind: string;
   command: string;
   description: string | undefined;
@@ -40,7 +40,7 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
   const [potentialKeybinds, setPotentialKeybinds] =
     createSignal<PotentialKeybind[]>();
 
-  function showAllPotentialKeybinds() {
+  function allKeybinds() {
     const componentMap = componentKeybinds();
     const configMap = configKeybinds();
 
@@ -49,7 +49,7 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
       merged.set(key, keybind);
     }
 
-    const all = merged
+    return merged
       .values()
       .map((k) => ({
         bind: formatter.format(k.ast),
@@ -57,6 +57,10 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
         description: k.commandDescription,
       }))
       .toArray();
+  }
+
+  function showAllPotentialKeybinds() {
+    const all = allKeybinds();
 
     setPotentialKeybinds(all);
   }
@@ -265,6 +269,7 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
   return {
     registerKeybind,
     potentialKeybinds,
+    allKeybinds,
     unregisterKeybind,
     showAllPotentialKeybinds,
   };
