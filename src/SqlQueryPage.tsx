@@ -5,7 +5,7 @@ import { extractTableFromSql } from "./lib/extractTablesFromSql";
 import { LoadingSpinner } from "./SuspenseBoundary";
 import { DataTable } from "./table/DataTable";
 import { DataTableProvider } from "./table/DataTableProvider";
-import { useTableStructure } from "./useTableStructure";
+import { type PostgresDataType, useTableStructure } from "./useTableStructure";
 
 export function SqlQueryPage(props: { query: string }) {
   const database = useDatabase();
@@ -33,10 +33,28 @@ export function SqlQueryPage(props: { query: string }) {
       return parsedStructure.filter((s) => columns.includes(s.columnName));
     }
 
+    const getDataType = (data: unknown): PostgresDataType => {
+      switch (typeof data) {
+        case "string":
+          return "text";
+        case "number":
+          return "integer";
+        case "bigint":
+          return "bigint";
+        case "boolean":
+          return "boolean";
+        case "symbol":
+        case "undefined":
+        case "object":
+        case "function":
+          return "text";
+      }
+    };
+
     // infer columns from query result if no parsed structure could be determined
-    return Object.keys(rowsQuery.data?.at(0) ?? {}).map((k) => ({
-      columnName: k,
-      dataType: "text" as const,
+    return Object.entries(rowsQuery.data?.at(0) ?? {}).map(([key, data]) => ({
+      columnName: key,
+      dataType: getDataType(data),
       isPrimary: false,
       foreignKey: null,
       isNullable: true,

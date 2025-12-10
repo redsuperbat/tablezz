@@ -10,7 +10,9 @@ import z from "zod";
 import { useCommandsContext } from "@/commands/CommandsContext";
 import { createWatcher } from "@/commands/createWatcher";
 import { message } from "@/commands/Messages";
+import { useRegisterCommandOnMount } from "@/commands/useRegisterCommand";
 import { useEditor } from "@/editor/useEditor";
+import { useHopContext } from "@/HopContext";
 import { useKeybindContext } from "@/keybinds/KeybindProvider";
 import {
   useRegisterKeybindCommand,
@@ -18,7 +20,6 @@ import {
 } from "@/keybinds/useRegisterKeybindCommand";
 import { createCounterWithBoundaries } from "@/lib/counter";
 import { useRef } from "@/lib/useRef";
-import { useManualQueryContext } from "@/ManualQueryContext";
 import { useBatchExecute } from "@/useBatchExecute";
 import { useTableCount } from "@/useTableCount";
 import type { ForeignKey, PostgresDataType } from "@/useTableStructure";
@@ -127,6 +128,30 @@ export function DataTableProvider(props: {
   const column = createCounterWithBoundaries({
     max: () => getTable().getColumns().length - 1,
     min: 0,
+  });
+
+  const hopContext = useHopContext();
+
+  useRegisterCommandOnMount({
+    command: "SqlQuery",
+    description: "Run a custom SQL query and display the results.",
+    actionArgs: [z.string().min(1).meta({ title: "<sql>" }).optional()],
+    async action(sql) {
+      if (sql === undefined) {
+        sql = await editor.open({
+          initialContent: "",
+          extension: ".sql",
+        });
+      }
+
+      hopContext.add({
+        query: sql,
+        previousColumnIndex: column.value(),
+        previousRowIndex: row.value(),
+      });
+      column.reset();
+      row.reset();
+    },
   });
 
   const currentCell = () =>
@@ -303,15 +328,11 @@ export function DataTableProvider(props: {
     },
   });
 
-  const manualQuery = useManualQueryContext();
-
   useRegisterKeybindCommandOnMount({
     command: "GoBackward",
     keybindExpression: "Control + o",
     action() {
-      row.reset();
-      column.reset();
-      manualQuery.pop();
+      hopContext.pop();
     },
   });
 
@@ -328,13 +349,15 @@ export function DataTableProvider(props: {
       }
 
       const value = cell.toSqlValue();
+      const previousRowIndex = row.value();
+      const previousColumnIndex = column.value();
+
+      const query = `SELECT * FROM "${cellColumn.foreignKey.table}" WHERE "${cellColumn.foreignKey.column}" = ${value}`;
+
+      hopContext.add({ query, previousColumnIndex, previousRowIndex });
 
       row.reset();
       column.reset();
-
-      manualQuery.add(
-        `SELECT * FROM "${cellColumn.foreignKey.table}" WHERE "${cellColumn.foreignKey.column}" = ${value}`,
-      );
     },
   });
 

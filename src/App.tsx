@@ -7,10 +7,10 @@ import { DatabaseConnectionProvider } from "./database/useDatabase";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { EditorProvider } from "./editor/useEditor";
 import { GlobalKeybinds } from "./GlobalKeybinds";
+import { HopProvider } from "./HopContext";
 import { AllKeybindsHelp } from "./keybinds/AllKeybindsHelp";
 import { KeybindProvider } from "./keybinds/KeybindProvider";
 import { PotentialKeybindHelp } from "./keybinds/PotentialKeybindHelp";
-import { ManualQueryProvider } from "./ManualQueryContext";
 import { Picker } from "./Picker";
 import { RouteProvider, Router } from "./Router";
 import { SchemaProvider } from "./SchemaProvider";
@@ -39,10 +39,10 @@ export function App() {
                         <RouteProvider>
                           <SchemaProvider>
                             <SelectedTableProvider>
-                              <ManualQueryProvider>
+                              <HopProvider>
                                 <Picker />
                                 <Router />
-                              </ManualQueryProvider>
+                              </HopProvider>
                             </SelectedTableProvider>
                           </SchemaProvider>
                         </RouteProvider>

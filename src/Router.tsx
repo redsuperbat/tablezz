@@ -1,9 +1,6 @@
 import { createSignal, Match, Switch } from "solid-js";
-import z from "zod";
-import { useRegisterCommandOnMount } from "./commands/useRegisterCommand";
 import { createSolidContext } from "./createSolidContext";
-import { useEditor } from "./editor/useEditor";
-import { useManualQueryContext } from "./ManualQueryContext";
+import { useHopContext } from "./HopContext";
 import { SqlQueryPage } from "./SqlQueryPage";
 import { TablePage } from "./TablePage";
 
@@ -16,32 +13,15 @@ export const [RouteProvider, , useRouter] = createSolidContext(() => {
 });
 
 export function Router() {
-  const editor = useEditor();
-  const manualQuery = useManualQueryContext();
-
-  useRegisterCommandOnMount({
-    command: "SqlQuery",
-    description: "Run a custom SQL query and display the results.",
-    actionArgs: [z.string().min(1).meta({ title: "<sql>" }).optional()],
-    async action(sql) {
-      if (sql === undefined) {
-        sql = await editor.open({
-          initialContent: "",
-          extension: ".sql",
-        });
-      }
-
-      manualQuery.add(sql);
-    },
-  });
+  const hopContext = useHopContext();
 
   return (
     <Switch>
-      <Match when={manualQuery.isEmpty()}>
+      <Match when={hopContext.isEmpty()}>
         <TablePage />
       </Match>
-      <Match when={manualQuery.value().at(-1)}>
-        {(query) => <SqlQueryPage query={query()} />}
+      <Match when={hopContext.value().at(-1)}>
+        {(hop) => <SqlQueryPage query={hop().query} />}
       </Match>
     </Switch>
   );

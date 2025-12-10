@@ -91,12 +91,7 @@ function TableRow(props: {
 
   return (
     <tr
-      ref={(ref) => {
-        if (props.ref) {
-          console.log("MY PROPS HAVE REF");
-          props.ref(ref);
-        }
-      }}
+      ref={props.ref}
       classList={{
         "bg-red-500/10 line-through": isDeleted(),
       }}
@@ -183,18 +178,14 @@ export function DataTable(props: { reload: () => void }) {
         </thead>
         <tbody class="bg-white">
           <For each={getTable().getRows()}>
-            {(row, index) => {
-              const ref = index() === 0 ? setRowRef : undefined;
-              console.log(ref);
-              return (
-                <TableRow
-                  ref={ref}
-                  row={row}
-                  openedCell={openedCell()}
-                  clearOpenedCell={() => setOpenedCell(undefined)}
-                />
-              );
-            }}
+            {(row, index) => (
+              <TableRow
+                ref={index() === 0 ? setRowRef : undefined}
+                row={row}
+                openedCell={openedCell()}
+                clearOpenedCell={() => setOpenedCell(undefined)}
+              />
+            )}
           </For>
         </tbody>
       </table>
