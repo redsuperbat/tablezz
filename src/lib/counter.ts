@@ -44,7 +44,7 @@ export function createCounterWithBoundaries({
 
   const decrement = (offset = 1) => setValue((v) => Math.max(v - offset, min));
 
-  const reset = () => setValue(initial);
+  const reset = () => setValue(min);
 
   const setToMax = () => setValue(max());
 

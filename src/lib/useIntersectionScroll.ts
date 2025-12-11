@@ -26,7 +26,7 @@ export function useIntersectionScroll<T extends HTMLElement = HTMLDivElement>(
   createEffect(() => {
     if (!ref) return;
     if (shouldScrollIntoView() && !isInView()) {
-      ref.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      ref.scrollIntoView({ behavior: "instant", block: "nearest" });
     }
   });
 

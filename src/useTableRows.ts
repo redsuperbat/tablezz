@@ -23,7 +23,7 @@ export function useTableRows(
 
   return useQuery(() => ({
     queryFn: () => database.select<Record<string, unknown>[]>(query()),
-
+    staleTime: Infinity,
     queryKey: ["table-content", query()],
   }));
 }

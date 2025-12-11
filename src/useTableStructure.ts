@@ -93,5 +93,6 @@ export function useTableStructure(tableName: () => string) {
       return result;
     },
     queryKey: ["table-structure", schema(), tableName(), url()],
+    staleTime: Infinity,
   }));
 }
