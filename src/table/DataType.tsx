@@ -222,7 +222,7 @@ class VectorDataType extends DataType {
   }
 
   toSqlValue(data: unknown): string {
-    return `'${this.toString(data)}'`;
+    return this.toString(data);
   }
 }
 

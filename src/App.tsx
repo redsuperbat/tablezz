@@ -37,14 +37,14 @@ export function App() {
                       <DatabaseConnectionProvider>
                         <GlobalKeybinds />
                         <RouteProvider>
-                          <SchemaProvider>
-                            <SelectedTableProvider>
-                              <HopProvider>
+                          <HopProvider>
+                            <SchemaProvider>
+                              <SelectedTableProvider>
                                 <Picker />
                                 <Router />
-                              </HopProvider>
-                            </SelectedTableProvider>
-                          </SchemaProvider>
+                              </SelectedTableProvider>
+                            </SchemaProvider>
+                          </HopProvider>
                         </RouteProvider>
                       </DatabaseConnectionProvider>
                     </QueryHistoryProvider>
