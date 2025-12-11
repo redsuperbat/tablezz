@@ -76,7 +76,7 @@ class ArrayDataType extends DataType {
     if (!Array.isArray(data)) {
       throw new Error("Expected array data");
     }
-    return `'{${data.map((d) => this.#elementType.toSqlValue(d)).join(",")}}'`;
+    return `ARRAY[${data.map((d) => this.#elementType.toSqlValue(d)).join(",")}]`;
   }
 
   fromString(value: string): unknown[] {
