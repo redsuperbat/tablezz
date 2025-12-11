@@ -1,5 +1,7 @@
 import { batch, createSignal } from "solid-js";
+import { createWatcher } from "./commands/createWatcher";
 import { createSolidContext } from "./createSolidContext";
+import { useSelectedTableContext } from "./SelectedTableProvider";
 
 interface Hop {
   query: string;
@@ -8,6 +10,7 @@ interface Hop {
 }
 
 export const [HopProvider, , useHopContext] = createSolidContext(() => {
+  const { selectedTable } = useSelectedTableContext();
   const [hops, setHops] = createSignal<Hop[]>([]);
   const [position, setPosition] = createSignal<{ row: number; col: number }>();
 
@@ -17,6 +20,21 @@ export const [HopProvider, , useHopContext] = createSolidContext(() => {
       setPosition(undefined);
     });
   }
+
+  // Reset position when table changes
+  createWatcher(
+    selectedTable,
+    () => {
+      batch(() => {
+        setPosition(undefined);
+        setHops([]);
+      });
+    },
+    {
+      // Do not run on initial render
+      defer: true,
+    },
+  );
 
   function pop() {
     const currentHops = hops();

@@ -28,10 +28,10 @@ export function Router() {
           initialRowIndex={initialIndices()?.row}
         />
       </Match>
-      <Match when={hopContext.value().at(-1)}>
+      <Match keyed when={hopContext.value().at(-1)}>
         {(hop) => (
           <SqlQueryPage
-            query={hop().query}
+            query={hop.query}
             initialColumnIndex={initialIndices()?.col}
             initialRowIndex={initialIndices()?.row}
           />
