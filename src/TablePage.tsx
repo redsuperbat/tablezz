@@ -7,7 +7,10 @@ import { DataTableProvider } from "./table/DataTableProvider";
 import { useTableRows } from "./useTableRows";
 import { useTableStructure } from "./useTableStructure";
 
-export function TablePage() {
+export function TablePage(props: {
+  initialRowIndex: number | undefined;
+  initialColumnIndex: number | undefined;
+}) {
   const { selectedTable } = useSelectedTableContext();
 
   const showQueryHistory = useRegisterKeybindToggle({
@@ -48,6 +51,8 @@ export function TablePage() {
               structure={structureData()}
               rows={rows()}
               name={selectedTable()}
+              initialRowIndex={props.initialRowIndex}
+              initialColumnIndex={props.initialColumnIndex}
             >
               <DataTable reload={reload} />
             </DataTableProvider>

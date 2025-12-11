@@ -7,7 +7,11 @@ import { DataTable } from "./table/DataTable";
 import { DataTableProvider } from "./table/DataTableProvider";
 import { type PostgresDataType, useTableStructure } from "./useTableStructure";
 
-export function SqlQueryPage(props: { query: string }) {
+export function SqlQueryPage(props: {
+  query: string;
+  initialRowIndex: number | undefined;
+  initialColumnIndex: number | undefined;
+}) {
   const database = useDatabase();
 
   const rowsQuery = useQuery(() => ({
@@ -78,6 +82,8 @@ export function SqlQueryPage(props: { query: string }) {
               structure={structure()}
               rows={rows()}
               name={tableName() || "Query Result"}
+              initialRowIndex={props.initialRowIndex}
+              initialColumnIndex={props.initialColumnIndex}
             >
               <DataTable reload={rowsQuery.refetch} />
             </DataTableProvider>

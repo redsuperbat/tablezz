@@ -44,6 +44,8 @@ const TableEditorContext = createContext<TableEditorContext | null>(null);
 export function DataTableProvider(props: {
   rows: unknown[];
   name: string;
+  initialRowIndex: number | undefined;
+  initialColumnIndex: number | undefined;
   structure: {
     columnName: string;
     dataType: PostgresDataType;
@@ -120,17 +122,19 @@ export function DataTableProvider(props: {
     return Math.max(1, Math.floor(containerEl.clientHeight / rowHeight / 2));
   };
 
+  const hopContext = useHopContext();
+
   const row = createCounterWithBoundaries({
     max: () => getTable().getRows().length - 1,
     min: 0,
+    initialValue: props.initialRowIndex,
   });
 
   const column = createCounterWithBoundaries({
     max: () => getTable().getColumns().length - 1,
     min: 0,
+    initialValue: props.initialColumnIndex,
   });
-
-  const hopContext = useHopContext();
 
   useRegisterCommandOnMount({
     command: "SqlQuery",
@@ -149,8 +153,6 @@ export function DataTableProvider(props: {
         previousColumnIndex: column.value(),
         previousRowIndex: row.value(),
       });
-      column.reset();
-      row.reset();
     },
   });
 
@@ -349,15 +351,13 @@ export function DataTableProvider(props: {
       }
 
       const value = cell.toSqlValue();
-      const previousRowIndex = row.value();
-      const previousColumnIndex = column.value();
-
       const query = `SELECT * FROM "${cellColumn.foreignKey.table}" WHERE "${cellColumn.foreignKey.column}" = ${value}`;
 
-      hopContext.add({ query, previousColumnIndex, previousRowIndex });
-
-      row.reset();
-      column.reset();
+      hopContext.add({
+        query,
+        previousColumnIndex: column.value(),
+        previousRowIndex: row.value(),
+      });
     },
   });
 
