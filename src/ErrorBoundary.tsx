@@ -13,25 +13,27 @@ export function ErrorBoundary(props: ErrorBoundaryProps) {
   return (
     <SolidErrorBoundary
       fallback={(err: Error, reset) => (
-        <div class="grid h-screen w-screen place-content-center">
-          <div>
-            <h2>Tablezz internal error occurred</h2>
-          </div>
+        <div
+          class="grid place-content-center gap-10"
+          style={{ "grid-template-rows": "auto 1fr auto" }}
+        >
+          <h2 class="mt-10 text-center text-4xl text-black">
+            Tablezz internal error occurred
+          </h2>
           <pre class="max-h-96 overflow-y-scroll">
-            {err.message}
-            {err.stack}
+            <h4>{err.message}</h4>
+            <p>{err.stack}</p>
           </pre>
-          <div>
-            <Button
-              class="cursor-pointer"
-              onclick={() => {
-                queryClient.resetQueries();
-                reset();
-              }}
-            >
-              Reset
-            </Button>
-          </div>
+          <Button
+            class="cursor-pointer"
+            variant="outline"
+            onclick={() => {
+              queryClient.resetQueries();
+              reset();
+            }}
+          >
+            Reset
+          </Button>
         </div>
       )}
     >
