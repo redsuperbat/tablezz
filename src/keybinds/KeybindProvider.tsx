@@ -208,12 +208,14 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
           keybindHit = true;
           newPotentialKeybinds.push(bind);
 
+          // Stop propagation and prevent default when we successfully
+          // hit a keybind
+          e.preventDefault();
+          e.stopPropagation();
+
           if (bind.check.length === i + 1) {
             // Clear potential keybinds before triggering command
             reset();
-
-            e.preventDefault();
-            e.stopPropagation();
 
             // Run command within the reactive owner context to ensure
             // any computations created during the update have a proper owner
