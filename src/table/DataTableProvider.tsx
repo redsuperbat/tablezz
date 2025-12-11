@@ -13,11 +13,8 @@ import { message } from "@/commands/Messages";
 import { useRegisterCommandOnMount } from "@/commands/useRegisterCommand";
 import { useEditor } from "@/editor/useEditor";
 import { useHopContext } from "@/HopContext";
-import { useKeybindContext } from "@/keybinds/KeybindProvider";
-import {
-  useRegisterKeybindCommand,
-  useRegisterKeybindCommandOnMount,
-} from "@/keybinds/useRegisterKeybindCommand";
+import { useRegisterKeybindCommandOnMount } from "@/keybinds/useRegisterKeybindCommand";
+import { useRegisterKeybindCommandOnConditional } from "@/keybinds/useRegisterKeybindCommandOnConditional";
 import { createCounterWithBoundaries } from "@/lib/counter";
 import { useRef } from "@/lib/useRef";
 import { useBatchExecute } from "@/useBatchExecute";
@@ -108,8 +105,6 @@ export function DataTableProvider(props: {
   const undoTree = new UndoTree();
 
   const [visualModeStartCell, setVisualModeStartCell] = createSignal<Cell>();
-  const keybindContext = useKeybindContext();
-  const registerKeybindCommand = useRegisterKeybindCommand();
 
   const rowRef = useRef();
   const tableContainerRef = useRef();
@@ -164,25 +159,33 @@ export function DataTableProvider(props: {
       start: visualModeStartCell(),
       current: currentCell(),
       table: getTable(),
+      onEnter() {
+        setVisualModeStartCell(currentCell());
+      },
       onExit() {
-        keybindContext.unregisterKeybind({
-          keybindExpression: "Escape | v",
-          command: "VisualModeExit",
-        });
         setVisualModeStartCell(undefined);
       },
-      onEnter() {
-        const disposable = registerKeybindCommand({
-          keybindExpression: "Escape | v",
-          command: "VisualModeExit",
-          description: "Exit visual selection mode.",
-          action() {
-            disposable.dispose();
-            visualSelection().exit();
-          },
-        });
-      },
     });
+  });
+
+  useRegisterKeybindCommandOnConditional({
+    predicate: () => !!visualModeStartCell(),
+    false: {
+      keybindExpression: "v",
+      command: "VisualModeEnter",
+      description: "Enter visual selection mode.",
+      action() {
+        visualSelection().enter();
+      },
+    },
+    true: {
+      keybindExpression: "Escape | v",
+      command: "VisualModeExit",
+      description: "Exit visual selection mode.",
+      action() {
+        visualSelection().exit();
+      },
+    },
   });
 
   useRegisterKeybindCommandOnMount({
@@ -256,16 +259,6 @@ export function DataTableProvider(props: {
       } finally {
         props.reload();
       }
-    },
-  });
-
-  useRegisterKeybindCommandOnMount({
-    command: "VisualModeEnter",
-    description: "Enter visual selection mode.",
-    keybindExpression: "v",
-    action() {
-      visualSelection().enter();
-      setVisualModeStartCell(currentCell());
     },
   });
 
@@ -468,18 +461,20 @@ export function DataTableProvider(props: {
     description: "Mark the selected rows for deletion.",
     action() {
       const selection = visualSelection();
-      const rows = selection.getAllIntersectingRows();
+      try {
+        const rows = selection.getAllIntersectingRows();
 
-      if (rows.every((r) => r.isDeleted)) {
-        return selection.exit();
+        if (rows.every((r) => r.isDeleted)) {
+          return;
+        }
+
+        rows.forEach((r) => r.markForDeletion());
+        undoTree.addChange({
+          undo: () => rows.forEach((r) => r.restore()),
+        });
+      } finally {
+        selection.exit();
       }
-
-      rows.forEach((r) => r.markForDeletion());
-      undoTree.addChange({
-        undo: () => rows.forEach((r) => r.restore()),
-      });
-
-      selection.exit();
     },
   });
 
