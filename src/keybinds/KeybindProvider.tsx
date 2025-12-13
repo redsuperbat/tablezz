@@ -3,6 +3,7 @@ import { useCommandsContext } from "@/commands/CommandsContext";
 import { createWatcher } from "@/commands/createWatcher";
 import { useConfig } from "@/config/ConfigurationProvider";
 import { createSolidContext } from "@/createSolidContext";
+import { useDisposables } from "@/lib/useDisposables";
 import type { Keybind } from "./Keybind";
 import { KeybindChecker, type KeyEvent } from "./KeybindChecker";
 import { KeybindFormatter } from "./KeybindFormatter";
@@ -155,6 +156,8 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
     }
   });
 
+  const disposables = useDisposables();
+
   onMount(() => {
     const owner = getOwner();
     let i = 0;
@@ -195,6 +198,7 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
 
       let keybindHit = false;
       const newPotentialKeybinds: RegisteredKeybind[] = [];
+      console.log("keybind check");
 
       for (const bind of keybindsToCheck) {
         // If the target element is an input element we skip triggering
@@ -260,7 +264,9 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
     }
 
     window.addEventListener("keydown", checkAndTrigger);
-    return () => window.removeEventListener("keydown", checkAndTrigger);
+    disposables.add(() =>
+      window.removeEventListener("keydown", checkAndTrigger),
+    );
   });
 
   return {

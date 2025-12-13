@@ -159,9 +159,6 @@ export function DataTableProvider(props: {
       start: visualModeStartCell(),
       current: currentCell(),
       table: getTable(),
-      onEnter() {
-        setVisualModeStartCell(currentCell());
-      },
       onExit() {
         setVisualModeStartCell(undefined);
       },
@@ -175,7 +172,7 @@ export function DataTableProvider(props: {
       command: "VisualModeEnter",
       description: "Enter visual selection mode.",
       action() {
-        visualSelection().enter();
+        setVisualModeStartCell(currentCell());
       },
     },
     true: {
