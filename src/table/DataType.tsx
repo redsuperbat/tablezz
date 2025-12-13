@@ -137,6 +137,10 @@ class WithNull extends DataType {
 
     return this.#inner.fromString(value);
   }
+
+  override fileExtension(): string {
+    return this.#inner.fileExtension();
+  }
 }
 
 class NumberDataType extends DataType {
