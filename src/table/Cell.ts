@@ -55,10 +55,6 @@ export class Cell {
     return this.#isDirty;
   }
 
-  display() {
-    return this.getDataType().display(this.data);
-  }
-
   cellRender() {
     return this.getDataType().cellRender(this.data);
   }

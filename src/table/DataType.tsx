@@ -4,7 +4,6 @@ import type { PostgresDataType } from "@/useTableStructure";
 
 export abstract class DataType {
   abstract toString(data: unknown): string;
-  abstract display(data: unknown): JSXElement;
   abstract cellRender(data: unknown): JSXElement;
   abstract fromString(value: string): unknown;
   abstract toSqlValue(data: unknown): string;
@@ -15,14 +14,6 @@ export abstract class DataType {
 }
 
 class JsonDataType extends DataType {
-  display(data: unknown) {
-    return (
-      <code>
-        <pre>{JSON.stringify(data, null, 2)}</pre>
-      </code>
-    );
-  }
-
   cellRender(data: unknown): JSXElement {
     const str = JSON.stringify(data);
     return str.length > 1000 ? str.slice(0, 1000) : str;
@@ -51,14 +42,6 @@ class ArrayDataType extends DataType {
   constructor(elementType: DataType) {
     super();
     this.#elementType = elementType;
-  }
-
-  display(data: unknown) {
-    return (
-      <code>
-        <pre>{this.toString(data)}</pre>
-      </code>
-    );
   }
 
   cellRender(data: unknown): JSXElement {
@@ -106,14 +89,6 @@ class WithNull extends DataType {
     return this.#inner.toSqlValue(value);
   }
 
-  display(value: unknown) {
-    if (value === null) {
-      return "null";
-    }
-
-    return this.#inner.display(value);
-  }
-
   cellRender(value: unknown): JSXElement {
     if (value === null) {
       return "null";
@@ -144,10 +119,6 @@ class WithNull extends DataType {
 }
 
 class NumberDataType extends DataType {
-  display(data: unknown): string {
-    return this.toString(data);
-  }
-
   cellRender(data: unknown): JSXElement {
     return this.toString(data);
   }
@@ -169,10 +140,6 @@ class NumberDataType extends DataType {
 }
 
 class TextDataType extends DataType {
-  display(data: unknown): string {
-    return this.toString(data);
-  }
-
   cellRender(data: unknown): JSXElement {
     return this.toString(data);
   }
@@ -194,17 +161,6 @@ class TextDataType extends DataType {
 }
 
 class VectorDataType extends DataType {
-  display(data: unknown) {
-    if (!Array.isArray(data)) {
-      throw new Error("Expected array data for vector");
-    }
-    return (
-      <code>
-        <pre>[{data.join(", ")}]</pre>
-      </code>
-    );
-  }
-
   cellRender(data: unknown): JSXElement {
     return this.toString(data);
   }
@@ -231,10 +187,6 @@ class VectorDataType extends DataType {
 }
 
 class DefaultDataType extends DataType {
-  display(data: unknown): string {
-    return this.toString(data);
-  }
-
   cellRender(data: unknown): JSXElement {
     return this.toString(data);
   }
