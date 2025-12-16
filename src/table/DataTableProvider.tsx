@@ -365,9 +365,11 @@ export function DataTableProvider(props: {
 
   commandContext.registerVariable("%", () => `"${props.name}"`);
   commandContext.registerVariable("&", () => currentCell()?.toSqlValue() ?? "");
+  commandContext.registerVariable("@", () => `"${currentCell()?.getColumn().name ?? ""}"`);
   onCleanup(() => {
     commandContext.unregisterVariable("%");
     commandContext.unregisterVariable("&");
+    commandContext.unregisterVariable("@");
   });
 
   useRegisterKeybindCommandOnMount({
