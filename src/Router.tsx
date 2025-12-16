@@ -1,5 +1,4 @@
 import { createSignal, Match, Switch } from "solid-js";
-import { createWatcher } from "./commands/createWatcher";
 import { createSolidContext } from "./createSolidContext";
 import { useHopContext } from "./HopContext";
 import { SqlQueryPage } from "./SqlQueryPage";
@@ -17,8 +16,6 @@ export function Router() {
   const hopContext = useHopContext();
 
   const initialIndices = () => hopContext.position();
-
-  createWatcher(initialIndices, ({ next }) => console.log(next));
 
   return (
     <Switch>

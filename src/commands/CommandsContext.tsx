@@ -9,7 +9,11 @@ import {
 import { type ZodType, z } from "zod";
 import type { Command } from "./Command";
 import { message } from "./Messages";
-import { parseCommand } from "./parseCommand";
+import {
+  type CommandVariables,
+  expandVariables,
+  parseCommand,
+} from "./parseCommand";
 
 interface CommandsContext {
   registerCommand<const T extends ZodType[]>(command: Command<T>): void;
@@ -18,6 +22,8 @@ interface CommandsContext {
   allCommands(): Command[];
   addCommandLineSuffix(suffix: JSXElement): void;
   commandLineSuffix: Accessor<JSXElement>;
+  registerVariable(char: string, getter: () => string): void;
+  unregisterVariable(char: string): void;
 }
 
 const CommandsContext = createContext<CommandsContext | null>(null);
@@ -35,6 +41,7 @@ export function useCommandsContext() {
 export function CommandsProvider(props: ParentProps) {
   const [commands, setCommands] = createSignal(new Map<string, Command>());
   const [suffix, setSuffix] = createSignal<JSXElement>();
+  const [variables, setVariables] = createSignal<CommandVariables>(new Map());
 
   function unregisterCommand(command: string) {
     return setCommands((prev) => {
@@ -52,8 +59,25 @@ export function CommandsProvider(props: ParentProps) {
     });
   }
 
+  function registerVariable(char: string, getter: () => string) {
+    setVariables((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(char, getter);
+      return newMap;
+    });
+  }
+
+  function unregisterVariable(char: string) {
+    setVariables((prev) => {
+      const newMap = new Map(prev);
+      newMap.delete(char);
+      return newMap;
+    });
+  }
+
   function triggerCommand(commandExpression: string) {
-    const { commandName, args } = parseCommand(commandExpression);
+    const expanded = expandVariables(commandExpression, variables());
+    const { commandName, args } = parseCommand(expanded);
 
     if (!commandName) return;
 
@@ -99,6 +123,8 @@ export function CommandsProvider(props: ParentProps) {
         unregisterCommand,
         addCommandLineSuffix: setSuffix,
         commandLineSuffix: suffix,
+        registerVariable,
+        unregisterVariable,
       }}
     >
       {props.children}

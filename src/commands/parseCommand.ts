@@ -1,3 +1,41 @@
+export type CommandVariables = Map<string, () => string>;
+
+export function expandVariables(
+  input: string,
+  variables: CommandVariables,
+): string {
+  let result = "";
+  let i = 0;
+
+  while (i < input.length) {
+    const char = input[i] as string;
+
+    // Handle escape sequences
+    if (char === "\\" && i + 1 < input.length) {
+      const nextChar = input[i + 1] as string;
+      if (variables.has(nextChar)) {
+        // Escaped variable character, output literally
+        result += nextChar;
+        i += 2;
+        continue;
+      }
+    }
+
+    // Check for variable expansion
+    const variableGetter = variables.get(char);
+    if (variableGetter) {
+      result += variableGetter();
+      i++;
+      continue;
+    }
+
+    result += char;
+    i++;
+  }
+
+  return result;
+}
+
 class CommandParser {
   #index = 0;
   #input: string;
@@ -19,7 +57,7 @@ class CommandParser {
         this.#escapeNext = false;
       } else if (char === "\\") {
         this.#escapeNext = true;
-      } else if (char === '"' || char === "'") {
+      } else if (char === '"' || char === "'" || char === "`") {
         this.#handleQuote(char);
       } else if (char === " " && !this.#inQuotes) {
         this.#pushCurrent();

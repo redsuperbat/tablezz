@@ -4,6 +4,7 @@ import {
   createMemo,
   createSignal,
   type JSXElement,
+  onCleanup,
   useContext,
 } from "solid-js";
 import z from "zod";
@@ -362,6 +363,13 @@ export function DataTableProvider(props: {
     ),
   );
 
+  commandContext.registerVariable("%", () => `"${props.name}"`);
+  commandContext.registerVariable("&", () => currentCell()?.toSqlValue() ?? "");
+  onCleanup(() => {
+    commandContext.unregisterVariable("%");
+    commandContext.unregisterVariable("&");
+  });
+
   useRegisterKeybindCommandOnMount({
     command: "GoToBottom",
     description: "Move to the last row of the table.",
@@ -478,10 +486,11 @@ export function DataTableProvider(props: {
   useRegisterCommandOnMount({
     command: "TruncateTable",
     description: "Remove all rows from the current table.",
-    async action() {
+    actionArgs: [z.string().meta({ title: "<table-name>" })],
+    async action(tableName: string) {
       try {
-        await batchExecute.exec([`TRUNCATE TABLE "${props.name}"`]);
-        message.info(`Truncated table "${props.name}"`);
+        await batchExecute.exec([`TRUNCATE TABLE "${tableName}"`]);
+        message.info(`Truncated table "${tableName}"`);
       } finally {
         props.reload();
       }

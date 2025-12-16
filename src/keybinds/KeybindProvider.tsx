@@ -198,7 +198,6 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
 
       let keybindHit = false;
       const newPotentialKeybinds: RegisteredKeybind[] = [];
-      console.log("keybind check");
 
       for (const bind of keybindsToCheck) {
         // If the target element is an input element we skip triggering
