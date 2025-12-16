@@ -475,6 +475,19 @@ export function DataTableProvider(props: {
     },
   });
 
+  useRegisterCommandOnMount({
+    command: "TruncateTable",
+    description: "Remove all rows from the current table.",
+    async action() {
+      try {
+        await batchExecute.exec([`TRUNCATE TABLE "${props.name}"`]);
+        message.info(`Truncated table "${props.name}"`);
+      } finally {
+        props.reload();
+      }
+    },
+  });
+
   return (
     <TableEditorContext.Provider
       value={{
