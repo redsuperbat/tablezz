@@ -3,7 +3,6 @@ import { createSolidContext } from "./createSolidContext";
 import { useHopContext } from "./HopContext";
 import { SqlQueryPage } from "./SqlQueryPage";
 import { usePickTable } from "./usePickTable";
-import { useSelectedSchemaTables } from "./useSelectedSchemaTables";
 
 export const [RouteProvider, , useRouter] = createSolidContext(() => {
   const routes = ["table", "editor"] as const;
@@ -15,13 +14,9 @@ export const [RouteProvider, , useRouter] = createSolidContext(() => {
 
 function InitialQuery() {
   const pickTable = usePickTable();
-  const tablesQuery = useSelectedSchemaTables();
 
   createEffect(() => {
-    const tables = tablesQuery.data;
-    if (!tables || tables.length === 0) return;
-
-    pickTable(tables.map((t) => t.tableName));
+    pickTable();
   });
 
   return null;

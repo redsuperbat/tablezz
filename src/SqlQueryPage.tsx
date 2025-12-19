@@ -1,11 +1,24 @@
 import { useQuery } from "@tanstack/solid-query";
-import { Match, Switch } from "solid-js";
+import { Match, onMount, Switch } from "solid-js";
+import { message } from "./commands/Messages";
 import { useDatabase } from "./database/useDatabase";
+import { useHopContext } from "./HopContext";
 import { extractTableFromSql } from "./lib/extractTablesFromSql";
 import { LoadingSpinner } from "./SuspenseBoundary";
 import { DataTable } from "./table/DataTable";
 import { DataTableProvider } from "./table/DataTableProvider";
 import { type PostgresDataType, useTableStructure } from "./useTableStructure";
+
+function PopCurrentHop(props: { errorMessage: string }) {
+  const hopContext = useHopContext();
+
+  onMount(() => {
+    message.error(props.errorMessage);
+    hopContext.pop();
+  });
+
+  return null;
+}
 
 export function SqlQueryPage(props: {
   query: string;
@@ -71,7 +84,9 @@ export function SqlQueryPage(props: {
   return (
     <div class="grid h-full overflow-hidden">
       <Switch>
-        <Match when={error()}>{(error) => error().message}</Match>
+        <Match when={error()}>
+          {(error) => <PopCurrentHop errorMessage={error().message} />}
+        </Match>
         <Match when={isLoading()}>
           <LoadingSpinner />
         </Match>

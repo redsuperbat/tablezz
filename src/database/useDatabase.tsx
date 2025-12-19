@@ -76,7 +76,7 @@ export function DatabaseConnectionProvider(props: ParentProps) {
 export function useDatabase(): DatabaseConnectionContext {
   const ctx = useContext(DatabaseConnectionContext);
   if (!ctx) {
-    throw new Error("bad");
+    throw new Error("Could not find database connection context");
   }
   return ctx;
 }

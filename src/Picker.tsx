@@ -7,7 +7,6 @@ import { useSchemaContext } from "./SchemaProvider";
 import { useDatabases } from "./useDatabases";
 import { usePickTable } from "./usePickTable";
 import { useSelectedDatabaseSchemas } from "./useSelectedDatabaseSchemas";
-import { useSelectedSchemaTables } from "./useSelectedSchemaTables";
 
 export function Picker() {
   const selectedSchemas = useSelectedDatabaseSchemas();
@@ -16,7 +15,6 @@ export function Picker() {
   const { savedUrls, setActiveUrl, url } = useConnectionCredentials();
   const picker = usePicker();
   const pickTable = usePickTable();
-  const tablesQuery = useSelectedSchemaTables();
 
   const schemas = () => selectedSchemas.data ?? [];
   const databasesList = () => databases.data ?? [];
@@ -63,8 +61,7 @@ export function Picker() {
         }
 
         case "tables": {
-          const tables = tablesQuery.data?.map((t) => t.tableName) ?? [];
-          pickTable(tables);
+          pickTable();
           break;
         }
 
