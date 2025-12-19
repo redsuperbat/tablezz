@@ -1,6 +1,6 @@
 import type { FuzzyMatches, FuzzyResult } from "@nozbe/microfuzz";
 import createFuzzySearch from "@nozbe/microfuzz";
-import { Folder, Table } from "lucide-solid";
+import { Database, Folder, Link, Table } from "lucide-solid";
 import { createMemo, For, type JSXElement } from "solid-js";
 import z from "zod";
 import {
@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useConnectionCredentials } from "./ConnectionCredentialsProvider";
 import { createWatcher } from "./commands/createWatcher";
 import { useAppForm } from "./components/form";
 import { useRegisterKeybindCommandOnMount } from "./keybinds/useRegisterKeybindCommand";
@@ -18,6 +19,7 @@ import { createCounterWithWrap } from "./lib/counter";
 import { useIntersectionScroll } from "./lib/useIntersectionScroll";
 import { useSchemaContext } from "./SchemaProvider";
 import { useSelectedTableContext } from "./SelectedTableProvider";
+import { useDatabases } from "./useDatabases";
 import { useSelectedDatabaseSchemas } from "./useSelectedDatabaseSchemas";
 import { useSelectedSchemaTables } from "./useSelectedSchemaTables";
 
@@ -32,19 +34,28 @@ export function Picker() {
   const selectedSchema = useSelectedSchemaTables();
   const selectedSchemas = useSelectedDatabaseSchemas();
   const { setSchema } = useSchemaContext();
+  const databases = useDatabases();
+  const { savedUrls, setActiveUrl, url } = useConnectionCredentials();
 
   const pickerType = useRegisterKeybindValue({
     command: "PickerOpen",
     description: "Open the picker to pick items",
     keybindExpression: "Leader > Space",
     actionArgs: [
-      z.enum(["schemas", "tables"]).default("tables").meta({ title: "<type>" }),
+      z
+        .enum(["schemas", "tables", "databases", "urls"])
+        .default("tables")
+        .meta({ title: "<type>" }),
     ],
   });
 
   const tables = () => selectedSchema.data ?? [];
 
   const schemas = () => selectedSchemas.data ?? [];
+
+  const databasesList = () => databases.data ?? [];
+
+  const urlsList = () => savedUrls() ?? [];
 
   const items = (): PickerItem[] => {
     const type = pickerType.value();
@@ -68,6 +79,31 @@ export function Picker() {
             setSelectedTable(t.tableName);
           },
         }));
+
+      case "databases":
+        return databasesList().map((d) => ({
+          icon: <Database />,
+          searchTerm: d.databaseName,
+          onSelect() {
+            // Switch to this database by updating the URL
+            const currentUrl = new URL(url());
+            currentUrl.pathname = `/${d.databaseName}`;
+            setActiveUrl(currentUrl.toString());
+          },
+        }));
+
+      case "urls":
+        return urlsList().map((url) => {
+          const parsed = new URL(url);
+          const displayName = `${parsed.host}${parsed.pathname}`;
+          return {
+            icon: <Link />,
+            searchTerm: displayName,
+            onSelect() {
+              setActiveUrl(url);
+            },
+          };
+        });
     }
   };
 
