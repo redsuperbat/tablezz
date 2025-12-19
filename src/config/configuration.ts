@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { KeybindParser } from "@/keybinds/KeybindParser";
-import { KeybindTokenizer } from "@/keybinds/KeybindTokenizer";
+import { KeybindParser } from "../keybinds/KeybindParser.ts";
+import { KeybindTokenizer } from "../keybinds/KeybindTokenizer.ts";
 
 export const configuration = z
   .object({
