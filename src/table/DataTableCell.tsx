@@ -26,7 +26,7 @@ export function TableCell(props: {
   const [rerender, forceRerender] = createSignal({});
   const { visualSelection, currentCell } = useTableEditorContext();
 
-  const isCurrent = () => currentCell().equals(props.cell);
+  const isCurrent = () => !!currentCell()?.equals(props.cell);
 
   const isActive = () => visualSelection().isIntersectingWithCell(props.cell);
 
@@ -77,7 +77,7 @@ export function TableCell(props: {
         <PopoverTrigger as="div" class="outline-none">
           <ConstrainedCell>{cellToString()}</ConstrainedCell>
         </PopoverTrigger>
-        <PopoverContent class="w-full max-w-6xl break-words rounded-md border border-zinc-200 bg-white p-3 font-mono text-sm text-zinc-700 shadow-lg">
+        <PopoverContent class="wrap-break-word w-full max-w-6xl rounded-md border border-zinc-200 bg-white p-3 font-mono text-sm text-zinc-700 shadow-lg">
           {displayCell()}
         </PopoverContent>
       </Popover>

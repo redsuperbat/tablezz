@@ -4,13 +4,13 @@ import type { Table } from "./Table";
 
 export class VisualSelection {
   #start?: Cell;
-  #current: Cell;
+  #current?: Cell;
   #table: Table;
   #onExit: () => void;
 
   constructor(opts: {
     start: Cell | undefined;
-    current: Cell;
+    current: Cell | undefined;
     table: Table;
     onExit: () => void;
   }) {
@@ -39,16 +39,24 @@ export class VisualSelection {
   }
 
   getAllIntersectingRows(): Row[] {
+    if (!this.#current) {
+      return [];
+    }
+
     if (!this.start) {
-      return [this.current.getRow()];
+      return [this.#current.getRow()];
     }
 
     return this.#table.getRows().filter((r) => this.isIntersectingWithRow(r));
   }
 
   getAllIntersectingCells(): Cell[] {
+    if (!this.#current) {
+      return [];
+    }
+
     if (!this.start) {
-      return [this.current];
+      return [this.#current];
     }
 
     return this.#table
@@ -65,9 +73,13 @@ export class VisualSelection {
     rowDelimiter: string;
     columnDelimiter: string;
   }) {
+    if (!this.#current) {
+      return [];
+    }
+
     if (!this.start) {
-      this.current.updateData(stringifiedCells);
-      return [this.current];
+      this.#current.updateData(stringifiedCells);
+      return [this.#current];
     }
 
     const startRow = Math.min(
@@ -121,7 +133,7 @@ export class VisualSelection {
   }
 
   isIntersectingWithRow(row: Row): boolean {
-    if (!this.start) {
+    if (!this.start || !this.#current) {
       return false;
     }
 
@@ -135,7 +147,7 @@ export class VisualSelection {
   }
 
   isIntersectingWithCell(cell: Cell): boolean {
-    if (!this.start) {
+    if (!this.start || !this.#current) {
       return false;
     }
 

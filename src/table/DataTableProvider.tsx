@@ -31,7 +31,7 @@ import { UndoTree } from "./UndoTree";
 import { VisualSelection } from "./VisualSelection";
 
 interface TableEditorContext {
-  currentCell: Accessor<Cell>;
+  currentCell: Accessor<Cell | undefined>;
   getTable: Accessor<Table>;
   visualSelection: Accessor<VisualSelection>;
   setTableContainerRef: (el: HTMLElement) => void;
@@ -152,7 +152,14 @@ export function DataTableProvider(props: {
   });
 
   const currentCell = () => {
-    const cell = getTable().getRow(row.value())?.getCell(column.value());
+    const table = getTable();
+
+    // Handle empty table - no cells exist
+    if (table.getRows().length === 0) {
+      return undefined;
+    }
+
+    const cell = table.getRow(row.value())?.getCell(column.value());
 
     // If the cell is somehow not found
     // we reset the index and return the cell again
@@ -348,6 +355,8 @@ export function DataTableProvider(props: {
     keybindExpression: "g > d",
     action() {
       const cell = currentCell();
+      if (!cell) return;
+
       const cellColumn = cell.getColumn();
 
       if (cellColumn.foreignKey === null) {

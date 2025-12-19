@@ -152,12 +152,12 @@ export function DataTable(props: { reload: () => void }) {
     actionArgs: [
       z.coerce
         .number()
-        .default(() => currentCell().getColumn().index)
+        .default(() => currentCell()?.getColumn().index ?? 0)
         .meta({ title: "<column>" }),
 
       z.coerce
         .number()
-        .default(() => currentCell().getRow().index)
+        .default(() => currentCell()?.getRow().index ?? 0)
         .meta({ title: "<row>" }),
     ],
     action(column, row) {
