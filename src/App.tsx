@@ -23,8 +23,8 @@ export function App() {
     <ErrorBoundary>
       <SuspenseBoundary>
         <HopProvider>
-          <CommandsProvider>
-            <ConfigurationProvider>
+          <ConfigurationProvider>
+            <CommandsProvider>
               <KeybindProvider>
                 <div
                   class="grid h-screen overflow-hidden"
@@ -56,8 +56,8 @@ export function App() {
                   <CommandLine />
                 </div>
               </KeybindProvider>
-            </ConfigurationProvider>
-          </CommandsProvider>
+            </CommandsProvider>
+          </ConfigurationProvider>
         </HopProvider>
       </SuspenseBoundary>
     </ErrorBoundary>

@@ -7,6 +7,7 @@ import {
   useContext,
 } from "solid-js";
 import { type ZodType, z } from "zod";
+import { useConfig } from "@/config/ConfigurationProvider";
 import type { Command } from "./Command";
 import { message } from "./Messages";
 import {
@@ -39,6 +40,7 @@ export function useCommandsContext() {
 }
 
 export function CommandsProvider(props: ParentProps) {
+  const { config } = useConfig();
   const [commands, setCommands] = createSignal(new Map<string, Command>());
   const [suffix, setSuffix] = createSignal<JSXElement>();
   const [variables, setVariables] = createSignal<CommandVariables>(new Map());
@@ -81,10 +83,12 @@ export function CommandsProvider(props: ParentProps) {
 
     if (!commandName) return;
 
-    const command = commands().get(commandName);
+    const command =
+      commands().get(commandName) ??
+      commands().get(config().commandAliases[commandName] ?? "");
 
     if (!command) {
-      return message.error(`Invalid command ${commandName}`);
+      return message.error(`Invalid command: "${commandName}"`);
     }
 
     const parsedArgs = [];
@@ -111,7 +115,16 @@ export function CommandsProvider(props: ParentProps) {
   }
 
   function allCommands() {
-    return commands().values().toArray();
+    const all = commands().values().toArray();
+
+    for (const [alias, command] of Object.entries(config().commandAliases)) {
+      const cmd = all.find((c) => c.command === command);
+      if (!cmd) continue;
+      cmd.command = alias;
+      all.push(cmd);
+    }
+
+    return all;
   }
 
   return (
