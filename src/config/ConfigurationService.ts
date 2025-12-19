@@ -1,5 +1,6 @@
 import { BaseDirectory, readFile } from "@tauri-apps/plugin-fs";
-import type { z } from "zod";
+import { prettifyError, type z } from "zod";
+import { message } from "@/commands/Messages";
 import { tryCatch } from "@/lib/tryCatch";
 import { configuration } from "./configuration";
 
@@ -29,6 +30,7 @@ export async function initConfiguration(): Promise<Configuration> {
   const parsed = configuration.safeParse(json);
 
   if (parsed.error) {
+    message.error(`Configuration error: ${prettifyError(parsed.error)}`);
     return defaultConfig();
   }
 

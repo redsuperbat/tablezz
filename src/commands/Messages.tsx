@@ -33,7 +33,7 @@ function clear() {
 
 export function Messages() {
   return (
-    <Toast.Region limit={1}>
+    <Toast.Region duration={10_000} limit={1}>
       <Toast.List class="font-mono text-sm" />
     </Toast.Region>
   );
