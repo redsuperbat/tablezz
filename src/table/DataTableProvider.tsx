@@ -1,5 +1,6 @@
 import {
   type Accessor,
+  batch,
   createContext,
   createMemo,
   createSignal,
@@ -150,8 +151,22 @@ export function DataTableProvider(props: {
     },
   });
 
-  const currentCell = () =>
-    getTable().getRow(row.value())?.getCell(column.value()) as Cell;
+  const currentCell = () => {
+    const cell = getTable().getRow(row.value())?.getCell(column.value());
+
+    // If the cell is somehow not found
+    // we reset the index and return the cell again
+    if (!cell) {
+      batch(() => {
+        row.reset();
+        column.reset();
+      });
+
+      return currentCell();
+    }
+
+    return cell;
+  };
 
   const visualSelection = createMemo(() => {
     return new VisualSelection({
