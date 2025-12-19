@@ -3,7 +3,7 @@ name: Generate Configuration Schema & Docs
 on:
   push:
     paths:
-      - "src/config/configuration.ts"
+      - src/config/configuration.ts
   workflow_dispatch:
 
 jobs:
