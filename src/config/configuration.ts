@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { KeybindParser } from "@/keybinds/KeybindParser";
+import { KeybindTokenizer } from "@/keybinds/KeybindTokenizer";
 
 export const configuration = z
   .object({
@@ -7,9 +9,18 @@ export const configuration = z
       .meta({
         title: "Leader Key",
         description: "The leader key",
+        examples: ["Control + a"],
       })
       .optional()
-      .default("Space"),
+      .default("Space")
+      .refine(
+        (key) => {
+          const tokens = new KeybindTokenizer(key).tokenize();
+          const ast = new KeybindParser(tokens).parseKeybind();
+          return ast.kind !== "leader";
+        },
+        { error: "Leader key can not be self referential" },
+      ),
 
     keybinds: z
       .record(
@@ -26,6 +37,15 @@ export const configuration = z
         title: "Keybinds",
         description:
           "Configure custom keybinds which trigger predefined commands",
+        examples: [
+          {
+            w: "WriteChanges",
+            "Leader > d": {
+              command: "PickerOpen databases",
+              description: "Change database",
+            },
+          },
+        ],
       })
       .default({})
       .transform((k) => {
@@ -49,6 +69,12 @@ export const configuration = z
       .meta({
         title: "Command Aliases",
         description: "Specify aliases to alias long named commands",
+        examples: [
+          {
+            w: "WriteChanges",
+            d: "DeleteRow",
+          },
+        ],
       })
       .optional()
       .default({}),
@@ -59,6 +85,7 @@ export const configuration = z
         title: "Editor",
         description:
           "The terminal editor which will be invoked when editing cells",
+        examples: ["vim", "emacs"],
       })
       .optional()
       .default("nvim"),
