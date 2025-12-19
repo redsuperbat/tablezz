@@ -22,6 +22,9 @@ jobs:
           cache: "pnpm"
 
       - name: Generate schema and documentation
+        run: pnpm install zod @adobe/jsonschema2md
+
+      - name: Generate schema and documentation
         run: pnpm gen-docs
 
       - name: Commit changes
