@@ -11,6 +11,7 @@ export function TextField(props: {
   placeholder?: string;
   autofocus?: boolean;
   autocomplete?: string;
+  ref?: HTMLInputElement | ((el: HTMLInputElement) => void);
 }) {
   const field = useFieldContext<string>();
 
@@ -18,6 +19,7 @@ export function TextField(props: {
     <TextFieldRoot>
       <TextFieldLabel>{props.label}</TextFieldLabel>
       <BaseTextField
+        ref={props.ref}
         value={field().state.value}
         onInput={(e) => {
           const target = e.target as HTMLInputElement;

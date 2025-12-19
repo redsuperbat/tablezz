@@ -6,6 +6,7 @@ import {
   createSignal,
   For,
   type JSXElement,
+  onMount,
   type ParentProps,
   Show,
   useContext,
@@ -16,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useRef } from "@/lib/useRef";
 import { createWatcher } from "../commands/createWatcher";
 import { useAppForm } from "../components/form";
 import { useRegisterKeybindCommandOnMount } from "../keybinds/useRegisterKeybindCommand";
@@ -164,6 +166,12 @@ function PickerContent<T>(props: {
     },
   });
 
+  const textRef = useRef();
+
+  onMount(() => {
+    setTimeout(() => textRef.get()?.focus(), 100);
+  });
+
   return (
     <>
       <DialogHeader class="border-zinc-200 border-b bg-white p-3">
@@ -178,7 +186,12 @@ function PickerContent<T>(props: {
           <form.AppField
             name="searchTerm"
             children={(field) => (
-              <field.TextField type="text" placeholder="Type something..." />
+              <field.TextField
+                ref={textRef.set}
+                autofocus
+                type="text"
+                placeholder="Type something..."
+              />
             )}
           />
         </form>

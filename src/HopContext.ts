@@ -27,6 +27,10 @@ export const [HopProvider, , useHopContext] = createSolidContext(() => {
     setHops((h) => h.slice(0, -1));
   }
 
+  function clear() {
+    setHops([]);
+  }
+
   function currentHop() {
     return hops().at(-1) as Hop;
   }
@@ -65,6 +69,7 @@ export const [HopProvider, , useHopContext] = createSolidContext(() => {
     current: currentHop,
     setRowIndex,
     setColumnIndex,
+    clear,
     add,
     pop,
     isEmpty: () => hops().length === 0,
