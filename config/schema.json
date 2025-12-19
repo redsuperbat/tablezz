@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Tablezz Configuration",
+  "description": "All configuration options to configure Tablezz",
+  "type": "object",
+  "properties": {
+    "leaderKey": {
+      "default": "Space",
+      "title": "Leader Key",
+      "description": "The leader key",
+      "type": "string"
+    },
+    "keybinds": {
+      "default": {},
+      "title": "Keybinds",
+      "description": "Configure custom keybinds which trigger predefined commands",
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "command"
+            ]
+          }
+        ]
+      }
+    },
+    "commandAliases": {
+      "default": {},
+      "title": "Command Aliases",
+      "description": "Specify aliases to alias long named commands",
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "editor": {
+      "default": "nvim",
+      "title": "Editor",
+      "description": "The terminal editor which will be invoked when editing cells",
+      "type": "string"
+    },
+    "terminalFont": {
+      "default": "Fira Code",
+      "title": "Terminal Font",
+      "description": "Font family for the terminal editor",
+      "type": "string"
+    }
+  }
+}
