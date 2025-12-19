@@ -1,4 +1,4 @@
-import { type Accessor, createSignal, type Setter } from "solid-js";
+import { type Accessor, createSignal } from "solid-js";
 
 function wrap(value: number, min: number, max: number): number {
   if (value < min) return max;
@@ -49,16 +49,16 @@ export function createBoundedCounterWithExternalState({
   max: Accessor<number>;
   min: number;
   value: Accessor<number>;
-  setValue: Setter<number>;
+  setValue: (value: (value: number) => number) => void;
 }) {
   const increment = (offset = 1) =>
     setValue((v) => Math.min(v + offset, max()));
 
   const decrement = (offset = 1) => setValue((v) => Math.max(v - offset, min));
 
-  const reset = () => setValue(min);
+  const reset = () => setValue(() => min);
 
-  const setToMax = () => setValue(max());
+  const setToMax = () => setValue(() => max());
 
   return { increment, decrement, value, reset, setToMax };
 }
