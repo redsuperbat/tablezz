@@ -17,11 +17,11 @@ export interface KeyEvent {
 
 export class KeybindChecker {
   #event: KeyEvent;
-  #leaderKey: string;
+  #leaderKeyAst: KeybindNode;
 
-  constructor(event: KeyEvent, leaderKey: string) {
+  constructor(event: KeyEvent, leaderKeyAst: KeybindNode) {
     this.#event = event;
-    this.#leaderKey = leaderKey;
+    this.#leaderKeyAst = leaderKeyAst;
   }
 
   check(node: KeybindNode): boolean {
@@ -38,7 +38,7 @@ export class KeybindChecker {
   }
 
   #checkLeaderNode(_node: LeaderNode): boolean {
-    return this.#checkKey(this.#leaderKey);
+    return this.check(this.#leaderKeyAst);
   }
 
   #checkOrNode(node: OrNode): boolean {

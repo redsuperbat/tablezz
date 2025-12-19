@@ -94,7 +94,7 @@ export class KeybindParser {
   #parseCombination(): CombinationNode {
     const left = this.#parseModifier();
     this.#assertNext("plus");
-    const right = this.#parseKeybind();
+    const right = this.parseKeybind();
     return {
       left,
       right,
@@ -129,7 +129,7 @@ export class KeybindParser {
 
   #parseParenthesized(): KeybindNode {
     const openParen = this.#assertNext("open-paren");
-    const innerExpression = this.#parseKeybind();
+    const innerExpression = this.parseKeybind();
     const closeParen = this.#assertNext("closed-paren");
 
     return {
@@ -143,7 +143,7 @@ export class KeybindParser {
     return { kind, range };
   }
 
-  #parseKeybind(): KeybindNode {
+  parseKeybind(): KeybindNode {
     const leafExpression = this.#parseLeafNode();
 
     if (this.#isAtEnd()) {
@@ -164,7 +164,7 @@ export class KeybindParser {
     const keybinds = [];
 
     while (true) {
-      keybinds.push(this.#parseKeybind());
+      keybinds.push(this.parseKeybind());
 
       if (this.#isAtEnd()) {
         break;
@@ -178,7 +178,7 @@ export class KeybindParser {
   #parseOr(left: KeybindNode): OrNode {
     const start = left.range.start;
     this.#assertNext("pipe");
-    const right = this.#parseKeybind();
+    const right = this.parseKeybind();
 
     return {
       kind: "or",

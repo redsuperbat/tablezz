@@ -67,10 +67,16 @@ export const [KeybindProvider, , useKeybindContext] = createSolidContext(() => {
   const compileKeybind = (keyExpression: string) => {
     const tokens = new KeybindTokenizer(keyExpression).tokenize();
     const ast = new KeybindParser(tokens).parseKeyExpression();
+    const leaderKeyExpression = config().leaderKey;
+    const leaderKeyTokens = new KeybindTokenizer(
+      leaderKeyExpression,
+    ).tokenize();
+
+    const leaderKeyAst = new KeybindParser(leaderKeyTokens).parseKeybind();
 
     const checker = ast.map(
       (keybind) => (e: KeyEvent) =>
-        new KeybindChecker(e, config().leaderKey).check(keybind),
+        new KeybindChecker(e, leaderKeyAst).check(keybind),
     );
 
     return { checker, ast };
