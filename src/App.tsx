@@ -6,6 +6,7 @@ import { QueryHistoryProvider } from "./database/QueryHistoryProvider";
 import { DatabaseConnectionProvider } from "./database/useDatabase";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { EditorProvider } from "./editor/useEditor";
+import { PickerProvider } from "./picker/usePicker";
 import { GlobalKeybinds } from "./GlobalKeybinds";
 import { HopProvider } from "./HopContext";
 import { AllKeybindsHelp } from "./keybinds/AllKeybindsHelp";
@@ -32,23 +33,25 @@ export function App() {
                 <PotentialKeybindHelp />
 
                 <EditorProvider>
-                  <ConnectionCredentialsProvider>
-                    <QueryHistoryProvider>
-                      <DatabaseConnectionProvider>
-                        <GlobalKeybinds />
-                        <RouteProvider>
-                          <HopProvider>
-                            <SchemaProvider>
-                              <SelectedTableProvider>
-                                <Picker />
-                                <Router />
-                              </SelectedTableProvider>
-                            </SchemaProvider>
-                          </HopProvider>
-                        </RouteProvider>
-                      </DatabaseConnectionProvider>
-                    </QueryHistoryProvider>
-                  </ConnectionCredentialsProvider>
+                  <PickerProvider>
+                    <ConnectionCredentialsProvider>
+                      <QueryHistoryProvider>
+                        <DatabaseConnectionProvider>
+                          <GlobalKeybinds />
+                          <RouteProvider>
+                            <HopProvider>
+                              <SchemaProvider>
+                                <SelectedTableProvider>
+                                  <Picker />
+                                  <Router />
+                                </SelectedTableProvider>
+                              </SchemaProvider>
+                            </HopProvider>
+                          </RouteProvider>
+                        </DatabaseConnectionProvider>
+                      </QueryHistoryProvider>
+                    </ConnectionCredentialsProvider>
+                  </PickerProvider>
                 </EditorProvider>
 
                 <CommandLine />

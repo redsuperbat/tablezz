@@ -8,7 +8,6 @@ import {
   useContext,
 } from "solid-js";
 import { createWatcher } from "./commands/createWatcher";
-import { useHopContext } from "./HopContext";
 import { useSchemaContext } from "./SchemaProvider";
 import { useSelectedSchemaTables } from "./useSelectedSchemaTables";
 
@@ -20,7 +19,6 @@ interface TableContext {
 const TableContext = createContext<TableContext | null>(null);
 
 export function SelectedTableProvider(props: ParentProps) {
-  const { setPosition } = useHopContext();
   const [tableName, setTableName] = makePersisted(createSignal<string>(), {
     name: "selectedTable",
   });
@@ -35,7 +33,6 @@ export function SelectedTableProvider(props: ParentProps) {
 
   function setSelectedTable(tableName: string) {
     batch(() => {
-      setPosition(undefined);
       setTableName(tableName);
     });
   }

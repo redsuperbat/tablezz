@@ -1,4 +1,6 @@
+import { makePersisted } from "@solid-primitives/storage";
 import { createSignal } from "solid-js";
+import { message } from "./commands/Messages";
 import { createSolidContext } from "./createSolidContext";
 
 interface Hop {
@@ -8,13 +10,20 @@ interface Hop {
 }
 
 export const [HopProvider, , useHopContext] = createSolidContext(() => {
-  const [hops, setHops] = createSignal<Hop[]>([]);
+  const [hops, setHops] = makePersisted(createSignal<Hop[]>([]), {
+    name: "jumps",
+  });
 
   function add(hop: { query: string }) {
     setHops((h) => [...h, { query: hop.query, columnIndex: 0, rowIndex: 0 }]);
   }
 
   function pop() {
+    if (hops().length === 1) {
+      message.error("Can not hop past the last item in the stack");
+      return;
+    }
+
     setHops((h) => h.slice(0, -1));
   }
 
@@ -22,23 +31,7 @@ export const [HopProvider, , useHopContext] = createSolidContext(() => {
     return hops().at(-1) as Hop;
   }
 
-  function set(dimension: "row" | "column", index: number) {
-    setHops((h) => {
-      const newHops = [...h];
-      const current = newHops.at(-1);
-      if (!current) return newHops;
-
-      if (dimension === "row") {
-        current.rowIndex = index;
-      } else {
-        current.columnIndex = index;
-      }
-
-      return newHops;
-    });
-  }
-
-  function increment(dimension: "row" | "column", offset = 1) {
+  function updateCurrentHop(cb: (h: Hop) => Hop) {
     const current = currentHop();
 
     if (!current) {
@@ -49,51 +42,31 @@ export const [HopProvider, , useHopContext] = createSolidContext(() => {
       const newHops = [...h];
       const current = newHops.at(-1);
       if (!current) return newHops;
-
-      if (dimension === "row") {
-        current.rowIndex += offset;
-      } else {
-        current.columnIndex += offset;
-      }
-
+      newHops[newHops.length - 1] = cb(current);
       return newHops;
     });
   }
 
-  function decrement(dimension: "row" | "column", offset = 1) {
-    const current = currentHop();
-    if (!current) {
-      return;
-    }
+  function setColumnIndex(cb: (columnIndex: number) => number) {
+    updateCurrentHop((h) => {
+      h.columnIndex = cb(h.columnIndex);
+      return h;
+    });
+  }
 
-    setHops((h) => {
-      const newHops = [...h];
-      const current = newHops.at(-1);
-      if (!current) return newHops;
-
-      if (dimension === "row") {
-        current.rowIndex -= offset;
-      } else {
-        current.columnIndex -= offset;
-      }
-
-      return newHops;
+  function setRowIndex(cb: (columnIndex: number) => number) {
+    updateCurrentHop((h) => {
+      h.rowIndex = cb(h.rowIndex);
+      return h;
     });
   }
 
   return {
     current: currentHop,
+    setRowIndex,
+    setColumnIndex,
     add,
     pop,
-    currentIndex: {
-      decrement,
-      increment,
-      set,
-    },
     isEmpty: () => hops().length === 0,
-    position: () => ({
-      rowIndex: currentHop()?.rowIndex,
-      columnIndex: currentHop()?.columnIndex,
-    }),
   };
 });

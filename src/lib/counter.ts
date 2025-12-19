@@ -1,4 +1,4 @@
-import { type Accessor, createSignal } from "solid-js";
+import { type Accessor, createSignal, type Setter } from "solid-js";
 
 function wrap(value: number, min: number, max: number): number {
   if (value < min) return max;
@@ -26,20 +26,7 @@ export function createCounterWithWrap(max: Accessor<number>) {
   return { increment, decrement, value, reset, setToMax };
 }
 
-export function createBoundariesFunction({
-  max,
-  min,
-}: {
-  max: Accessor<number>;
-  min: Accessor<number>;
-}) {
-  return {
-    set: (value: number) => Math.min(Math.max(value, min()), max()),
-    max: () => max(),
-  };
-}
-
-export function createCounterWithBoundaries({
+export function createBoundedCounter({
   max,
   min,
   initialValue,
@@ -48,10 +35,22 @@ export function createCounterWithBoundaries({
   min: number;
   initialValue?: number;
 }) {
-  const initial = initialValue !== undefined ? initialValue : min;
+  const [value, setValue] = createSignal(initialValue ?? 0);
 
-  const [value, setValue] = createSignal(initial);
+  return createBoundedCounterWithExternalState({ max, min, value, setValue });
+}
 
+export function createBoundedCounterWithExternalState({
+  max,
+  min,
+  value,
+  setValue,
+}: {
+  max: Accessor<number>;
+  min: number;
+  value: Accessor<number>;
+  setValue: Setter<number>;
+}) {
   const increment = (offset = 1) =>
     setValue((v) => Math.min(v + offset, max()));
 

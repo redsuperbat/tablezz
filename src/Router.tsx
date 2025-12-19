@@ -1,8 +1,9 @@
-import { createSignal, Match, Switch } from "solid-js";
-import { createWatcher } from "./commands/createWatcher";
+import { createEffect, createSignal, Match, Switch } from "solid-js";
 import { createSolidContext } from "./createSolidContext";
 import { useHopContext } from "./HopContext";
 import { SqlQueryPage } from "./SqlQueryPage";
+import { usePickTable } from "./usePickTable";
+import { useSelectedSchemaTables } from "./useSelectedSchemaTables";
 
 export const [RouteProvider, , useRouter] = createSolidContext(() => {
   const routes = ["table", "editor"] as const;
@@ -12,16 +13,29 @@ export const [RouteProvider, , useRouter] = createSolidContext(() => {
   return { route, navigateTo: setRoute, routes };
 });
 
+function InitialQuery() {
+  const pickTable = usePickTable();
+  const tablesQuery = useSelectedSchemaTables();
+
+  createEffect(() => {
+    const tables = tablesQuery.data;
+    if (!tables || tables.length === 0) return;
+
+    pickTable(tables.map((t) => t.tableName));
+  });
+
+  return null;
+}
+
 export function Router() {
   const hopContext = useHopContext();
 
-  createWatcher(hopContext.current, ({ next }) => {
-    if (!next) {
-    }
-  });
-
   return (
     <Switch>
+      <Match when={!hopContext.current()}>
+        <InitialQuery />
+      </Match>
+
       <Match keyed when={hopContext.current()}>
         {(hop) => (
           <SqlQueryPage

@@ -11,10 +11,7 @@ import {
 import { useRegisterKeybindCommandOnMount } from "@/keybinds/useRegisterKeybindCommand";
 import { useRegisterKeybindToggle } from "@/keybinds/useRegisterKeybindToggle";
 import { cn } from "@/lib/cn";
-import {
-  createCounterWithBoundaries,
-  createCounterWithWrap,
-} from "@/lib/counter";
+import { createBoundedCounter, createCounterWithWrap } from "@/lib/counter";
 import { useIntersectionScroll } from "@/lib/useIntersectionScroll";
 import type { Command } from "./Command";
 import { useCommandsContext } from "./CommandsContext";
@@ -228,7 +225,7 @@ function CommandLineContent(props: {
   onSelect: () => void;
 }) {
   const commandContext = useCommandsContext();
-  const historyIndex = createCounterWithBoundaries({
+  const historyIndex = createBoundedCounter({
     initialValue: -1,
     min: 0,
     max: () => props.commandHistory().length - 1,
