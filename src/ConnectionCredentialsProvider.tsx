@@ -9,6 +9,7 @@ import {
 import { z } from "zod";
 import { useRegisterCommandOnMount } from "./commands/useRegisterCommand";
 import { createSolidContext } from "./createSolidContext";
+import { useHopContext } from "./HopContext";
 
 export const [RootConnectionCredentialsProvider, , useConnectionCredentials] =
   createSolidContext(
@@ -44,6 +45,7 @@ export const [RootConnectionCredentialsProvider, , useConnectionCredentials] =
   );
 
 export function ConnectionCredentialsProvider(props: ParentProps) {
+  const hopsContext = useHopContext();
   const [databaseUrlRaw, setDatabaseUrlRaw] = makePersisted(
     createSignal<string>(),
     { name: "databaseurl" },
@@ -54,6 +56,7 @@ export function ConnectionCredentialsProvider(props: ParentProps) {
   });
 
   const setActiveUrl = (url: string) => {
+    hopsContext.clear();
     setDatabaseUrlRaw(url);
     const urls = savedUrls();
     if (!urls.includes(url)) {

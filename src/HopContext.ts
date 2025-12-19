@@ -11,7 +11,7 @@ interface Hop {
 
 export const [HopProvider, , useHopContext] = createSolidContext(() => {
   const [hops, setHops] = makePersisted(createSignal<Hop[]>([]), {
-    name: "hops@",
+    name: "jumps",
   });
 
   function add(hop: { query: string }) {
