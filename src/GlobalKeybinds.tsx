@@ -14,12 +14,11 @@ export function GlobalKeybinds() {
 
   useRegisterKeybindCommandOnMount({
     keybindExpression: "Meta + Enter",
-    command: "ToggleFullscreen",
-    description: "Toggle fullscreen mode.",
+    command: "ToggleMaximize",
+    description: "Toggle maximize window.",
     async action() {
       const window = getCurrentWindow();
-      const isFullscreen = await window.isFullscreen();
-      await window.setFullscreen(!isFullscreen);
+      await window.toggleMaximize();
     },
   });
 
