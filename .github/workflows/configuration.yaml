@@ -9,6 +9,9 @@ on:
 jobs:
   generate:
     runs-on: ubuntu-latest
+    permissions:
+      # This allows pushing commits
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
