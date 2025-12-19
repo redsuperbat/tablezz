@@ -10,7 +10,8 @@
     "tauri": "tauri",
     "tc": "tsc",
     "test": "vitest --disable-console-intercept",
-    "lint": "biome check ."
+    "lint": "biome check .",
+    "gen-docs": "node ./scripts/generate-config-schema.ts"
   },
   "dependencies": {
     "@corvu/resizable": "^0.2.5",
@@ -36,6 +37,7 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@adobe/jsonschema2md": "^8.0.9",
     "@tauri-apps/cli": "^2.9.6",
     "@types/node": "^24.10.2",
     "baseline-browser-mapping": "^2.9.5",

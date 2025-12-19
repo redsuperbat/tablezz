@@ -12,18 +12,4 @@ Configuration is stored in a JSON format at:
 
 The configuration file is watched for changes and automatically reloaded.
 
-### Example Configuration
-
-```json
-{
-  "leaderKey": "Space",
-  "keybinds": {
-    "Space > n": "DatabaseUrlAdd",
-    "Control + h": {
-      "command": "CommandLineClose",
-      "description": "Close the command line."
-    }
-  },
-  "editor": "nvim"
-}
-```
+For more configuration options see [the definition file](./config/definition.md)

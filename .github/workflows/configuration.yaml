@@ -1,0 +1,33 @@
+name: Generate Configuration Schema & Docs
+
+on:
+  push:
+    paths:
+      - "src/config/configuration.ts"
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Generate schema and documentation
+        run: pnpm gen-docs
+
+      - name: Commit changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add config/
+          git diff --staged --quiet || git commit -m "chore: update configuration schema and docs"
+          git push
