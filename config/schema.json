@@ -8,12 +8,24 @@
       "default": "Space",
       "title": "Leader Key",
       "description": "The leader key",
+      "examples": [
+        "Control + a"
+      ],
       "type": "string"
     },
     "keybinds": {
       "default": {},
       "title": "Keybinds",
       "description": "Configure custom keybinds which trigger predefined commands",
+      "examples": [
+        {
+          "w": "WriteChanges",
+          "Leader > d": {
+            "command": "PickerOpen databases",
+            "description": "Change database"
+          }
+        }
+      ],
       "type": "object",
       "propertyNames": {
         "type": "string"
@@ -44,6 +56,12 @@
       "default": {},
       "title": "Command Aliases",
       "description": "Specify aliases to alias long named commands",
+      "examples": [
+        {
+          "w": "WriteChanges",
+          "d": "DeleteRow"
+        }
+      ],
       "type": "object",
       "propertyNames": {
         "type": "string"
@@ -56,6 +74,10 @@
       "default": "nvim",
       "title": "Editor",
       "description": "The terminal editor which will be invoked when editing cells",
+      "examples": [
+        "vim",
+        "emacs"
+      ],
       "type": "string"
     },
     "terminalFont": {

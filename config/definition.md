@@ -38,6 +38,12 @@ The default value is:
 "Space"
 ```
 
+### leaderKey Examples
+
+```json
+"Control + a"
+```
+
 ## keybinds
 
 Configure custom keybinds which trigger predefined commands
@@ -62,6 +68,18 @@ The default value is:
 
 ```json
 {}
+```
+
+### keybinds Examples
+
+```json
+{
+  "w": "WriteChanges",
+  "Leader > d": {
+    "command": "PickerOpen databases",
+    "description": "Change database"
+  }
+}
 ```
 
 ## commandAliases
@@ -90,6 +108,15 @@ The default value is:
 {}
 ```
 
+### commandAliases Examples
+
+```json
+{
+  "w": "WriteChanges",
+  "d": "DeleteRow"
+}
+```
+
 ## editor
 
 The terminal editor which will be invoked when editing cells
@@ -114,6 +141,16 @@ The default value is:
 
 ```json
 "nvim"
+```
+
+### editor Examples
+
+```json
+"vim"
+```
+
+```json
+"emacs"
 ```
 
 ## terminalFont
