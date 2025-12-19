@@ -1,8 +1,8 @@
 import { createSignal, Match, Switch } from "solid-js";
+import { createWatcher } from "./commands/createWatcher";
 import { createSolidContext } from "./createSolidContext";
 import { useHopContext } from "./HopContext";
 import { SqlQueryPage } from "./SqlQueryPage";
-import { TablePage } from "./TablePage";
 
 export const [RouteProvider, , useRouter] = createSolidContext(() => {
   const routes = ["table", "editor"] as const;
@@ -15,22 +15,19 @@ export const [RouteProvider, , useRouter] = createSolidContext(() => {
 export function Router() {
   const hopContext = useHopContext();
 
-  const initialIndices = () => hopContext.position();
+  createWatcher(hopContext.current, ({ next }) => {
+    if (!next) {
+    }
+  });
 
   return (
     <Switch>
-      <Match when={hopContext.isEmpty()}>
-        <TablePage
-          initialColumnIndex={initialIndices()?.col}
-          initialRowIndex={initialIndices()?.row}
-        />
-      </Match>
-      <Match keyed when={hopContext.value().at(-1)}>
+      <Match keyed when={hopContext.current()}>
         {(hop) => (
           <SqlQueryPage
             query={hop.query}
-            initialColumnIndex={initialIndices()?.col}
-            initialRowIndex={initialIndices()?.row}
+            initialColumnIndex={hop.columnIndex}
+            initialRowIndex={hop.rowIndex}
           />
         )}
       </Match>

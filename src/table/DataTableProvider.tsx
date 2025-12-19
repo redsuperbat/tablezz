@@ -16,7 +16,7 @@ import { useEditor } from "@/editor/useEditor";
 import { useHopContext } from "@/HopContext";
 import { useRegisterKeybindCommandOnMount } from "@/keybinds/useRegisterKeybindCommand";
 import { useRegisterKeybindCommandOnConditional } from "@/keybinds/useRegisterKeybindCommandOnConditional";
-import { createCounterWithBoundaries } from "@/lib/counter";
+import { createBoundariesFunction } from "@/lib/counter";
 import { useRef } from "@/lib/useRef";
 import { useBatchExecute } from "@/useBatchExecute";
 import { useTableCount } from "@/useTableCount";
@@ -110,26 +110,24 @@ export function DataTableProvider(props: {
   const rowRef = useRef();
   const tableContainerRef = useRef();
 
-  const visibleRows = () => {
+  const numberOfVisibleRows = () => {
     const rowEl = rowRef.get();
     const containerEl = tableContainerRef.get();
-    if (!containerEl || !rowEl) return 10; // fallback
+    if (!containerEl || !rowEl) return 10;
     const rowHeight = rowEl.offsetHeight || 37;
     return Math.max(1, Math.floor(containerEl.clientHeight / rowHeight / 2));
   };
 
   const hopContext = useHopContext();
 
-  const row = createCounterWithBoundaries({
+  const boundRowIndex = createBoundariesFunction({
     max: () => getTable().getRows().length - 1,
-    min: 0,
-    initialValue: props.initialRowIndex,
+    min: () => 0,
   });
 
-  const column = createCounterWithBoundaries({
-    max: () => getTable().getColumns().length - 1,
-    min: 0,
-    initialValue: props.initialColumnIndex,
+  const boundColumnIndex = createBoundariesFunction({
+    max: () => getTable().getRows().length - 1,
+    min: () => 0,
   });
 
   useRegisterCommandOnMount({
@@ -144,16 +142,14 @@ export function DataTableProvider(props: {
         });
       }
 
-      hopContext.add({
-        query: sql,
-        previousColumnIndex: column.value(),
-        previousRowIndex: row.value(),
-      });
+      hopContext.add({ query: sql });
     },
   });
 
   const currentCell = () =>
-    getTable().getRow(row.value())?.getCell(column.value()) as Cell;
+    getTable()
+      .getRow(hopContext.current()?.rowIndex as number)
+      ?.getCell(hopContext.current()?.columnIndex as number) as Cell;
 
   const visualSelection = createMemo(() => {
     return new VisualSelection({
@@ -344,11 +340,7 @@ export function DataTableProvider(props: {
       const value = cell.toSqlValue();
       const query = `SELECT * FROM "${cellColumn.foreignKey.table}" WHERE "${cellColumn.foreignKey.column}" = ${value}`;
 
-      hopContext.add({
-        query,
-        previousColumnIndex: column.value(),
-        previousRowIndex: row.value(),
-      });
+      hopContext.add({ query });
     },
   });
 
@@ -365,7 +357,11 @@ export function DataTableProvider(props: {
 
   commandContext.registerVariable("%", () => `"${props.name}"`);
   commandContext.registerVariable("&", () => currentCell()?.toSqlValue() ?? "");
-  commandContext.registerVariable("@", () => `"${currentCell()?.getColumn().name ?? ""}"`);
+  commandContext.registerVariable(
+    "@",
+    () => `"${currentCell()?.getColumn().name ?? ""}"`,
+  );
+
   onCleanup(() => {
     commandContext.unregisterVariable("%");
     commandContext.unregisterVariable("&");
@@ -376,7 +372,9 @@ export function DataTableProvider(props: {
     command: "GoToBottom",
     description: "Move to the last row of the table.",
     keybindExpression: "G",
-    action: row.setToMax,
+    action() {
+      hopContext.currentIndex.increment("row", boundRowIndex.max());
+    },
   });
 
   useRegisterKeybindCommandOnMount({
@@ -384,7 +382,10 @@ export function DataTableProvider(props: {
     description: "Move down by half a page.",
     keybindExpression: "Control + d",
     action() {
-      row.increment(visibleRows());
+      hopContext.currentIndex.increment(
+        "row",
+        boundRowIndex.set(numberOfVisibleRows()),
+      );
     },
   });
 
@@ -393,7 +394,10 @@ export function DataTableProvider(props: {
     description: "Move up by half a page.",
     keybindExpression: "Control + u",
     action() {
-      row.decrement(visibleRows());
+      hopContext.currentIndex.decrement(
+        "row",
+        boundRowIndex.set(numberOfVisibleRows()),
+      );
     },
   });
 
@@ -401,7 +405,9 @@ export function DataTableProvider(props: {
     command: "GoToTop",
     description: "Move to the first row of the table.",
     keybindExpression: "g > g",
-    action: row.reset,
+    action() {
+      hopContext.currentIndex.set("row", 0);
+    },
   });
 
   useRegisterKeybindCommandOnMount({
@@ -409,7 +415,7 @@ export function DataTableProvider(props: {
     description: "Move the cursor to the left end of the table.",
     keybindExpression: "^",
     action() {
-      column.reset();
+      hopContext.currentIndex.set("column", 0);
     },
   });
 
@@ -418,7 +424,7 @@ export function DataTableProvider(props: {
     description: "Move the cursor to the right end of the table.",
     keybindExpression: "$",
     action() {
-      column.setToMax();
+      hopContext.currentIndex.set("column", boundColumnIndex.max());
     },
   });
 
@@ -428,7 +434,10 @@ export function DataTableProvider(props: {
     keybindExpression: "l",
     actionArgs: [z.coerce.number().optional().meta({ title: "<distance>" })],
     action(distance) {
-      column.increment(distance);
+      hopContext.currentIndex.increment(
+        "column",
+        boundColumnIndex.set(distance ?? 1),
+      );
     },
   });
 
@@ -438,7 +447,10 @@ export function DataTableProvider(props: {
     keybindExpression: "h",
     actionArgs: [z.coerce.number().optional().meta({ title: "<distance>" })],
     action(distance) {
-      column.decrement(distance);
+      hopContext.currentIndex.decrement(
+        "column",
+        boundColumnIndex.set(distance ?? 1),
+      );
     },
   });
 
@@ -448,7 +460,10 @@ export function DataTableProvider(props: {
     keybindExpression: "k",
     actionArgs: [z.coerce.number().optional().meta({ title: "<distance>" })],
     action(distance) {
-      row.decrement(distance);
+      hopContext.currentIndex.decrement(
+        "row",
+        boundRowIndex.set(distance ?? 1),
+      );
     },
   });
 
@@ -458,7 +473,10 @@ export function DataTableProvider(props: {
     keybindExpression: "j",
     actionArgs: [z.coerce.number().optional().meta({ title: "<distance>" })],
     action(distance) {
-      row.increment(distance);
+      hopContext.currentIndex.increment(
+        "row",
+        boundRowIndex.set(distance ?? 1),
+      );
     },
   });
 

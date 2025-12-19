@@ -26,6 +26,19 @@ export function createCounterWithWrap(max: Accessor<number>) {
   return { increment, decrement, value, reset, setToMax };
 }
 
+export function createBoundariesFunction({
+  max,
+  min,
+}: {
+  max: Accessor<number>;
+  min: Accessor<number>;
+}) {
+  return {
+    set: (value: number) => Math.min(Math.max(value, min()), max()),
+    max: () => max(),
+  };
+}
+
 export function createCounterWithBoundaries({
   max,
   min,

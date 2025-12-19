@@ -1,45 +1,99 @@
-import { batch, createSignal } from "solid-js";
+import { createSignal } from "solid-js";
 import { createSolidContext } from "./createSolidContext";
 
 interface Hop {
   query: string;
-  previousRowIndex: number;
-  previousColumnIndex: number;
+  rowIndex: number;
+  columnIndex: number;
 }
 
 export const [HopProvider, , useHopContext] = createSolidContext(() => {
   const [hops, setHops] = createSignal<Hop[]>([]);
-  const [position, setPosition] = createSignal<{ row: number; col: number }>();
 
-  function add(hop: Hop) {
-    batch(() => {
-      setHops((h) => [...h, hop]);
-      setPosition(undefined);
-    });
+  function add(hop: { query: string }) {
+    setHops((h) => [...h, { query: hop.query, columnIndex: 0, rowIndex: 0 }]);
   }
 
   function pop() {
-    const currentHops = hops();
-    const popped = currentHops.at(-1);
+    setHops((h) => h.slice(0, -1));
+  }
 
-    batch(() => {
-      setHops(currentHops.slice(0, -1));
-      if (!popped) return;
-      setPosition({
-        row: popped.previousRowIndex,
-        col: popped.previousColumnIndex,
-      });
+  function currentHop() {
+    return hops().at(-1) as Hop;
+  }
+
+  function set(dimension: "row" | "column", index: number) {
+    setHops((h) => {
+      const newHops = [...h];
+      const current = newHops.at(-1);
+      if (!current) return newHops;
+
+      if (dimension === "row") {
+        current.rowIndex = index;
+      } else {
+        current.columnIndex = index;
+      }
+
+      return newHops;
     });
+  }
 
-    return popped;
+  function increment(dimension: "row" | "column", offset = 1) {
+    const current = currentHop();
+
+    if (!current) {
+      return;
+    }
+
+    setHops((h) => {
+      const newHops = [...h];
+      const current = newHops.at(-1);
+      if (!current) return newHops;
+
+      if (dimension === "row") {
+        current.rowIndex += offset;
+      } else {
+        current.columnIndex += offset;
+      }
+
+      return newHops;
+    });
+  }
+
+  function decrement(dimension: "row" | "column", offset = 1) {
+    const current = currentHop();
+    if (!current) {
+      return;
+    }
+
+    setHops((h) => {
+      const newHops = [...h];
+      const current = newHops.at(-1);
+      if (!current) return newHops;
+
+      if (dimension === "row") {
+        current.rowIndex -= offset;
+      } else {
+        current.columnIndex -= offset;
+      }
+
+      return newHops;
+    });
   }
 
   return {
-    value: hops,
+    current: currentHop,
     add,
     pop,
+    currentIndex: {
+      decrement,
+      increment,
+      set,
+    },
     isEmpty: () => hops().length === 0,
-    position,
-    setPosition,
+    position: () => ({
+      rowIndex: currentHop()?.rowIndex,
+      columnIndex: currentHop()?.columnIndex,
+    }),
   };
 });
