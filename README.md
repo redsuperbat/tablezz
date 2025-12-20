@@ -209,7 +209,7 @@ Long form (with description):
 
 ### Command Variables
 
-SQL commands support variable substitution:
+Commands support variable substitution:
 
 | Variable | Description            |
 | -------- | ---------------------- |
