@@ -229,7 +229,6 @@ export function DataTable(props: { reload: () => void }) {
                   display: "grid",
                   "grid-template-columns": "subgrid",
                   "grid-column": "1 / -1",
-                  height: `${virtualRow.size}px`,
                 }}
                 ref={virtualRow.index === 0 ? rowRef.set : undefined}
                 row={row}
