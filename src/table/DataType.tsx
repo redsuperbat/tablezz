@@ -161,28 +161,35 @@ class TextDataType extends DataType {
 }
 
 class VectorDataType extends DataType {
+  #isTruncatedVector(
+    data: unknown,
+  ): data is { preview: number[]; length: number } {
+    return (
+      data !== null &&
+      typeof data === "object" &&
+      "preview" in data &&
+      "length" in data
+    );
+  }
+
   cellRender(data: unknown): JSXElement {
     return this.toString(data);
   }
 
   toString(data: unknown): string {
-    if (!Array.isArray(data)) {
-      throw new Error("Expected array data for vector");
+    if (!this.#isTruncatedVector(data)) {
+      throw new Error("Invalid vector data");
     }
-    return `[${data.join(",")}]`;
+    const previewStr = data.preview.join(", ");
+    return `[${previewStr}] (${data.length})`;
   }
 
-  fromString(value: string): number[] {
-    if (value.startsWith("[") && value.endsWith("]")) {
-      const inner = value.slice(1, -1);
-      if (inner === "") return [];
-      return inner.split(",").map((v) => Number(v.trim()));
-    }
-    throw new Error("Malformed vector data");
+  fromString(): unknown {
+    throw new Error("Editing vector data is not supported");
   }
 
-  toSqlValue(data: unknown): string {
-    return this.toString(data);
+  toSqlValue(): string {
+    throw new Error("Editing vector data is not supported");
   }
 }
 

@@ -1,6 +1,5 @@
 import { makePersisted } from "@solid-primitives/storage";
 import { createSignal } from "solid-js";
-import { message } from "./commands/Messages";
 import { createSolidContext } from "./createSolidContext";
 
 interface Hop {
@@ -20,7 +19,6 @@ export const [HopProvider, , useHopContext] = createSolidContext(() => {
 
   function pop() {
     if (hops().length === 1) {
-      message.error("Can not hop past the last item in the stack");
       return;
     }
 

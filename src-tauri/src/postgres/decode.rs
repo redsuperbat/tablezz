@@ -211,6 +211,17 @@ fn decode_bytea(v: &PgValueRef<'_>) -> JsonValue {
 fn decode_vector(v: &PgValueRef<'_>) -> JsonValue {
     ValueRef::to_owned(v)
         .try_decode::<Vector>()
-        .map(|vec| JsonValue::Array(vec.to_vec().into_iter().map(JsonValue::from).collect()))
+        .map(|vec| {
+            let floats = vec.to_vec();
+            let preview: Vec<JsonValue> = floats
+                .iter()
+                .take(5)
+                .map(|&f| JsonValue::from(f))
+                .collect();
+            serde_json::json!({
+                "preview": preview,
+                "length": floats.len()
+            })
+        })
         .unwrap_or(JsonValue::Null)
 }

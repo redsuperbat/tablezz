@@ -234,9 +234,9 @@ pub async fn table_structure(
                 data_type: row.get("data_type"),
                 is_primary: row.get("is_primary"),
                 is_nullable: row.get("is_nullable"),
-                foreign_key: foreign_table_name.zip(foreign_column_name).map(
-                    |(table, column)| ForeignKey { table, column },
-                ),
+                foreign_key: foreign_table_name
+                    .zip(foreign_column_name)
+                    .map(|(table, column)| ForeignKey { table, column }),
             }
         })
         .collect();
