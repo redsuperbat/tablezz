@@ -10,6 +10,7 @@ import {
   Type,
 } from "lucide-solid";
 import { createSignal, For, onMount, Show } from "solid-js";
+import type { JSX } from "solid-js/jsx-runtime";
 import z from "zod";
 import { createWatcher } from "@/commands/createWatcher";
 import { message } from "@/commands/Messages";
@@ -80,6 +81,7 @@ function TableRow(props: {
   openedCell?: Cell;
   clearOpenedCell: () => void;
   ref?: (el: HTMLElement) => void;
+  style: JSX.CSSProperties;
 }) {
   const [rerender, forceRerender] = createSignal({});
 
@@ -96,6 +98,7 @@ function TableRow(props: {
     <div
       ref={props.ref}
       class={cn("bg-white", isDeleted() && "bg-red-500/10 line-through")}
+      style={props.style}
     >
       <For each={props.row.getCells()}>
         {(cell) => (
@@ -194,20 +197,37 @@ export function DataTable(props: { reload: () => void }) {
       <div
         class="relative grid bg-white"
         style={{
-          height: `${virtualizer.getTotalSize()}px`,
           "grid-template-columns": `repeat(${getTable().getColumns().length}, minmax(150px, auto))`,
+          "padding-top": `${virtualizer.getVirtualItems()[0]?.start ?? 0}px`,
+          "padding-bottom": `${virtualizer.getTotalSize() - (virtualizer.getVirtualItems().at(-1)?.end ?? 0)}px`,
         }}
       >
-        <For each={getTable().getColumns()}>
-          {(column) => <ColumnHeader column={column} />}
-        </For>
+        <div
+          class="sticky top-0 bg-white"
+          style={{
+            display: "grid",
+
+            "grid-template-columns": "subgrid",
+            "grid-column": "1 / -1",
+            height: `${rowHeight()}px`,
+          }}
+        >
+          <For each={getTable().getColumns()}>
+            {(column) => <ColumnHeader column={column} />}
+          </For>
+        </div>
+
         <For each={virtualizer.getVirtualItems()}>
           {(virtualRow) => {
             const row = getTable().getRows()[virtualRow.index];
             if (!row) return null;
-
             return (
               <TableRow
+                style={{
+                  display: "grid",
+                  "grid-template-columns": "subgrid",
+                  "grid-column": "1 / -1",
+                }}
                 ref={virtualRow.index === 0 ? rowRef.set : undefined}
                 row={row}
                 openedCell={openedCell()}

@@ -6,6 +6,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/cn";
+import { useIntersectionScroll } from "@/lib/useIntersectionScroll";
 import type { Cell } from "./Cell";
 import { useTableEditorContext } from "./DataTableProvider";
 
@@ -32,6 +33,7 @@ export function TableCell(props: {
   const isVisualStart = () => visualSelection().start?.equals(props.cell);
 
   createWatcher(isCurrent, () => props.clearOpenedCell());
+  const ref = useIntersectionScroll(isCurrent);
 
   onMount(() => {
     props.cell.setRenderer(() => forceRerender({}));
@@ -56,6 +58,7 @@ export function TableCell(props: {
 
   return (
     <div
+      ref={ref}
       class={cn(
         "scroll-mt-12 border-zinc-200 border-t border-l px-3 py-1.5 text-sm last:border-r",
         isActive() && "bg-indigo-500/15",
