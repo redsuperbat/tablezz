@@ -129,6 +129,9 @@ export function DataTable(props: { reload: () => void }) {
     get count() {
       return getTable().getRows().length;
     },
+    get scrollPaddingStart() {
+      return rowHeight();
+    },
     getScrollElement: () => tableContainerRef.get(),
     estimateSize: () => rowHeight(),
     get overscan() {
@@ -199,7 +202,7 @@ export function DataTable(props: { reload: () => void }) {
         style={{
           "grid-template-columns": `repeat(${getTable().getColumns().length}, minmax(150px, auto))`,
           "padding-top": `${virtualizer.getVirtualItems()[0]?.start ?? 0}px`,
-          "padding-bottom": `${virtualizer.getTotalSize() - (virtualizer.getVirtualItems().at(-1)?.end ?? 0)}px`,
+          "padding-bottom": `${virtualizer.getTotalSize() - (virtualizer.getVirtualItems().at(-1)?.end ?? 0 - rowHeight())}px`,
         }}
       >
         <div

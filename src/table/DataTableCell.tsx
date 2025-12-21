@@ -6,7 +6,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/cn";
-import { useIntersectionScroll } from "@/lib/useIntersectionScroll";
+import { useHorizontalScrollIntoView } from "@/lib/useHorizontalScrollIntoView";
 import type { Cell } from "./Cell";
 import { useTableEditorContext } from "./DataTableProvider";
 
@@ -24,7 +24,8 @@ export function TableCell(props: {
   clearOpenedCell: () => void;
 }) {
   const [rerender, forceRerender] = createSignal({});
-  const { visualSelection, currentCell } = useTableEditorContext();
+  const { visualSelection, currentCell, tableContainerRef } =
+    useTableEditorContext();
 
   const isCurrent = () => !!currentCell()?.equals(props.cell);
 
@@ -33,7 +34,8 @@ export function TableCell(props: {
   const isVisualStart = () => visualSelection().start?.equals(props.cell);
 
   createWatcher(isCurrent, () => props.clearOpenedCell());
-  const ref = useIntersectionScroll(isCurrent);
+
+  const ref = useHorizontalScrollIntoView(isCurrent, tableContainerRef.get);
 
   onMount(() => {
     props.cell.setRenderer(() => forceRerender({}));
