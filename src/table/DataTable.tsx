@@ -202,14 +202,13 @@ export function DataTable(props: { reload: () => void }) {
         style={{
           "grid-template-columns": `repeat(${getTable().getColumns().length}, minmax(150px, auto))`,
           "padding-top": `${virtualizer.getVirtualItems()[0]?.start ?? 0}px`,
-          "padding-bottom": `${virtualizer.getTotalSize() - (virtualizer.getVirtualItems().at(-1)?.end ?? 0 - rowHeight())}px`,
+          "margin-bottom": `${virtualizer.getTotalSize() - (virtualizer.getVirtualItems().at(-1)?.end ?? 0)}px`,
         }}
       >
         <div
           class="sticky top-0 bg-white"
           style={{
             display: "grid",
-
             "grid-template-columns": "subgrid",
             "grid-column": "1 / -1",
             height: `${rowHeight()}px`,
@@ -230,6 +229,7 @@ export function DataTable(props: { reload: () => void }) {
                   display: "grid",
                   "grid-template-columns": "subgrid",
                   "grid-column": "1 / -1",
+                  height: `${virtualRow.size}`,
                 }}
                 ref={virtualRow.index === 0 ? rowRef.set : undefined}
                 row={row}
