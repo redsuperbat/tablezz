@@ -34,8 +34,10 @@ interface TableEditorContext {
   currentCell: Accessor<Cell | undefined>;
   getTable: Accessor<Table>;
   visualSelection: Accessor<VisualSelection>;
-  setTableContainerRef: (el: HTMLElement) => void;
-  setRowRef: (el: HTMLElement) => void;
+  tableContainerRef: ReturnType<typeof useRef>;
+  rowRef: ReturnType<typeof useRef>;
+  rowHeight: Accessor<number>;
+  numberOfVisibleRows: Accessor<number>;
 }
 
 const TableEditorContext = createContext<TableEditorContext | null>(null);
@@ -111,12 +113,18 @@ export function DataTableProvider(props: {
   const rowRef = useRef();
   const tableContainerRef = useRef();
 
-  const visibleRows = () => {
+  const rowHeight = () => {
     const rowEl = rowRef.get();
+    if (!rowEl) return 37;
+    return rowEl.offsetHeight;
+  };
+
+  const numberOfVisibleRows = () => {
     const containerEl = tableContainerRef.get();
-    if (!containerEl || !rowEl) return 10; // fallback
-    const rowHeight = rowEl.offsetHeight || 37;
-    return Math.max(1, Math.floor(containerEl.clientHeight / rowHeight / 2));
+    if (!containerEl) return 10;
+
+    const rHeight = rowHeight();
+    return Math.max(1, Math.floor(containerEl.clientHeight / rHeight / 2));
   };
 
   const hopContext = useHopContext();
@@ -405,7 +413,7 @@ export function DataTableProvider(props: {
     description: "Move down by half a page.",
     keybindExpression: "Control + d",
     action() {
-      row.increment(visibleRows());
+      row.increment(numberOfVisibleRows());
     },
   });
 
@@ -414,7 +422,7 @@ export function DataTableProvider(props: {
     description: "Move up by half a page.",
     keybindExpression: "Control + u",
     action() {
-      row.decrement(visibleRows());
+      row.decrement(numberOfVisibleRows());
     },
   });
 
@@ -524,10 +532,12 @@ export function DataTableProvider(props: {
     <TableEditorContext.Provider
       value={{
         currentCell,
+        numberOfVisibleRows,
         visualSelection,
         getTable,
-        setTableContainerRef: tableContainerRef.set,
-        setRowRef: rowRef.set,
+        tableContainerRef,
+        rowRef,
+        rowHeight,
       }}
     >
       {props.children}

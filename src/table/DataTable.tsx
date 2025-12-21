@@ -1,3 +1,4 @@
+import { createVirtualizer } from "@tanstack/solid-virtual";
 import {
   Binary,
   Braces,
@@ -10,8 +11,10 @@ import {
 } from "lucide-solid";
 import { createSignal, For, onMount, Show } from "solid-js";
 import z from "zod";
+import { createWatcher } from "@/commands/createWatcher";
 import { message } from "@/commands/Messages";
 import { useRegisterKeybindCommandOnMount } from "@/keybinds/useRegisterKeybindCommand";
+import { cn } from "@/lib/cn";
 import type { PostgresDataType } from "@/useTableStructure";
 import type { Cell } from "./Cell";
 import type { Column } from "./Column";
@@ -54,7 +57,7 @@ function ColumnHeader(props: { column: Column }) {
   const DataTypeIcon = getDataTypeIcon(props.column.rawType);
 
   return (
-    <th class="px-3 py-2 text-left font-medium text-base text-zinc-600">
+    <div class="px-3 py-2 text-left font-medium text-base text-zinc-600">
       <div class="flex items-center gap-1.5">
         <Show when={props.column.isPrimary}>
           <Key class="h-3.5 w-3.5 text-amber-500" />
@@ -68,7 +71,7 @@ function ColumnHeader(props: { column: Column }) {
           <span class="font-semibold text-blue-400 text-xs">?</span>
         </Show>
       </div>
-    </th>
+    </div>
   );
 }
 
@@ -90,11 +93,9 @@ function TableRow(props: {
   };
 
   return (
-    <tr
+    <div
       ref={props.ref}
-      classList={{
-        "bg-red-500/10 line-through": isDeleted(),
-      }}
+      class={cn("bg-white", isDeleted() && "bg-red-500/10 line-through")}
     >
       <For each={props.row.getCells()}>
         {(cell) => (
@@ -105,7 +106,7 @@ function TableRow(props: {
           />
         )}
       </For>
-    </tr>
+    </div>
   );
 }
 
@@ -114,10 +115,32 @@ export function DataTable(props: { reload: () => void }) {
     currentCell,
     visualSelection,
     getTable,
-    setTableContainerRef,
-    setRowRef,
+    tableContainerRef,
+    numberOfVisibleRows: visibleRows,
+    rowRef,
+    rowHeight,
   } = useTableEditorContext();
   const [openedCell, setOpenedCell] = createSignal<Cell>();
+
+  const virtualizer = createVirtualizer({
+    get count() {
+      return getTable().getRows().length;
+    },
+    getScrollElement: () => tableContainerRef.get(),
+    estimateSize: () => rowHeight(),
+    get overscan() {
+      return Math.round(visibleRows() / 2);
+    },
+  });
+
+  createWatcher(
+    () => currentCell()?.getRow().index,
+    (rowIndex) => {
+      if (rowIndex.next !== undefined) {
+        virtualizer.scrollToIndex(rowIndex.next, { align: "auto" });
+      }
+    },
+  );
 
   useRegisterKeybindCommandOnMount({
     command: "ReloadTable",
@@ -167,28 +190,33 @@ export function DataTable(props: { reload: () => void }) {
   });
 
   return (
-    <div ref={setTableContainerRef} class="overflow-y-auto bg-zinc-50">
-      <table class="w-full border-separate border-spacing-0">
-        <thead class="sticky top-0 z-10 bg-zinc-100/95 backdrop-blur-sm">
-          <tr class="border-zinc-300 border-b">
-            <For each={getTable().getColumns()}>
-              {(column) => <ColumnHeader column={column} />}
-            </For>
-          </tr>
-        </thead>
-        <tbody class="bg-white">
-          <For each={getTable().getRows()}>
-            {(row, index) => (
+    <div ref={tableContainerRef.set} class="overflow-auto bg-zinc-50">
+      <div
+        class="relative grid bg-white"
+        style={{
+          height: `${virtualizer.getTotalSize()}px`,
+          "grid-template-columns": `repeat(${getTable().getColumns().length}, minmax(150px, auto))`,
+        }}
+      >
+        <For each={getTable().getColumns()}>
+          {(column) => <ColumnHeader column={column} />}
+        </For>
+        <For each={virtualizer.getVirtualItems()}>
+          {(virtualRow) => {
+            const row = getTable().getRows()[virtualRow.index];
+            if (!row) return null;
+
+            return (
               <TableRow
-                ref={index() === 0 ? setRowRef : undefined}
+                ref={virtualRow.index === 0 ? rowRef.set : undefined}
                 row={row}
                 openedCell={openedCell()}
                 clearOpenedCell={() => setOpenedCell(undefined)}
               />
-            )}
-          </For>
-        </tbody>
-      </table>
+            );
+          }}
+        </For>
+      </div>
     </div>
   );
 }

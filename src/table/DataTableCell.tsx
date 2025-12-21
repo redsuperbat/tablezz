@@ -6,7 +6,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/cn";
-import { useIntersectionScroll } from "@/lib/useIntersectionScroll";
 import type { Cell } from "./Cell";
 import { useTableEditorContext } from "./DataTableProvider";
 
@@ -38,8 +37,6 @@ export function TableCell(props: {
     props.cell.setRenderer(() => forceRerender({}));
   });
 
-  const ref = useIntersectionScroll<HTMLTableCellElement>(isCurrent);
-
   const isOpened = () => props.cell.equals(props.openedCell) && isCurrent();
 
   const cellToString = () => {
@@ -58,10 +55,9 @@ export function TableCell(props: {
   };
 
   return (
-    <td
-      ref={ref}
+    <div
       class={cn(
-        "scroll-mt-12 border-zinc-200 border-t border-l px-3 py-1.5 text-sm transition-colors last:border-r",
+        "scroll-mt-12 border-zinc-200 border-t border-l px-3 py-1.5 text-sm last:border-r",
         isActive() && "bg-indigo-500/15",
         isCurrent() &&
           "-outline-offset-1 bg-blue-500/20 outline-1 outline-blue-500",
@@ -81,6 +77,6 @@ export function TableCell(props: {
           {displayCell()}
         </PopoverContent>
       </Popover>
-    </td>
+    </div>
   );
 }
