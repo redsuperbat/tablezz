@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { KeybindChecker, type KeyEvent } from "./KeybindChecker.ts";
-import { KeybindParser } from "./KeybindParser.ts";
+import { KeybindParser, type KeyNode } from "./KeybindParser.ts";
 import { KeybindTokenizer } from "./KeybindTokenizer";
 
 const check = ({
@@ -22,7 +22,7 @@ const check = ({
       code: "",
       ...event,
     },
-    "Space",
+    { key: "Space", kind: "key" } as KeyNode,
   );
   const expression = parser.parseKeyExpression();
 

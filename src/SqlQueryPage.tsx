@@ -90,12 +90,12 @@ export function SqlQueryPage(props: {
         <Match when={isLoading()}>
           <LoadingSpinner />
         </Match>
-        <Match when={rowsQuery.data}>
+        <Match keyed when={rowsQuery.data}>
           {(rows) => (
             <DataTableProvider
               reload={rowsQuery.refetch}
               structure={structure()}
-              rows={rows()}
+              rows={rows}
               name={tableName() || "Query Result"}
               initialRowIndex={props.initialRowIndex}
               initialColumnIndex={props.initialColumnIndex}
