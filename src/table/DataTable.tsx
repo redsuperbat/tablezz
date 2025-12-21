@@ -58,7 +58,7 @@ function ColumnHeader(props: { column: Column }) {
   const DataTypeIcon = getDataTypeIcon(props.column.rawType);
 
   return (
-    <div class="px-3 py-2 text-left font-medium text-base text-zinc-600">
+    <div class="whitespace-nowrap px-3 py-2 text-left font-medium text-base text-zinc-600">
       <div class="flex items-center gap-1.5">
         <Show when={props.column.isPrimary}>
           <Key class="h-3.5 w-3.5 text-amber-500" />
@@ -198,9 +198,9 @@ export function DataTable(props: { reload: () => void }) {
   return (
     <div ref={tableContainerRef.set} class="overflow-auto bg-zinc-50">
       <div
-        class="relative grid bg-white"
+        class="relative grid w-max min-w-full bg-white"
         style={{
-          "grid-template-columns": `repeat(${getTable().getColumns().length}, minmax(150px, auto))`,
+          "grid-template-columns": `repeat(${getTable().getColumns().length}, minmax(150px, max-content))`,
           "padding-top": `${virtualizer.getVirtualItems()[0]?.start ?? 0}px`,
           "margin-bottom": `${virtualizer.getTotalSize() - (virtualizer.getVirtualItems().at(-1)?.end ?? 0)}px`,
         }}
@@ -229,7 +229,7 @@ export function DataTable(props: { reload: () => void }) {
                   display: "grid",
                   "grid-template-columns": "subgrid",
                   "grid-column": "1 / -1",
-                  height: `${virtualRow.size}`,
+                  height: `${virtualRow.size}px`,
                 }}
                 ref={virtualRow.index === 0 ? rowRef.set : undefined}
                 row={row}
