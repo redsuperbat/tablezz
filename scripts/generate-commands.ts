@@ -159,8 +159,9 @@ async function main() {
   for (const entry of uniqueEntries) {
     const description = entry.description ?? "";
     const keybind = entry.keybindExpression
-      ? `\`${entry.keybindExpression}\``
+      ? `\`${entry.keybindExpression.replace(/|/g, "\\|")}\``
       : "-";
+
     const sourceLink = `[${entry.sourceFile}:${entry.line}](${GITHUB_REPO}/blob/${GITHUB_BRANCH}/${entry.sourceFile}#L${entry.line})`;
 
     lines.push(
