@@ -18,6 +18,10 @@ For more configuration options see [the definition file](./config/definition.md)
 
 Tablezz uses a powerful keybind expression system inspired by Vim. Keybinds can be customized in your configuration file.
 
+### Available Commands
+
+For a complete auto-generated list of all commands with source locations and default keybinds, see [config/commands.md](./config/commands.md).
+
 ### Syntax
 
 Keybind expressions support the following operators:
@@ -77,7 +81,7 @@ You can change the leader key to any valid expression:
 
 ### Key Sequences
 
-Use `>` to create multi-key sequences (Vim-style):
+Use `>` to create multi-key sequences:
 
 ```json
 {
@@ -103,33 +107,3 @@ Use `|` to allow multiple keys to trigger the same command:
   }
 }
 ```
-
-### Keybind Formats
-
-Short form (command name only):
-
-```json
-{
-  "keybinds": {
-    "w": "WriteChanges",
-    "y": "SelectionCopyToClipboard"
-  }
-}
-```
-
-Long form (with description):
-
-```json
-{
-  "keybinds": {
-    "Leader > d": {
-      "command": "PickerOpen databases",
-      "description": "Open database picker"
-    }
-  }
-}
-```
-
-### Available Commands
-
-For a complete auto-generated list of all commands with source locations, see [config/commands.md](./config/commands.md).
