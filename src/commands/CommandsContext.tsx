@@ -6,13 +6,15 @@ import {
   type ParentProps,
   useContext,
 } from "solid-js";
-import { type ZodType, z } from "zod";
+import { prettifyError, type ZodType } from "zod";
 import { useConfig } from "@/config/ConfigurationProvider";
+import { iife } from "@/lib/iife";
 import type { Command } from "./Command";
 import { message } from "./Messages";
 import {
   type CommandVariables,
   expandVariables,
+  type ParsedCommand,
   parseCommand,
 } from "./parseCommand";
 
@@ -78,10 +80,24 @@ export function CommandsProvider(props: ParentProps) {
   }
 
   function triggerCommand(commandExpression: string) {
-    const expanded = expandVariables(commandExpression, variables());
-    const { commandName, args } = parseCommand(expanded);
+    const expandedCommandExpression = expandVariables(
+      commandExpression,
+      variables(),
+    );
 
-    if (!commandName) return;
+    const parsedCommands = parseCommand(expandedCommandExpression);
+
+    console.log(parsedCommands);
+
+    iife(async () => {
+      for (const command of parsedCommands) {
+        await executeCommand(command);
+      }
+    });
+  }
+
+  async function executeCommand(parsedCommand: ParsedCommand) {
+    const { args, commandName } = parsedCommand;
 
     const command =
       commands().get(commandName) ??
@@ -100,18 +116,20 @@ export function CommandsProvider(props: ParentProps) {
         const help = argTitle
           ? ` for argument ${argTitle}`
           : ` at index "${index}"`;
-        message.error(`${z.treeifyError(arg.error).errors.join(", ")}${help}`);
+        message.error(`${prettifyError(arg.error)} ${help}`);
         return;
       }
 
       parsedArgs.push(arg.data);
     }
 
-    Promise.resolve(command.action(...parsedArgs)).catch((error) => {
+    try {
+      await command.action(...parsedArgs);
+    } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       message.error(errorMessage);
-    });
+    }
   }
 
   function allCommands() {

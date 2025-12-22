@@ -320,7 +320,10 @@ export function DataTableProvider(props: {
 
       const intersectingCells = selection.getAllIntersectingCells();
 
-      const extension = intersectingCells.at(0)?.getDataType().fileExtension();
+      const extension =
+        intersectingCells.length === 1
+          ? intersectingCells.at(0)?.getDataType().fileExtension()
+          : undefined;
 
       const initialContent = selection.intersectingCellsToString({
         columnDelimiter,

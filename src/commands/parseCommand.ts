@@ -36,10 +36,15 @@ export function expandVariables(
   return result;
 }
 
+export type ParsedCommand = {
+  commandName: string;
+  args: string[];
+};
+
 class CommandParser {
   #index = 0;
   #input: string;
-  #parts: string[] = [];
+  #parts: string[][] = [[]];
   #current = "";
   #inQuotes?: string;
   #escapeNext = false;
@@ -48,7 +53,7 @@ class CommandParser {
     this.#input = input;
   }
 
-  parse() {
+  parse(): ParsedCommand[] {
     while (this.#index < this.#input.length) {
       const char = this.#input[this.#index];
 
@@ -59,6 +64,8 @@ class CommandParser {
         this.#escapeNext = true;
       } else if (char === '"' || char === "'" || char === "`") {
         this.#handleQuote(char);
+      } else if (char === "|") {
+        this.#parts.push([]);
       } else if (char === " " && !this.#inQuotes) {
         this.#pushCurrent();
       } else {
@@ -70,8 +77,13 @@ class CommandParser {
 
     this.#pushCurrent();
 
-    const [commandName, ...args] = this.#parts;
-    return { commandName, args };
+    return this.#parts
+      .map((p) => {
+        const [commandName, ...args] = p;
+        if (!commandName) return;
+        return { commandName, args };
+      })
+      .filter((c) => c !== undefined);
   }
 
   #handleQuote(char: string) {
@@ -86,7 +98,7 @@ class CommandParser {
 
   #pushCurrent() {
     if (this.#current.length > 0) {
-      this.#parts.push(this.#current);
+      this.#parts.at(-1)?.push(this.#current);
       this.#current = "";
     }
   }
