@@ -7,6 +7,12 @@
   src: url("./fonts/FiraCodeNFM-Reg.woff2") format("woff2");
 }
 
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  src: url("./fonts/JetBrainsMonoNerdFont-Regular.woff2") format("woff2");
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

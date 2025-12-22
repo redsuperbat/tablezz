@@ -95,9 +95,10 @@ export const configuration = z
       .meta({
         title: "Terminal Font",
         description: "Font family for the terminal editor",
+        examples: ["Fira Code", "JetBrains Mono"],
       })
       .optional()
-      .default("Fira Code"),
+      .default("JetBrains Mono"),
   })
   .meta({
     title: "Tablezz Configuration",
