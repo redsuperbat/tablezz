@@ -1,6 +1,6 @@
-import { relaunch } from "@tauri-apps/plugin-process";
 import { useQueryClient } from "@tanstack/solid-query";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { relaunch } from "@tauri-apps/plugin-process";
 import z from "zod";
 import { message } from "./commands/Messages";
 import { useRegisterCommandOnMount } from "./commands/useRegisterCommand";

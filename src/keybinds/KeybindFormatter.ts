@@ -10,11 +10,7 @@ import type {
 
 export class KeybindFormatter {
   format(keyExpression: KeyExpression): string {
-    return keyExpression
-      .map((node) => {
-        return this.#formatKeybind(node);
-      })
-      .join(" > ");
+    return keyExpression.map((node) => this.#formatKeybind(node)).join(" > ");
   }
 
   #formatKeybind(node: KeybindNode): string {
