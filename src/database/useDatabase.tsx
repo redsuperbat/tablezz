@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/solid-query";
-import Database from "@tauri-apps/plugin-sql";
 import {
   createContext,
   Match,
@@ -8,11 +7,16 @@ import {
   useContext,
 } from "solid-js";
 import { useConnectionCredentials } from "@/ConnectionCredentialsProvider";
+import * as database from "./database";
 import { useQueryHistory } from "./QueryHistoryProvider";
 
 interface DatabaseConnectionContext {
   select<T = unknown>(query: string, bindValues?: unknown[]): Promise<T>;
-  execute(query: string, bindValues?: unknown[]): Promise<void>;
+  batchExecute(statements: string[]): Promise<void>;
+  tableStructure(
+    schema: string,
+    tableName: string,
+  ): Promise<database.TableStructure[]>;
 }
 
 const DatabaseConnectionContext =
@@ -38,30 +42,42 @@ export function DatabaseConnectionProvider(props: ParentProps) {
   const queryHistory = useQueryHistory();
   const { url } = useConnectionCredentials();
 
-  const databaseQuery = useQuery(() => ({
-    queryFn: () => wrapWithError(Database.load(url())),
+  const connectionQuery = useQuery(() => ({
+    queryFn: () => wrapWithError(database.connect(url())),
     queryKey: ["database", url()],
   }));
 
   return (
     <Switch>
-      <Match when={databaseQuery.isPending}>
+      <Match when={connectionQuery.isPending}>
         <Center>Connecting to database...</Center>
       </Match>
-      <Match when={databaseQuery.error}>
+      <Match when={connectionQuery.error}>
         {(error) => <Center>{error().message}</Center>}
       </Match>
-      <Match when={databaseQuery.data}>
-        {(database) => (
+      <Match when={connectionQuery.data}>
+        {(connection) => (
           <DatabaseConnectionContext.Provider
             value={{
-              async select(query, bindValues) {
-                queryHistory.addEntry({ query, createdAt: new Date() });
-                return wrapWithError(database().select(query, bindValues));
+              tableStructure(schema, tableName) {
+                return wrapWithError(
+                  database.tableStructure(connection(), schema, tableName),
+                );
               },
-              async execute(query, bindValues) {
+              batchExecute(statements) {
+                queryHistory.addEntry({
+                  query: statements.join(`\n`),
+                  createdAt: new Date(),
+                });
+                return wrapWithError(
+                  database.batchExecute(connection(), statements),
+                );
+              },
+              select(query, bindValues) {
                 queryHistory.addEntry({ query, createdAt: new Date() });
-                await wrapWithError(database().execute(query, bindValues));
+                return wrapWithError(
+                  database.select(connection(), query, bindValues ?? []),
+                );
               },
             }}
           >

@@ -6,9 +6,7 @@ use sqlx::Executor;
 use sqlx::Pool;
 use sqlx::{Column, Postgres, Row};
 use tauri::Manager;
-use tauri::{
-    command, plugin::Builder as PluginBuilder, plugin::TauriPlugin, RunEvent, Runtime, State,
-};
+use tauri::{command, App, Runtime, State};
 use tokio::sync::RwLock;
 
 mod decode;
@@ -41,8 +39,6 @@ pub struct DbInstances(pub RwLock<HashMap<String, Pool<Postgres>>>);
 pub enum Error {
     #[error(transparent)]
     Sql(#[from] sqlx::Error),
-    #[error(transparent)]
-    Migration(#[from] sqlx::migrate::MigrateError),
     #[error("database {0} not loaded")]
     DatabaseNotLoaded(String),
     #[error("unsupported datatype: {0}")]
@@ -58,83 +54,34 @@ impl Serialize for Error {
     }
 }
 
-#[derive(Serialize)]
-pub enum LastInsertId {
-    Postgres(()),
-}
-
 #[command]
-pub async fn load(db_instances: State<'_, DbInstances>, db: String) -> Result<String, Error> {
-    let pool = Pool::connect(&db).await?;
-
-    db_instances.0.write().await.insert(db.clone(), pool);
-
-    Ok(db)
-}
-
-/// Allows the database connection(s) to be closed; if no database
-/// name is passed in then _all_ database connection pools will be
-/// shut down.
-#[command]
-pub async fn close(
+pub async fn load(
     db_instances: State<'_, DbInstances>,
-    db: Option<String>,
-) -> Result<bool, Error> {
-    let instances = db_instances.0.read().await;
+    database_url: String,
+) -> Result<String, Error> {
+    let pool = Pool::connect(&database_url).await?;
 
-    let pools = if let Some(db) = db {
-        vec![db]
-    } else {
-        instances.keys().cloned().collect()
-    };
+    db_instances
+        .0
+        .write()
+        .await
+        .insert(database_url.clone(), pool);
 
-    for pool in pools {
-        let db = instances.get(&pool).ok_or(Error::DatabaseNotLoaded(pool))?;
-        db.close().await;
-    }
-
-    Ok(true)
-}
-
-/// Execute a command against the database
-#[command]
-pub async fn execute(
-    db_instances: State<'_, DbInstances>,
-    db: String,
-    query: String,
-    values: Vec<JsonValue>,
-) -> Result<(u64, LastInsertId), Error> {
-    let instances = db_instances.0.read().await;
-
-    let pool = instances.get(&db).ok_or(Error::DatabaseNotLoaded(db))?;
-    let mut query = sqlx::query(&query);
-
-    for value in values {
-        if value.is_null() {
-            query = query.bind(None::<JsonValue>);
-        } else if value.is_string() {
-            query = query.bind(value.as_str().unwrap().to_owned())
-        } else if let Some(number) = value.as_number() {
-            query = query.bind(number.as_f64().unwrap_or_default())
-        } else {
-            query = query.bind(value);
-        }
-    }
-
-    let result = pool.execute(query).await?;
-    Ok((result.rows_affected(), LastInsertId::Postgres(())))
+    Ok(database_url)
 }
 
 #[command]
 pub async fn select(
     db_instances: State<'_, DbInstances>,
-    db: String,
+    database_url: String,
     query: String,
     values: Vec<JsonValue>,
 ) -> Result<Vec<IndexMap<String, JsonValue>>, Error> {
     let instances = db_instances.0.read().await;
 
-    let pool = instances.get(&db).ok_or(Error::DatabaseNotLoaded(db))?;
+    let pool = instances
+        .get(&database_url)
+        .ok_or(Error::DatabaseNotLoaded(database_url))?;
 
     let mut query = sqlx::query(&query);
 
@@ -172,12 +119,14 @@ pub async fn select(
 #[command]
 pub async fn table_structure(
     db_instances: State<'_, DbInstances>,
-    db: String,
+    database_url: String,
     schema: String,
     table_name: String,
 ) -> Result<Vec<ColumnInfo>, Error> {
     let instances = db_instances.0.read().await;
-    let pool = instances.get(&db).ok_or(Error::DatabaseNotLoaded(db))?;
+    let pool = instances
+        .get(&database_url)
+        .ok_or(Error::DatabaseNotLoaded(database_url))?;
 
     // Query using format_type() to get proper type names like "integer[]" instead of "ARRAY"
     let rows = sqlx::query(
@@ -248,11 +197,13 @@ pub async fn table_structure(
 #[command]
 pub async fn batch_execute(
     db_instances: State<'_, DbInstances>,
-    db: String,
+    database_url: String,
     statements: Vec<String>,
 ) -> Result<(), Error> {
     let instances = db_instances.0.read().await;
-    let pool = instances.get(&db).ok_or(Error::DatabaseNotLoaded(db))?;
+    let pool = instances
+        .get(&database_url)
+        .ok_or(Error::DatabaseNotLoaded(database_url))?;
 
     let mut tx = pool.begin().await?;
 
@@ -265,32 +216,15 @@ pub async fn batch_execute(
     Ok(())
 }
 
-pub struct Builder {}
+/// Initialize database state - call from setup
+pub fn init<R: Runtime>(app: &App<R>) {
+    app.manage(DbInstances::default());
+}
 
-impl Builder {
-    pub fn new() -> Self {
-        Self {}
-    }
-
-    pub fn build<R: Runtime>(self) -> TauriPlugin<R> {
-        PluginBuilder::new("sql")
-            .invoke_handler(tauri::generate_handler![load, execute, select, close])
-            .setup(|app, _| {
-                let instances = DbInstances::default();
-                app.manage(instances);
-                Ok(())
-            })
-            .on_event(|app, event| {
-                if let RunEvent::Exit = event {
-                    tauri::async_runtime::block_on(async move {
-                        let instances = &*app.state::<DbInstances>();
-                        let instances = instances.0.read().await;
-                        for value in instances.values() {
-                            value.close().await;
-                        }
-                    });
-                }
-            })
-            .build()
+/// Cleanup connections on app exit
+pub async fn cleanup(db_instances: &DbInstances) {
+    let instances = db_instances.0.read().await;
+    for value in instances.values() {
+        value.close().await;
     }
 }
