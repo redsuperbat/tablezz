@@ -8,8 +8,8 @@ import {
   ToggleLeft,
 } from "lucide-solid";
 import type { JSXElement } from "solid-js";
+import type { PostgresDataType } from "@/database/database";
 import { iife } from "@/lib/iife";
-import type { PostgresDataType } from "@/useTableStructure";
 
 export abstract class DataType {
   abstract toString(data: unknown): string;

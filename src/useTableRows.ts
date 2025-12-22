@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/solid-query";
+import type { TableStructure } from "./database/database";
 import { useDatabase } from "./database/useDatabase";
 import { useSchemaContext } from "./SchemaProvider";
-import type { TableStructure } from "./useTableStructure";
 
 export function useTableRows(
   tableName: () => string,

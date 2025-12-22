@@ -1,4 +1,4 @@
-import type { ForeignKey } from "@/useTableStructure";
+import type { ForeignKey } from "@/database/database";
 import type { DataType } from "./DataType";
 
 export class Column {

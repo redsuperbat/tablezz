@@ -13,6 +13,7 @@ import { useCommandsContext } from "@/commands/CommandsContext";
 import { createWatcher } from "@/commands/createWatcher";
 import { message } from "@/commands/Messages";
 import { useRegisterCommandOnMount } from "@/commands/useRegisterCommand";
+import type { TableStructure } from "@/database/database";
 import { useEditor } from "@/editor/useEditor";
 import { useHopContext } from "@/HopContext";
 import { useRegisterKeybindCommandOnMount } from "@/keybinds/useRegisterKeybindCommand";
@@ -21,7 +22,6 @@ import { createBoundedCounterWithExternalState } from "@/lib/counter";
 import { useRef } from "@/lib/useRef";
 import { useBatchExecute } from "@/useBatchExecute";
 import { useTableCount } from "@/useTableCount";
-import type { ForeignKey, PostgresDataType } from "@/useTableStructure";
 import { Cell } from "./Cell";
 import { Column } from "./Column";
 import { createDataType } from "./DataType";
@@ -48,13 +48,7 @@ export function DataTableProvider(props: {
   schemaName?: string;
   initialRowIndex: number | undefined;
   initialColumnIndex: number | undefined;
-  structure: {
-    columnName: string;
-    dataType: PostgresDataType;
-    isPrimary: boolean;
-    isNullable: boolean;
-    foreignKey: ForeignKey | null;
-  }[];
+  structure: TableStructure[];
   children: JSXElement;
   reload: () => void;
 }) {

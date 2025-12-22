@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/solid-query";
 import { Match, onMount, Switch } from "solid-js";
 import { message } from "./commands/Messages";
+import type { PostgresDataType } from "./database/database";
 import { useDatabase } from "./database/useDatabase";
 import { useHopContext } from "./HopContext";
 import { extractTableFromSql } from "./lib/extractTablesFromSql";
 import { LoadingSpinner } from "./SuspenseBoundary";
 import { DataTable } from "./table/DataTable";
 import { DataTableProvider } from "./table/DataTableProvider";
-import { type PostgresDataType, useTableStructure } from "./useTableStructure";
+import { useTableStructure } from "./useTableStructure";
 
 function PopCurrentHop(props: { errorMessage: string }) {
   const hopContext = useHopContext();
