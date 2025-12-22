@@ -20,23 +20,23 @@ This file is auto-generated. Do not edit manually.
 | DatabaseUrlAdd | Set the database connection URL and save it. | - | [src/ConnectionCredentialsProvider.tsx:67](https://github.com/redsuperbat/tablezz/blob/main/src/ConnectionCredentialsProvider.tsx#L67) |
 | DatabaseUrlClear | Clear the current database connection URL. | - | [src/ConnectionCredentialsProvider.tsx:76](https://github.com/redsuperbat/tablezz/blob/main/src/ConnectionCredentialsProvider.tsx#L76) |
 | DatabaseUrlRemove | Remove a saved database URL from the list. | - | [src/ConnectionCredentialsProvider.tsx:84](https://github.com/redsuperbat/tablezz/blob/main/src/ConnectionCredentialsProvider.tsx#L84) |
-| DeleteRow | Mark the selected rows for deletion. | `d > d` | [src/table/DataTableProvider.tsx:486](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L486) |
-| GoBackward |  | `Control + o` | [src/table/DataTableProvider.tsx:343](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L343) |
-| GoDownHalf | Move down by half a page. | `Control + d` | [src/table/DataTableProvider.tsx:403](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L403) |
-| GoToBottom | Move to the last row of the table. | `G` | [src/table/DataTableProvider.tsx:396](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L396) |
-| GoToForeignKeyRelation | Move to the entry where the cursor is at | `g > d` | [src/table/DataTableProvider.tsx:351](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L351) |
-| GoToLeftEnd | Move the cursor to the left end of the table. | `^` | [src/table/DataTableProvider.tsx:428](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L428) |
-| GoToRightEnd | Move the cursor to the right end of the table. | `$` | [src/table/DataTableProvider.tsx:437](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L437) |
-| GoToTop | Move to the first row of the table. | `g > g` | [src/table/DataTableProvider.tsx:421](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L421) |
-| GoUpHalf | Move up by half a page. | `Control + u` | [src/table/DataTableProvider.tsx:412](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L412) |
+| DeleteRow | Mark the selected rows for deletion. | `d > d` | [src/table/DataTableProvider.tsx:480](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L480) |
+| GoBackward |  | `Control + o` | [src/table/DataTableProvider.tsx:337](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L337) |
+| GoDownHalf | Move down by half a page. | `Control + d` | [src/table/DataTableProvider.tsx:397](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L397) |
+| GoToBottom | Move to the last row of the table. | `G` | [src/table/DataTableProvider.tsx:390](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L390) |
+| GoToForeignKeyRelation | Move to the entry where the cursor is at | `g > d` | [src/table/DataTableProvider.tsx:345](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L345) |
+| GoToLeftEnd | Move the cursor to the left end of the table. | `^` | [src/table/DataTableProvider.tsx:422](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L422) |
+| GoToRightEnd | Move the cursor to the right end of the table. | `$` | [src/table/DataTableProvider.tsx:431](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L431) |
+| GoToTop | Move to the first row of the table. | `g > g` | [src/table/DataTableProvider.tsx:415](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L415) |
+| GoUpHalf | Move up by half a page. | `Control + u` | [src/table/DataTableProvider.tsx:406](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L406) |
 | KeybindHelpSearch | Search keybinds | `/` | [src/keybinds/KeybindHelp.tsx:98](https://github.com/redsuperbat/tablezz/blob/main/src/keybinds/KeybindHelp.tsx#L98) |
 | KeybindHelpSearchStop | Stop searching | `Escape` | [src/keybinds/KeybindHelp.tsx:24](https://github.com/redsuperbat/tablezz/blob/main/src/keybinds/KeybindHelp.tsx#L24) |
 | KeybindHelpShow | Show available keyboard shortcuts. | `?` | [src/keybinds/AllKeybindsHelp.tsx:22](https://github.com/redsuperbat/tablezz/blob/main/src/keybinds/AllKeybindsHelp.tsx#L22) |
-| MoveCellDown | Move the cursor down by one or more cells. | `j` | [src/table/DataTableProvider.tsx:476](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L476) |
-| MoveCellLeft | Move the cursor left by one or more cells. | `h` | [src/table/DataTableProvider.tsx:456](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L456) |
-| MoveCellRight | Move the cursor right by one or more cells. | `l` | [src/table/DataTableProvider.tsx:446](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L446) |
-| MoveCellUp | Move the cursor up by one or more cells. | `k` | [src/table/DataTableProvider.tsx:466](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L466) |
-| OpenCellEditor | Open the cell editor for the current selection. | `c` | [src/table/DataTableProvider.tsx:301](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L301) |
+| MoveCellDown | Move the cursor down by one or more cells. | `j` | [src/table/DataTableProvider.tsx:470](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L470) |
+| MoveCellLeft | Move the cursor left by one or more cells. | `h` | [src/table/DataTableProvider.tsx:450](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L450) |
+| MoveCellRight | Move the cursor right by one or more cells. | `l` | [src/table/DataTableProvider.tsx:440](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L440) |
+| MoveCellUp | Move the cursor up by one or more cells. | `k` | [src/table/DataTableProvider.tsx:460](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L460) |
+| OpenCellEditor | Open the cell editor for the current selection. | `c` | [src/table/DataTableProvider.tsx:295](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L295) |
 | PickerClose | Close the picker dialog. | `Escape` | [src/picker/usePicker.tsx:106](https://github.com/redsuperbat/tablezz/blob/main/src/picker/usePicker.tsx#L106) |
 | PickerOpen | Open the picker to pick items | `Leader > Space` | [src/Picker.tsx:23](https://github.com/redsuperbat/tablezz/blob/main/src/Picker.tsx#L23) |
 | PickerSelect | Select the highlighted item in the picker. | `Enter` | [src/picker/usePicker.tsx:137](https://github.com/redsuperbat/tablezz/blob/main/src/picker/usePicker.tsx#L137) |
@@ -47,10 +47,10 @@ This file is auto-generated. Do not edit manually.
 | SelectionCopyToClipboard | Copy the selected cells to the clipboard. | `y` | [src/table/DataTable.tsx:118](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTable.tsx#L118) |
 | SelectionOpen | Open a cell for inline viewing. | `K` | [src/table/DataTable.tsx:134](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTable.tsx#L134) |
 | SqlExecute | Execute a SQL statement without returning results. | - | [src/GlobalKeybinds.tsx:35](https://github.com/redsuperbat/tablezz/blob/main/src/GlobalKeybinds.tsx#L35) |
-| SqlSelect | Run a custom SQL select query and display the results. | - | [src/table/DataTableProvider.tsx:145](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L145) |
+| SqlSelect | Run a custom SQL select query and display the results. | - | [src/table/DataTableProvider.tsx:139](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L139) |
 | ToggleMaximize | Toggle maximize window. | `Meta + Enter` | [src/GlobalKeybinds.tsx:16](https://github.com/redsuperbat/tablezz/blob/main/src/GlobalKeybinds.tsx#L16) |
-| TruncateTable | Remove all rows from the current table. | - | [src/table/DataTableProvider.tsx:509](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L509) |
-| Undo | Undo latest changes | `u` | [src/table/DataTableProvider.tsx:290](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L290) |
-| VisualModeEnter | Enter visual selection mode. | `v` | [src/table/DataTableProvider.tsx:196](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L196) |
-| VisualModeExit | Exit visual selection mode. | `Escape \| v` | [src/table/DataTableProvider.tsx:196](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L196) |
-| WriteChanges | Write pending cell changes and row deletions to the database. | `w` | [src/table/DataTableProvider.tsx:216](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L216) |
+| TruncateTable | Remove all rows from the current table. | - | [src/table/DataTableProvider.tsx:503](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L503) |
+| Undo | Undo latest changes | `u` | [src/table/DataTableProvider.tsx:284](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L284) |
+| VisualModeEnter | Enter visual selection mode. | `v` | [src/table/DataTableProvider.tsx:190](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L190) |
+| VisualModeExit | Exit visual selection mode. | `Escape \| v` | [src/table/DataTableProvider.tsx:190](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L190) |
+| WriteChanges | Write pending cell changes and row deletions to the database. | `w` | [src/table/DataTableProvider.tsx:210](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L210) |
