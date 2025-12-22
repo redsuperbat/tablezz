@@ -42,13 +42,13 @@ This file is auto-generated. Do not edit manually.
 | PickerSelect | Select the highlighted item in the picker. | `Enter` | [src/picker/usePicker.tsx:137](https://github.com/redsuperbat/tablezz/blob/main/src/picker/usePicker.tsx#L137) |
 | PickerSelectNext | Move to the next item in the picker. | `(Control + j) \| ArrowDown` | [src/picker/usePicker.tsx:159](https://github.com/redsuperbat/tablezz/blob/main/src/picker/usePicker.tsx#L159) |
 | PickerSelectPrev | Move to the previous item in the picker. | `(Control + k) \| ArrowUp` | [src/picker/usePicker.tsx:149](https://github.com/redsuperbat/tablezz/blob/main/src/picker/usePicker.tsx#L149) |
-| ReloadFull | Restart the application. | `Meta + r` | [src/GlobalKeybinds.tsx:26](https://github.com/redsuperbat/tablezz/blob/main/src/GlobalKeybinds.tsx#L26) |
+| ReloadFull | Reload all data from the database. | `Meta + r` | [src/GlobalKeybinds.tsx:25](https://github.com/redsuperbat/tablezz/blob/main/src/GlobalKeybinds.tsx#L25) |
 | ReloadTable | Reload the current table data. | `r` | [src/table/DataTable.tsx:108](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTable.tsx#L108) |
 | SelectionCopyToClipboard | Copy the selected cells to the clipboard. | `y` | [src/table/DataTable.tsx:118](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTable.tsx#L118) |
 | SelectionOpen | Open a cell for inline viewing. | `K` | [src/table/DataTable.tsx:134](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTable.tsx#L134) |
 | SqlExecute | Execute a SQL statement without returning results. | - | [src/GlobalKeybinds.tsx:35](https://github.com/redsuperbat/tablezz/blob/main/src/GlobalKeybinds.tsx#L35) |
 | SqlSelect | Run a custom SQL select query and display the results. | - | [src/table/DataTableProvider.tsx:139](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L139) |
-| ToggleMaximize | Toggle maximize window. | `Meta + Enter` | [src/GlobalKeybinds.tsx:16](https://github.com/redsuperbat/tablezz/blob/main/src/GlobalKeybinds.tsx#L16) |
+| ToggleMaximize | Toggle maximize window. | `Meta + Enter` | [src/GlobalKeybinds.tsx:15](https://github.com/redsuperbat/tablezz/blob/main/src/GlobalKeybinds.tsx#L15) |
 | TruncateTable | Remove all rows from the current table. | - | [src/table/DataTableProvider.tsx:503](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L503) |
 | Undo | Undo latest changes | `u` | [src/table/DataTableProvider.tsx:284](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L284) |
 | VisualModeEnter | Enter visual selection mode. | `v` | [src/table/DataTableProvider.tsx:190](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L190) |
