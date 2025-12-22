@@ -1,3 +1,12 @@
+import {
+  Braces,
+  Brackets,
+  Calendar,
+  CaseLower,
+  Sigma,
+  SplinePointer,
+  ToggleLeft,
+} from "lucide-solid";
 import type { JSXElement } from "solid-js";
 import { iife } from "@/lib/iife";
 import type { PostgresDataType } from "@/useTableStructure";
@@ -7,6 +16,10 @@ export abstract class DataType {
   abstract cellRender(data: unknown): JSXElement;
   abstract fromString(value: string): unknown;
   abstract toSqlValue(data: unknown): string;
+
+  icon(_className: string): JSXElement {
+    return null;
+  }
 
   fileExtension(): string {
     return ".txt";
@@ -29,6 +42,10 @@ class JsonDataType extends DataType {
 
   toSqlValue(data: unknown): string {
     return `'${JSON.stringify(data)}'`;
+  }
+
+  override icon(className: string): JSXElement {
+    return <Braces class={className} />;
   }
 
   override fileExtension(): string {
@@ -62,14 +79,24 @@ class ArrayDataType extends DataType {
     return `ARRAY[${data.map((d) => this.#elementType.toSqlValue(d)).join(",")}]`;
   }
 
+  override icon(className: string): JSXElement {
+    return (
+      <>
+        {this.#elementType.icon(className)}
+        <Brackets class={className} />
+      </>
+    );
+  }
+
   fromString(value: string): unknown[] {
-    if (value.startsWith("{") && value.endsWith("}")) {
-      const inner = value.slice(1, -1);
-      if (inner === "") return [];
-      return inner.split(",").map((v) => this.#elementType.fromString(v));
+    if (!value.startsWith("{") || !value.endsWith("}")) {
+      throw new Error("Malformed array data, must start and end with {}");
     }
 
-    throw new Error("Malformed array data");
+    const inner = value.slice(1, -1);
+    if (inner === "") return [];
+
+    return inner.split(",").map((v) => this.#elementType.fromString(v.trim()));
   }
 }
 
@@ -113,25 +140,37 @@ class WithNull extends DataType {
     return this.#inner.fromString(value);
   }
 
+  override icon(className: string): JSXElement {
+    return this.#inner.icon(className);
+  }
+
   override fileExtension(): string {
     return this.#inner.fileExtension();
   }
 }
 
 class NumberDataType extends DataType {
+  #assertNumber(data: unknown): asserts data is number {
+    if (typeof data !== "number") {
+      throw new Error("Number data type was not of type number");
+    }
+  }
+
   cellRender(data: unknown): JSXElement {
     return this.toString(data);
   }
 
   toString(data: unknown): string {
-    if (typeof data !== "number") {
-      throw new Error(`Invalid data type for number: ${typeof data}`);
-    }
+    this.#assertNumber(data);
     return data.toString();
   }
 
   fromString(value: string): unknown {
     return Number(value);
+  }
+
+  override icon(className: string): JSXElement {
+    return <Sigma class={className} />;
   }
 
   toSqlValue(data: unknown): string {
@@ -140,23 +179,50 @@ class NumberDataType extends DataType {
 }
 
 class TextDataType extends DataType {
-  cellRender(data: unknown): JSXElement {
-    return this.toString(data);
+  #assertString(data: unknown): asserts data is string {
+    if (typeof data !== "string") {
+      throw new Error("Value is not string");
+    }
   }
 
-  toString(data: unknown): string {
-    if (typeof data !== "string") {
-      throw new Error(`Invalid data type for text: ${typeof data}`);
-    }
+  #quote(data: string) {
+    return `'${data}'`;
+  }
+
+  cellRender(data: unknown): JSXElement {
+    this.#assertString(data);
     return data;
   }
 
+  toString(data: unknown): string {
+    this.#assertString(data);
+    return this.#quote(data);
+  }
+
   fromString(value: string): unknown {
-    return value;
+    if (!value.endsWith("'") || !value.startsWith("'")) {
+      throw new Error("Invalid string, must start or end with single quotes");
+    }
+
+    // remove quotes
+    return value.slice(1, -1);
   }
 
   toSqlValue(data: unknown): string {
-    return `'${this.toString(data)}'`;
+    this.#assertString(data);
+    return this.#quote(data);
+  }
+
+  override icon(className: string): JSXElement {
+    return <CaseLower class={className} />;
+  }
+}
+
+// Treat the date data type as a textual format
+// for now when serializing and editing
+class DateDataType extends TextDataType {
+  override icon(className: string): JSXElement {
+    return <Calendar class={className} />;
   }
 }
 
@@ -191,6 +257,10 @@ class VectorDataType extends DataType {
   toSqlValue(): string {
     throw new Error("Editing vector data is not supported");
   }
+
+  override icon(className: string): JSXElement {
+    return <SplinePointer class={className} />;
+  }
 }
 
 class DefaultDataType extends DataType {
@@ -208,6 +278,12 @@ class DefaultDataType extends DataType {
 
   toSqlValue(data: unknown): string {
     return this.toString(data);
+  }
+}
+
+class BooleanDataType extends DefaultDataType {
+  override icon(className: string): JSXElement {
+    return <ToggleLeft class={className} />;
   }
 }
 
@@ -230,7 +306,6 @@ export function createDataType(
       case "jsonb":
         return new JsonDataType();
 
-      // Treat dates as text for now
       case "date":
       case "time":
       case "time without time zone":
@@ -238,10 +313,16 @@ export function createDataType(
       case "timestamp(3)":
       case "timestamp(3) without time zone":
       case "timestamp(3) with time zone":
+        return new DateDataType();
+
       case "uuid":
       case "text":
+      case "varchar":
+      case "character varying":
+      case "char":
         return new TextDataType();
 
+      case "decimal":
       case "integer":
       case "numeric":
       case "bigint":
@@ -250,6 +331,8 @@ export function createDataType(
 
       case "vector":
         return new VectorDataType();
+      case "boolean":
+        return new BooleanDataType();
 
       default:
         return new DefaultDataType();

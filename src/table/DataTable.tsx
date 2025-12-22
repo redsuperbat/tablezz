@@ -1,14 +1,5 @@
 import { createVirtualizer } from "@tanstack/solid-virtual";
-import {
-  Binary,
-  Braces,
-  Calendar,
-  Hash,
-  Key,
-  Link2,
-  List,
-  Type,
-} from "lucide-solid";
+import { Key, Link2 } from "lucide-solid";
 import { createSignal, For, onMount, Show } from "solid-js";
 import type { JSX } from "solid-js/jsx-runtime";
 import z from "zod";
@@ -16,47 +7,13 @@ import { createWatcher } from "@/commands/createWatcher";
 import { message } from "@/commands/Messages";
 import { useRegisterKeybindCommandOnMount } from "@/keybinds/useRegisterKeybindCommand";
 import { cn } from "@/lib/cn";
-import type { PostgresDataType } from "@/useTableStructure";
 import type { Cell } from "./Cell";
 import type { Column } from "./Column";
 import { TableCell } from "./DataTableCell";
 import { useTableEditorContext } from "./DataTableProvider";
 import type { Row } from "./Row";
 
-function getDataTypeIcon(dataType: PostgresDataType) {
-  const isArray = dataType.endsWith("[]");
-
-  if (isArray) {
-    return List;
-  }
-
-  switch (dataType) {
-    case "json":
-    case "jsonb":
-      return Braces;
-    case "integer":
-    case "numeric":
-    case "bigint":
-    case "smallint":
-      return Hash;
-    case "date":
-    case "time":
-    case "time without time zone":
-    case "time with time zone":
-    case "timestamp(3)":
-    case "timestamp(3) without time zone":
-    case "timestamp(3) with time zone":
-      return Calendar;
-    case "vector":
-      return Binary;
-    default:
-      return Type;
-  }
-}
-
 function ColumnHeader(props: { column: Column }) {
-  const DataTypeIcon = getDataTypeIcon(props.column.rawType);
-
   return (
     <div class="whitespace-nowrap px-3 py-2 text-left font-medium text-base text-zinc-600">
       <div class="flex items-center gap-1.5">
@@ -66,7 +23,7 @@ function ColumnHeader(props: { column: Column }) {
         <Show when={props.column.foreignKey}>
           <Link2 class="h-3.5 w-3.5 text-blue-500" />
         </Show>
-        <DataTypeIcon class="h-3.5 w-3.5 text-zinc-400" />
+        {props.column.getDataType().icon("h-3.5 w-3.5 text-zinc-400")}
         <span>{props.column.name}</span>
         <Show when={props.column.isNullable}>
           <span class="font-semibold text-blue-400 text-xs">?</span>

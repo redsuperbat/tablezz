@@ -35,6 +35,7 @@ export function SqlQueryPage(props: {
   const extractedTable = () => extractTableFromSql(props.query);
 
   const tableName = () => extractedTable()?.table ?? "";
+  const schemaName = () => extractedTable()?.schema ?? "";
 
   const structureQuery = useTableStructure(tableName);
 
@@ -96,7 +97,8 @@ export function SqlQueryPage(props: {
               reload={rowsQuery.refetch}
               structure={structure()}
               rows={rows}
-              name={tableName() || "Query Result"}
+              tableName={tableName()}
+              schemaName={schemaName()}
               initialRowIndex={props.initialRowIndex}
               initialColumnIndex={props.initialColumnIndex}
             >

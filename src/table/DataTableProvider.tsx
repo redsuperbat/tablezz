@@ -44,7 +44,8 @@ const TableEditorContext = createContext<TableEditorContext | null>(null);
 
 export function DataTableProvider(props: {
   rows: unknown[];
-  name: string;
+  tableName: string;
+  schemaName?: string;
   initialRowIndex: number | undefined;
   initialColumnIndex: number | undefined;
   structure: {
@@ -68,7 +69,6 @@ export function DataTableProvider(props: {
           isNullable: c.isNullable,
           foreignKey: c.foreignKey,
           dataType: createDataType(c.dataType, c.isNullable),
-          rawType: c.dataType,
           index,
         }),
     ),
@@ -79,18 +79,12 @@ export function DataTableProvider(props: {
       const cells = Object.entries(row as object)
         .values()
         .map(([name, data]) => {
-          const column = columns().find((c) => c.name === name);
-
-          if (!column) {
-            return;
-          }
-
           return new Cell({
             // We lazily self reference here for convenience
             // these functions never recurse indefinitely since there is
             // a cache layer handling base cases
             getTable: () => getTable(),
-            getColumn: () => column,
+            getColumn: () => columns().find((c) => c.name === name) as Column,
             getRow: () => rows().at(rowIndex) as Row,
             data,
           });
@@ -103,7 +97,12 @@ export function DataTableProvider(props: {
   });
 
   const getTable = createMemo(
-    () => new Table({ rows: rows(), columns: columns(), name: props.name }),
+    () =>
+      new Table({
+        rows: rows(),
+        columns: columns(),
+        name: props.tableName,
+      }),
   );
 
   const undoTree = new UndoTree();
@@ -244,13 +243,13 @@ export function DataTableProvider(props: {
 
         if (primaryKeys.length === 0) {
           message.error(
-            `Can't update, no primary key in table "${props.name}"`,
+            `Can't update, no primary key in table "${props.tableName}"`,
           );
           continue;
         }
 
         statements.push(
-          `UPDATE "${props.name}" SET "${columnName}" = ${cell.toSqlValue()} WHERE ${primaryKeys.map((p) => `"${p.columnName}" = ${p.value}`).join(" AND ")}`,
+          `UPDATE "${props.tableName}" SET "${columnName}" = ${cell.toSqlValue()} WHERE ${primaryKeys.map((p) => `"${p.columnName}" = ${p.value}`).join(" AND ")}`,
         );
       }
 
@@ -265,13 +264,13 @@ export function DataTableProvider(props: {
 
         if (primaryKeys.length === 0) {
           message.error(
-            `Can't delete row, no primary key in table "${props.name}"`,
+            `Can't delete row, no primary key in table "${props.tableName}"`,
           );
           continue;
         }
 
         statements.push(
-          `DELETE FROM "${props.name}" WHERE ${primaryKeys.map((p) => `"${p.columnName}" = ${p.value}`).join(" AND ")}`,
+          `DELETE FROM "${props.tableName}" WHERE ${primaryKeys.map((p) => `"${p.columnName}" = ${p.value}`).join(" AND ")}`,
         );
       }
 
@@ -378,18 +377,19 @@ export function DataTableProvider(props: {
     },
   });
 
-  const count = useTableCount(() => props.name);
+  const count = useTableCount(() => props.tableName);
   const commandContext = useCommandsContext();
 
   createWatcher(count, ({ next }) =>
     commandContext.addCommandLineSuffix(
       <div class="text-zinc-500">
-        {props.name} · {props.rows.length}/{next} rows
+        {props.tableName} · {props.rows.length}/{next} rows
       </div>,
     ),
   );
 
-  commandContext.registerVariable("%", () => `"${props.name}"`);
+  commandContext.registerVariable("%", () => `"${props.tableName}"`);
+  commandContext.registerVariable("%", () => `"${props.tableName}"`);
   commandContext.registerVariable("&", () => currentCell()?.toSqlValue() ?? "");
   commandContext.registerVariable(
     "@",
