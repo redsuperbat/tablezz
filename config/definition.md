@@ -176,5 +176,15 @@ Font family for the terminal editor
 The default value is:
 
 ```json
+"JetBrains Mono"
+```
+
+### terminalFont Examples
+
+```json
 "Fira Code"
+```
+
+```json
+"JetBrains Mono"
 ```

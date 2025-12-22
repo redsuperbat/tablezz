@@ -81,9 +81,13 @@
       "type": "string"
     },
     "terminalFont": {
-      "default": "Fira Code",
+      "default": "JetBrains Mono",
       "title": "Terminal Font",
       "description": "Font family for the terminal editor",
+      "examples": [
+        "Fira Code",
+        "JetBrains Mono"
+      ],
       "type": "string"
     }
   }
