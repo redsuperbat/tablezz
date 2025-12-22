@@ -12,7 +12,6 @@
     "fs:allow-home-read-recursive",
     "fs:allow-home-meta-recursive",
     "fs:allow-watch",
-    "fs:scope-home",
-    "process:allow-restart"
+    "fs:scope-home"
   ]
 }

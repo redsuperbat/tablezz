@@ -1,6 +1,5 @@
 import { useQueryClient } from "@tanstack/solid-query";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { relaunch } from "@tauri-apps/plugin-process";
 import z from "zod";
 import { message } from "./commands/Messages";
 import { useRegisterCommandOnMount } from "./commands/useRegisterCommand";
@@ -26,9 +25,10 @@ export function GlobalKeybinds() {
   useRegisterKeybindCommandOnMount({
     keybindExpression: "Meta + r",
     command: "ReloadFull",
-    description: "Restart the application.",
-    async action() {
-      await relaunch();
+    description: "Reload all data from the database.",
+    action() {
+      queryClient.resetQueries();
+      message.info("Reloaded all data");
     },
   });
 
