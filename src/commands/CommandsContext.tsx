@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/solid-query";
 import {
   type Accessor,
   createContext,
@@ -42,6 +43,7 @@ export function useCommandsContext() {
 }
 
 export function CommandsProvider(props: ParentProps) {
+  const queryClient = useQueryClient();
   const { config } = useConfig();
   const [commands, setCommands] = createSignal(new Map<string, Command>());
   const [suffix, setSuffix] = createSignal<JSXElement>();
@@ -79,6 +81,23 @@ export function CommandsProvider(props: ParentProps) {
     });
   }
 
+  const nextTick = () => new Promise<void>((r) => queueMicrotask(r));
+  function waitForQueries(): Promise<void> {
+    return new Promise((resolve) => {
+      if (queryClient.isFetching() === 0) {
+        resolve();
+        return;
+      }
+
+      const unsubscribe = queryClient.getQueryCache().subscribe(() => {
+        if (queryClient.isFetching() === 0) {
+          unsubscribe();
+          resolve();
+        }
+      });
+    });
+  }
+
   function triggerCommand(commandExpression: string) {
     const expandedCommandExpression = expandVariables(
       commandExpression,
@@ -91,6 +110,10 @@ export function CommandsProvider(props: ParentProps) {
 
     iife(async () => {
       for (const command of parsedCommands) {
+        // wait for pending queries to the database
+        await waitForQueries();
+        // wait solid to trigger onMount
+        await nextTick();
         await executeCommand(command);
       }
     });

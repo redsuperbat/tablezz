@@ -143,8 +143,8 @@ export function DataTableProvider(props: {
   });
 
   useRegisterCommandOnMount({
-    command: "SqlQuery",
-    description: "Run a custom SQL query and display the results.",
+    command: "SqlSelect",
+    description: "Run a custom SQL select query and display the results.",
     actionArgs: [z.string().min(1).meta({ title: "<sql>" }).optional()],
     async action(sql) {
       if (sql === undefined) {
