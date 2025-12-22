@@ -83,8 +83,7 @@ Use `>` to create multi-key sequences (Vim-style):
 {
   "keybinds": {
     "g > g": "GoToTop",
-    "d > d": "DeleteRow",
-    "s > u": "SelectionUndo"
+    "d > d": "DeleteRow"
   }
 }
 ```
@@ -158,8 +157,7 @@ Long form (with description):
 | `OpenCellEditor` | `c`             | Open terminal editor for cell     |
 | `SelectionOpen`  | `K`             | Open cell for inline viewing      |
 | `DeleteRow`      | `d > d`         | Mark row(s) for deletion          |
-| `Undo`           | `u`             | Undo latest changes               |
-| `SelectionUndo`  | `s > u`         | Undo changes in selected cells    |
+| `Undo`           | `u`             | Undo latest change                |
 
 #### Visual Selection
 

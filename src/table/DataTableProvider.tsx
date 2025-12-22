@@ -296,17 +296,6 @@ export function DataTableProvider(props: {
     },
   });
 
-  useRegisterKeybindCommandOnMount({
-    command: "SelectionUndo",
-    description: "Undo changes in the selected cells.",
-    keybindExpression: "s > u",
-    action() {
-      const selection = visualSelection();
-      selection.getAllIntersectingCells().forEach((c) => c.undo());
-      selection.exit();
-    },
-  });
-
   const editor = useEditor();
 
   useRegisterKeybindCommandOnMount({
