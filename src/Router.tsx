@@ -1,8 +1,11 @@
 import { createEffect, createSignal, Match, Switch } from "solid-js";
 import { createSolidContext } from "./createSolidContext";
 import { useHopContext } from "./HopContext";
+import { MessagesPage } from "./MessagesPage";
 import { SqlQueryPage } from "./SqlQueryPage";
 import { usePickTable } from "./usePickTable";
+
+export const MESSAGES_QUERY = "__messages__";
 
 export const [RouteProvider, , useRouter] = createSolidContext(() => {
   const routes = ["table", "editor"] as const;
@@ -29,6 +32,10 @@ export function Router() {
     <Switch>
       <Match when={!hopContext.current()}>
         <InitialQuery />
+      </Match>
+
+      <Match when={hopContext.current()?.query === MESSAGES_QUERY}>
+        <MessagesPage />
       </Match>
 
       <Match keyed when={hopContext.current()}>

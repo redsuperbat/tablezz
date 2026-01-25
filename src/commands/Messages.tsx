@@ -1,34 +1,60 @@
 import { Toast, toaster } from "@kobalte/core/toast";
+import { createSignal } from "solid-js";
 
-function info(message: string) {
+export type MessageType = "info" | "success" | "error";
+
+export interface StoredMessage {
+  type: MessageType;
+  text: string;
+  timestamp: Date;
+}
+
+const [messageHistory, setMessageHistory] = createSignal<StoredMessage[]>([]);
+
+function addToHistory(type: MessageType, text: string) {
+  setMessageHistory((prev) => [...prev, { type, text, timestamp: new Date() }]);
+}
+
+function info(text: string) {
+  addToHistory("info", text);
   toaster.clear();
   toaster.show((p) => (
     <Toast toastId={p.toastId} class="text-blue-600">
-      {message}
+      {text}
     </Toast>
   ));
 }
 
-function success(message: string) {
+function success(text: string) {
+  addToHistory("success", text);
   toaster.clear();
   toaster.show((p) => (
     <Toast toastId={p.toastId} class="text-emerald-600">
-      {message}
+      {text}
     </Toast>
   ));
 }
 
-function error(message: string) {
+function error(text: string) {
+  addToHistory("error", text);
   toaster.clear();
   toaster.show((p) => (
     <Toast toastId={p.toastId} class="text-red-600">
-      {message}
+      {text}
     </Toast>
   ));
 }
 
 function clear() {
   toaster.clear();
+}
+
+function getHistory() {
+  return messageHistory();
+}
+
+function clearHistory() {
+  setMessageHistory([]);
 }
 
 export function Messages() {
@@ -44,4 +70,6 @@ export const message = {
   success,
   error,
   clear,
+  getHistory,
+  clearHistory,
 };

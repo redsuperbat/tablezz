@@ -8,11 +8,13 @@ import {
   Show,
   Switch,
 } from "solid-js";
+import { useHopContext } from "@/HopContext";
 import { useRegisterKeybindCommandOnMount } from "@/keybinds/useRegisterKeybindCommand";
 import { useRegisterKeybindToggle } from "@/keybinds/useRegisterKeybindToggle";
 import { cn } from "@/lib/cn";
 import { createBoundedCounter, createCounterWithWrap } from "@/lib/counter";
 import { useIntersectionScroll } from "@/lib/useIntersectionScroll";
+import { MESSAGES_QUERY } from "@/Router";
 import type { Command } from "./Command";
 import { useCommandsContext } from "./CommandsContext";
 import { createWatcher } from "./createWatcher";
@@ -308,6 +310,7 @@ function CommandLineContent(props: {
 
 export function CommandLine() {
   const commandContext = useCommandsContext();
+  const hopContext = useHopContext();
   const [commandHistory, setCommandHistoryArray] = makePersisted(
     createSignal<string[]>([]),
     { name: "commandHistory" },
@@ -321,6 +324,23 @@ export function CommandLine() {
     keybindExpression: ":",
     command: "CommandLineActivate",
     description: "Open the command line.",
+  });
+
+  useRegisterCommandOnMount({
+    command: "Messages",
+    description: "Show all message history",
+    action() {
+      hopContext.add({ query: MESSAGES_QUERY });
+    },
+  });
+
+  useRegisterCommandOnMount({
+    command: "MessagesClear",
+    description: "Clear all message history",
+    action() {
+      message.clearHistory();
+      message.info("Message history cleared");
+    },
   });
 
   createWatcher(toggle.value, ({ next }) => {
