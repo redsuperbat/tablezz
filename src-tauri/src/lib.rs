@@ -22,6 +22,7 @@ pub fn run() {
             postgres::select,
             postgres::table_structure,
             postgres::batch_execute,
+            postgres::get_table_references,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

@@ -24,6 +24,14 @@ pub struct ForeignKey {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct TableReference {
+    pub source_table: String,
+    pub source_column: String,
+    pub target_column: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ColumnInfo {
     pub column_name: String,
     pub data_type: String,
@@ -214,6 +222,55 @@ pub async fn batch_execute(
     tx.commit().await?;
 
     Ok(())
+}
+
+/// Get tables that reference the given table via foreign keys
+#[command]
+pub async fn get_table_references(
+    db_instances: State<'_, DbInstances>,
+    database_url: String,
+    schema: String,
+    table_name: String,
+) -> Result<Vec<TableReference>, Error> {
+    let instances = db_instances.0.read().await;
+    let pool = instances
+        .get(&database_url)
+        .ok_or(Error::DatabaseNotLoaded(database_url))?;
+
+    let rows = sqlx::query(
+        r#"
+        SELECT
+            source_table.relname AS source_table,
+            source_attr.attname AS source_column,
+            target_attr.attname AS target_column
+        FROM pg_constraint con
+        JOIN pg_class source_table ON source_table.oid = con.conrelid
+        JOIN pg_class target_table ON target_table.oid = con.confrelid
+        JOIN pg_namespace n ON target_table.relnamespace = n.oid
+        JOIN pg_attribute source_attr ON source_attr.attrelid = con.conrelid
+            AND source_attr.attnum = ANY(con.conkey)
+        JOIN pg_attribute target_attr ON target_attr.attrelid = con.confrelid
+            AND target_attr.attnum = ANY(con.confkey)
+        WHERE target_table.relname = $1
+          AND n.nspname = $2
+          AND con.contype = 'f'
+        "#,
+    )
+    .bind(&table_name)
+    .bind(&schema)
+    .fetch_all(pool)
+    .await?;
+
+    let references: Vec<TableReference> = rows
+        .iter()
+        .map(|row| TableReference {
+            source_table: row.get("source_table"),
+            source_column: row.get("source_column"),
+            target_column: row.get("target_column"),
+        })
+        .collect();
+
+    Ok(references)
 }
 
 /// Initialize database state - call from setup
