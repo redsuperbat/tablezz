@@ -381,19 +381,21 @@ export function DataTableProvider(props: {
       const cellColumn = cell.getColumn();
 
       const result = iife(() => {
-        if (cellColumn.isPrimary) {
-          return {
-            targetTable: props.tableName,
-            targetColumn: cellColumn.name,
-            filterValue: cell.toSqlValue(),
-          };
-        }
-
+        // Check foreign key first - if the column is both a PK and FK,
+        // we want to find references to the FK's target table
         const foreignKey = cellColumn.foreignKey;
         if (foreignKey) {
           return {
             targetTable: foreignKey.table,
             targetColumn: foreignKey.column,
+            filterValue: cell.toSqlValue(),
+          };
+        }
+
+        if (cellColumn.isPrimary) {
+          return {
+            targetTable: props.tableName,
+            targetColumn: cellColumn.name,
             filterValue: cell.toSqlValue(),
           };
         }

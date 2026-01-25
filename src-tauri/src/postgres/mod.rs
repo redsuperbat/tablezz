@@ -247,10 +247,11 @@ pub async fn get_table_references(
         JOIN pg_class source_table ON source_table.oid = con.conrelid
         JOIN pg_class target_table ON target_table.oid = con.confrelid
         JOIN pg_namespace n ON target_table.relnamespace = n.oid
+        CROSS JOIN LATERAL unnest(con.conkey, con.confkey) AS cols(source_attnum, target_attnum)
         JOIN pg_attribute source_attr ON source_attr.attrelid = con.conrelid
-            AND source_attr.attnum = ANY(con.conkey)
+            AND source_attr.attnum = cols.source_attnum
         JOIN pg_attribute target_attr ON target_attr.attrelid = con.confrelid
-            AND target_attr.attnum = ANY(con.confkey)
+            AND target_attr.attnum = cols.target_attnum
         WHERE target_table.relname = $1
           AND n.nspname = $2
           AND con.contype = 'f'
