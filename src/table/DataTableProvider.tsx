@@ -582,12 +582,20 @@ export function DataTableProvider(props: {
 
   useRegisterCommandOnMount({
     command: "TruncateTable",
-    description: "Remove all rows from the current table.",
-    actionArgs: [z.string().meta({ title: "<table-name>" })],
-    async action(tableName: string) {
+    description: "Remove all rows from the current table",
+    actionArgs: [
+      z.string().meta({ title: "<table-name>" }),
+      z.enum(["cascade", "c"]).optional().meta({ title: "[cascade]" }),
+    ],
+    async action(tableName, cascade) {
       try {
-        await batchExecute.exec([`TRUNCATE TABLE "${tableName}"`]);
-        message.info(`Truncated table "${tableName}"`);
+        const sql = cascade
+          ? `TRUNCATE TABLE "${tableName}" CASCADE`
+          : `TRUNCATE TABLE "${tableName}"`;
+        await batchExecute.exec([sql]);
+        message.info(
+          `Truncated table "${tableName}"${cascade ? " with cascade" : ""}`,
+        );
       } finally {
         props.reload();
       }
