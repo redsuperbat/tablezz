@@ -14,12 +14,16 @@ import { createWatcher } from "@/commands/createWatcher";
 import { message } from "@/commands/Messages";
 import { useRegisterCommandOnMount } from "@/commands/useRegisterCommand";
 import type { TableStructure } from "@/database/database";
+import { useDatabase } from "@/database/useDatabase";
 import { useEditor } from "@/editor/useEditor";
 import { useHopContext } from "@/HopContext";
 import { useRegisterKeybindCommandOnMount } from "@/keybinds/useRegisterKeybindCommand";
 import { useRegisterKeybindCommandOnConditional } from "@/keybinds/useRegisterKeybindCommandOnConditional";
 import { createBoundedCounterWithExternalState } from "@/lib/counter";
+import { iife } from "@/lib/iife";
+import { invariant } from "@/lib/invariant";
 import { useRef } from "@/lib/useRef";
+import { usePicker } from "@/picker/usePicker";
 import { useBatchExecute } from "@/useBatchExecute";
 import { useTableCount } from "@/useTableCount";
 import { Cell } from "./Cell";
@@ -360,6 +364,80 @@ export function DataTableProvider(props: {
       const query = `SELECT * FROM "${cellColumn.foreignKey.table}" WHERE "${cellColumn.foreignKey.column}" = ${value}`;
 
       hopContext.add({ query });
+    },
+  });
+
+  const db = useDatabase();
+  const picker = usePicker();
+  const schema = () => props.schemaName ?? "public";
+
+  useRegisterKeybindCommandOnMount({
+    command: "GoToReferences",
+    description: "Show tables that reference the current cell's key value",
+    keybindExpression: "g > r",
+    async action() {
+      const cell = currentCell();
+      if (!cell) return;
+      const cellColumn = cell.getColumn();
+
+      const result = iife(() => {
+        if (cellColumn.isPrimary) {
+          return {
+            targetTable: props.tableName,
+            targetColumn: cellColumn.name,
+            filterValue: cell.toSqlValue(),
+          };
+        }
+
+        const foreignKey = cellColumn.foreignKey;
+        if (foreignKey) {
+          return {
+            targetTable: foreignKey.table,
+            targetColumn: foreignKey.column,
+            filterValue: cell.toSqlValue(),
+          };
+        }
+      });
+
+      if (!result) {
+        return;
+      }
+
+      const { filterValue, targetColumn, targetTable } = result;
+      const references = await db.getTableReferences(schema(), targetTable);
+
+      // Filter to references pointing to the target column
+      const relevantReferences = references.filter(
+        (ref) => ref.targetColumn === targetColumn,
+      );
+
+      if (relevantReferences.length === 0) {
+        return;
+      }
+
+      if (relevantReferences.length === 1) {
+        // Single reference - navigate directly
+        const ref = relevantReferences[0];
+        invariant(ref);
+        hopContext.add({
+          query: `SELECT * FROM "${ref.sourceTable}" WHERE "${ref.sourceColumn}" = ${filterValue}`,
+        });
+        return;
+      }
+
+      // Multiple references - show picker
+      const selected = await picker.open({
+        items: relevantReferences.map((ref) => ({
+          value: ref,
+          label: `${ref.sourceTable}.${ref.sourceColumn}`,
+        })),
+      });
+
+      if (!selected) return;
+
+      hopContext.add({
+        query: `SELECT * FROM "${selected.sourceTable}" WHERE "${selected.sourceColumn}" = ${filterValue}`,
+      });
     },
   });
 
