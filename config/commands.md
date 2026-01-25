@@ -50,7 +50,7 @@ This file is auto-generated. Do not edit manually.
 | SqlExecute | Execute a SQL statement without returning results. | - | [src/GlobalKeybinds.tsx:35](https://github.com/redsuperbat/tablezz/blob/main/src/GlobalKeybinds.tsx#L35) |
 | SqlSelect | Run a custom SQL select query and display the results. | - | [src/table/DataTableProvider.tsx:143](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L143) |
 | ToggleMaximize | Toggle maximize window. | `Meta + Enter` | [src/GlobalKeybinds.tsx:15](https://github.com/redsuperbat/tablezz/blob/main/src/GlobalKeybinds.tsx#L15) |
-| TruncateTable | Remove all rows from the current table. | - | [src/table/DataTableProvider.tsx:583](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L583) |
+| TruncateTable | Remove all rows from the current table | - | [src/table/DataTableProvider.tsx:583](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L583) |
 | Undo | Undo latest changes | `u` | [src/table/DataTableProvider.tsx:288](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L288) |
 | VisualModeEnter | Enter visual selection mode. | `v` | [src/table/DataTableProvider.tsx:194](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L194) |
 | VisualModeExit | Exit visual selection mode. | `Escape \| v` | [src/table/DataTableProvider.tsx:194](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L194) |
