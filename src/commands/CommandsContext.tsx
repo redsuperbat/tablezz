@@ -106,8 +106,6 @@ export function CommandsProvider(props: ParentProps) {
 
     const parsedCommands = parseCommand(expandedCommandExpression);
 
-    console.log(parsedCommands);
-
     iife(async () => {
       for (const command of parsedCommands) {
         // wait for pending queries to the database
