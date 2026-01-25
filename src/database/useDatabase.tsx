@@ -17,6 +17,10 @@ interface DatabaseConnectionContext {
     schema: string,
     tableName: string,
   ): Promise<database.TableStructure[]>;
+  getTableReferences(
+    schema: string,
+    tableName: string,
+  ): Promise<database.TableReference[]>;
 }
 
 const DatabaseConnectionContext =
@@ -77,6 +81,11 @@ export function DatabaseConnectionProvider(props: ParentProps) {
                 queryHistory.addEntry({ query, createdAt: new Date() });
                 return wrapWithError(
                   database.select(connection(), query, bindValues ?? []),
+                );
+              },
+              getTableReferences(schema, tableName) {
+                return wrapWithError(
+                  database.getTableReferences(connection(), schema, tableName),
                 );
               },
             }}

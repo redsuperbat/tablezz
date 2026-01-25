@@ -75,6 +75,12 @@ export type ForeignKey = {
   column: string;
 };
 
+export type TableReference = {
+  sourceTable: string;
+  sourceColumn: string;
+  targetColumn: string;
+};
+
 export type TableStructure = {
   columnName: string;
   dataType: PostgresDataType;
@@ -105,5 +111,20 @@ export async function batchExecute(
   await invoke("batch_execute", {
     databaseUrl: connection.url,
     statements,
+  });
+}
+
+/**
+ * Get tables that reference the given table via foreign keys
+ */
+export async function getTableReferences(
+  connection: Connection,
+  schema: string,
+  tableName: string,
+): Promise<TableReference[]> {
+  return invoke<TableReference[]>("get_table_references", {
+    databaseUrl: connection.url,
+    schema,
+    tableName,
   });
 }
