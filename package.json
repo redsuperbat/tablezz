@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tc": "tsc",
-    "test": "vitest --disable-console-intercept",
+    "test": "vitest --run --disable-console-intercept",
     "lint": "biome check .",
     "gen-docs": "node ./scripts/generate-config-schema.ts",
     "gen-commands": "node ./scripts/generate-commands.ts"
