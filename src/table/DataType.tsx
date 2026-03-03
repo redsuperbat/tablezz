@@ -301,6 +301,12 @@ export function createDataType(
       return new ArrayDataType(elementType);
     }
 
+    // Remove the number of varying characters
+    if (/character varying\(\d+\)$/.test(type)) {
+      const baseType = type.replace(/\(\d+\)$/, "");
+      return createDataType(baseType, false);
+    }
+
     switch (type) {
       case "json":
       case "jsonb":
