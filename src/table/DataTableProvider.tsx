@@ -455,7 +455,6 @@ export function DataTableProvider(props: {
   );
 
   commandContext.registerVariable("%", () => `"${props.tableName}"`);
-  commandContext.registerVariable("%", () => `"${props.tableName}"`);
   commandContext.registerVariable("&", () => currentCell()?.toSqlValue() ?? "");
   commandContext.registerVariable(
     "@",

@@ -41,7 +41,7 @@ export class Table {
   getRowOrThrow(index: number) {
     const row = this.getRow(index);
     if (!row) {
-      throw new Error("bad");
+      throw new Error(`No row found at index: ${index}`);
     }
     return row;
   }

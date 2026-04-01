@@ -52,7 +52,7 @@ export function useSelectedTableContext() {
   const ctx = useContext(TableContext);
 
   if (!ctx) {
-    throw new Error("no context found");
+    throw new Error("useSelectedTableContext must be used within a SelectedTableProvider");
   }
 
   return ctx;
