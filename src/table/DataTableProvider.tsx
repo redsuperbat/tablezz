@@ -362,7 +362,7 @@ export function DataTableProvider(props: {
       }
 
       const value = cell.toSqlValue();
-      const query = `SELECT * FROM "${cellColumn.foreignKey.table}" WHERE "${cellColumn.foreignKey.column}" = ${value}`;
+      const query = `SELECT * FROM "${schema()}"."${cellColumn.foreignKey.table}" WHERE "${cellColumn.foreignKey.column}" = ${value}`;
 
       hopContext.add({ query });
     },
@@ -423,7 +423,7 @@ export function DataTableProvider(props: {
         const ref = relevantReferences[0];
         invariant(ref);
         hopContext.add({
-          query: `SELECT * FROM "${ref.sourceTable}" WHERE "${ref.sourceColumn}" = ${filterValue}`,
+          query: `SELECT * FROM "${schema()}"."${ref.sourceTable}" WHERE "${ref.sourceColumn}" = ${filterValue}`,
         });
         return;
       }
@@ -439,7 +439,7 @@ export function DataTableProvider(props: {
       if (!selected) return;
 
       hopContext.add({
-        query: `SELECT * FROM "${selected.sourceTable}" WHERE "${selected.sourceColumn}" = ${filterValue}`,
+        query: `SELECT * FROM "${schema()}"."${selected.sourceTable}" WHERE "${selected.sourceColumn}" = ${filterValue}`,
       });
     },
   });

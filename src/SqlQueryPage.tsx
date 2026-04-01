@@ -36,7 +36,7 @@ export function SqlQueryPage(props: {
   const extractedTable = () => extractTableFromSql(props.query);
 
   const tableName = () => extractedTable()?.table ?? "";
-  const schemaName = () => extractedTable()?.schema ?? "";
+  const schemaName = () => extractedTable()?.schema;
 
   const structureQuery = useTableStructure(tableName);
 
