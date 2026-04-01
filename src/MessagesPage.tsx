@@ -17,6 +17,7 @@ export function MessagesPage() {
       isPrimary: false,
       foreignKey: null,
       isNullable: false,
+      columnDefault: null,
     },
     {
       columnName: "type",
@@ -24,6 +25,7 @@ export function MessagesPage() {
       isPrimary: false,
       foreignKey: null,
       isNullable: false,
+      columnDefault: null,
     },
     {
       columnName: "message",
@@ -31,6 +33,7 @@ export function MessagesPage() {
       isPrimary: false,
       foreignKey: null,
       isNullable: false,
+      columnDefault: null,
     },
   ];
 

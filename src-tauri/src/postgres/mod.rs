@@ -37,6 +37,7 @@ pub struct ColumnInfo {
     pub data_type: String,
     pub is_primary: bool,
     pub is_nullable: bool,
+    pub column_default: Option<String>,
     pub foreign_key: Option<ForeignKey>,
 }
 
@@ -150,6 +151,7 @@ pub async fn table_structure(
                 false
             ) AS is_primary,
             NOT a.attnotnull AS is_nullable,
+            pg_get_expr(d.adbin, d.adrelid) AS column_default,
             (SELECT fc.relname FROM pg_constraint con
              JOIN pg_class fc ON fc.oid = con.confrelid
              WHERE con.conrelid = a.attrelid
@@ -168,6 +170,7 @@ pub async fn table_structure(
         FROM pg_attribute a
         JOIN pg_class c ON a.attrelid = c.oid
         JOIN pg_namespace n ON c.relnamespace = n.oid
+        LEFT JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum
         WHERE c.relname = $1
           AND n.nspname = $2
           AND a.attnum > 0
@@ -191,6 +194,7 @@ pub async fn table_structure(
                 data_type: row.get("data_type"),
                 is_primary: row.get("is_primary"),
                 is_nullable: row.get("is_nullable"),
+                column_default: row.get("column_default"),
                 foreign_key: foreign_table_name
                     .zip(foreign_column_name)
                     .map(|(table, column)| ForeignKey { table, column }),

@@ -77,6 +77,7 @@ export function SqlQueryPage(props: {
       isPrimary: false,
       foreignKey: null,
       isNullable: true,
+      columnDefault: null,
     }));
   };
 

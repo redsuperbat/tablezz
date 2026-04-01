@@ -86,6 +86,7 @@ export type TableStructure = {
   dataType: PostgresDataType;
   isPrimary: boolean;
   isNullable: boolean;
+  columnDefault: string | null;
   foreignKey: ForeignKey | null;
 };
 

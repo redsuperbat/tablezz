@@ -65,6 +65,7 @@ export function DataTableProvider(props: {
           name: c.columnName,
           isPrimary: c.isPrimary,
           isNullable: c.isNullable,
+          columnDefault: c.columnDefault ?? null,
           foreignKey: c.foreignKey,
           dataType: createDataType(c.dataType, c.isNullable),
           index,
