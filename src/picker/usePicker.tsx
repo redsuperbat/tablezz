@@ -1,5 +1,4 @@
-import type { FuzzyMatches, FuzzyResult } from "@nozbe/microfuzz";
-import createFuzzySearch from "@nozbe/microfuzz";
+import Fuse from "fuse.js";
 import {
   createContext,
   createMemo,
@@ -95,6 +94,10 @@ export function usePicker() {
   return context;
 }
 
+interface SearchResult<T> {
+  item: PickerItem<T>;
+}
+
 function PickerContent<T>(props: {
   items: PickerItem<T>[];
   onSelect: (value: T | undefined) => void;
@@ -115,19 +118,19 @@ function PickerContent<T>(props: {
 
   const searchTerm = form.useStore((store) => store.values.searchTerm);
 
-  const filteredItems = (): FuzzyResult<PickerItem<T>>[] => {
+  const filteredItems = (): SearchResult<T>[] => {
     const term = searchTerm();
 
     if (!term) {
-      return props.items.map((i) => ({ item: i, matches: [], score: 0 }));
+      return props.items.map((i) => ({ item: i }));
     }
 
-    const search = createFuzzySearch<PickerItem<T>>(props.items, {
-      key: "label",
+    const fuse = new Fuse(props.items, {
+      keys: ["label"],
+      threshold: 0.4,
     });
 
-    const result = search(term);
-    return result;
+    return fuse.search(term);
   };
 
   const selectedIndex = createCounterWithWrap(() => filteredItems().length - 1);
@@ -203,7 +206,6 @@ function PickerContent<T>(props: {
               index={i()}
               item={result.item}
               selectedIndex={selectedIndex.value()}
-              highlightRanges={result.matches}
             />
           )}
         </For>
@@ -216,7 +218,6 @@ function SearchItem<T>(props: {
   selectedIndex: number;
   index: number;
   item: PickerItem<T>;
-  highlightRanges: FuzzyMatches;
 }) {
   const isActive = createMemo(() => props.selectedIndex === props.index);
   const ref = useIntersectionScroll(isActive);
