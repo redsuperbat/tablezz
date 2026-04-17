@@ -40,11 +40,11 @@ This file is auto-generated. Do not edit manually.
 | MoveCellRight | Move the cursor right by one or more cells. | `l` | [src/table/DataTableProvider.tsx:520](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L520) |
 | MoveCellUp | Move the cursor up by one or more cells. | `k` | [src/table/DataTableProvider.tsx:540](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L540) |
 | OpenCellEditor | Open the cell editor for the current selection. | `c` | [src/table/DataTableProvider.tsx:300](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L300) |
-| PickerClose | Close the picker dialog. | `Escape` | [src/picker/usePicker.tsx:106](https://github.com/redsuperbat/tablezz/blob/main/src/picker/usePicker.tsx#L106) |
+| PickerClose | Close the picker dialog. | `Escape` | [src/picker/usePicker.tsx:109](https://github.com/redsuperbat/tablezz/blob/main/src/picker/usePicker.tsx#L109) |
 | PickerOpen | Open the picker to pick items | `Leader > Space` | [src/Picker.tsx:23](https://github.com/redsuperbat/tablezz/blob/main/src/Picker.tsx#L23) |
-| PickerSelect | Select the highlighted item in the picker. | `Enter` | [src/picker/usePicker.tsx:137](https://github.com/redsuperbat/tablezz/blob/main/src/picker/usePicker.tsx#L137) |
-| PickerSelectNext | Move to the next item in the picker. | `(Control + j) \| ArrowDown` | [src/picker/usePicker.tsx:159](https://github.com/redsuperbat/tablezz/blob/main/src/picker/usePicker.tsx#L159) |
-| PickerSelectPrev | Move to the previous item in the picker. | `(Control + k) \| ArrowUp` | [src/picker/usePicker.tsx:149](https://github.com/redsuperbat/tablezz/blob/main/src/picker/usePicker.tsx#L149) |
+| PickerSelect | Select the highlighted item in the picker. | `Enter` | [src/picker/usePicker.tsx:140](https://github.com/redsuperbat/tablezz/blob/main/src/picker/usePicker.tsx#L140) |
+| PickerSelectNext | Move to the next item in the picker. | `(Control + j) \| ArrowDown` | [src/picker/usePicker.tsx:162](https://github.com/redsuperbat/tablezz/blob/main/src/picker/usePicker.tsx#L162) |
+| PickerSelectPrev | Move to the previous item in the picker. | `(Control + k) \| ArrowUp` | [src/picker/usePicker.tsx:152](https://github.com/redsuperbat/tablezz/blob/main/src/picker/usePicker.tsx#L152) |
 | ReloadFull | Reload all data from the database. | `Meta + r` | [src/GlobalKeybinds.tsx:25](https://github.com/redsuperbat/tablezz/blob/main/src/GlobalKeybinds.tsx#L25) |
 | ReloadTable | Reload the current table data. | `r` | [src/table/DataTable.tsx:108](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTable.tsx#L108) |
 | SelectionCopyToClipboard | Copy the selected cells to the clipboard. | `y` | [src/table/DataTable.tsx:118](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTable.tsx#L118) |
