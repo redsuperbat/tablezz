@@ -196,16 +196,11 @@ class TextDataType extends DataType {
 
   toString(data: unknown): string {
     this.#assertString(data);
-    return this.#quote(data);
+    return data;
   }
 
   fromString(value: string): unknown {
-    if (!value.endsWith("'") || !value.startsWith("'")) {
-      throw new Error("Invalid string, must start or end with single quotes");
-    }
-
-    // remove quotes
-    return value.slice(1, -1);
+    return value;
   }
 
   toSqlValue(data: unknown): string {
