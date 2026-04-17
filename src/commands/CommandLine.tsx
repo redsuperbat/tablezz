@@ -124,6 +124,7 @@ function AutocompleteOption(props: {
 function Autocomplete(props: {
   value: string;
   onValueChanged: (v: string) => void;
+  highlightQuery?: string;
 }) {
   const commandContext = useCommandsContext();
   let input: HTMLInputElement | undefined;
@@ -188,11 +189,48 @@ function Autocomplete(props: {
   return (
     <div class="relative w-full">
       <div class="relative">
-        <div class="pointer-events-none absolute inset-0 overflow-hidden whitespace-nowrap font-mono text-zinc-400">
-          <span class="invisible">{props.value}</span>
+        <Show
+          when={props.highlightQuery}
+          fallback={
+            <div class="pointer-events-none absolute inset-0 overflow-hidden whitespace-nowrap font-mono text-zinc-400">
+              <span class="invisible">{props.value}</span>
+              <span>{ghostText()?.show.slice(props.value.length)}</span>
+            </div>
+          }
+        >
+          {(query) => {
+            const parts = () => {
+              const q = query().toLowerCase();
+              const text = props.value;
+              const idx = text.toLowerCase().indexOf(q);
+              if (idx === -1 || q === "")
+                return [{ text, highlighted: false }];
+              return [
+                { text: text.slice(0, idx), highlighted: false },
+                { text: text.slice(idx, idx + q.length), highlighted: true },
+                { text: text.slice(idx + q.length), highlighted: false },
+              ].filter((p) => p.text.length > 0);
+            };
 
-          <span>{ghostText()?.show.slice(props.value.length)}</span>
-        </div>
+            return (
+              <div class="pointer-events-none absolute inset-0 flex items-center overflow-hidden whitespace-nowrap font-mono">
+                <For each={parts()}>
+                  {(part) => (
+                    <span
+                      class={
+                        part.highlighted
+                          ? "bg-blue-500/20 text-blue-600 rounded-sm"
+                          : "text-transparent"
+                      }
+                    >
+                      {part.text}
+                    </span>
+                  )}
+                </For>
+              </div>
+            );
+          }}
+        </Show>
 
         <Show when={toggleShowAutocomplete.value()}>
           <AutocompleteOptions
@@ -227,12 +265,23 @@ function CommandLineContent(props: {
   onSelect: () => void;
 }) {
   const commandContext = useCommandsContext();
+  const [inputValue, setInputValue] = createSignal("");
+  const [searchQuery, setSearchQuery] = createSignal("");
+  const [historySearchActive, setHistorySearchActive] = createSignal(false);
+
+  const filteredHistory = () => {
+    const query = searchQuery();
+    if (!query) return props.commandHistory();
+    return props.commandHistory().filter((cmd) =>
+      cmd.toLowerCase().includes(query.toLowerCase()),
+    );
+  };
+
   const historyIndex = createBoundedCounter({
     initialValue: -1,
     min: 0,
-    max: () => props.commandHistory().length - 1,
+    max: () => filteredHistory().length - 1,
   });
-  const [inputValue, setInputValue] = createSignal("");
 
   useRegisterKeybindCommandOnMount({
     keybindExpression: "Escape",
@@ -240,6 +289,17 @@ function CommandLineContent(props: {
     description: "Close the command line.",
     action: props.onClose,
     overrideInput: true,
+  });
+
+  useRegisterKeybindCommandOnMount({
+    keybindExpression: "Control + c",
+    command: "CommandLineClear",
+    description: "Clear the command line input.",
+    overrideInput: true,
+    action() {
+      setInputValue("");
+      setHistorySearchActive(false);
+    },
   });
 
   useRegisterCommandOnMount({
@@ -250,18 +310,36 @@ function CommandLineContent(props: {
     },
   });
 
+  function navigateHistory(direction: "up" | "down") {
+    const current = inputValue();
+    if (!historySearchActive()) {
+      setSearchQuery(current);
+      setHistorySearchActive(true);
+      historyIndex.reset();
+      if (direction === "up") {
+        const entry = filteredHistory().at(historyIndex.value());
+        if (entry) setInputValue(entry);
+      }
+      return;
+    }
+
+    if (direction === "up") {
+      historyIndex.increment();
+    } else {
+      historyIndex.decrement();
+    }
+
+    const entry = filteredHistory().at(historyIndex.value());
+    if (entry) setInputValue(entry);
+  }
+
   useRegisterKeybindCommandOnMount({
     keybindExpression: "ArrowDown | Control + j",
     command: "CommandLineNextHistory",
     description: "Navigate to the next command in history.",
     overrideInput: true,
     action() {
-      historyIndex.decrement();
-
-      const history = props.commandHistory().at(historyIndex.value());
-      if (!history) return;
-
-      setInputValue(history);
+      navigateHistory("down");
     },
   });
 
@@ -271,12 +349,7 @@ function CommandLineContent(props: {
     description: "Navigate to the previous command in history.",
     overrideInput: true,
     action() {
-      historyIndex.increment();
-
-      const history = props.commandHistory().at(historyIndex.value());
-      if (!history) return;
-
-      setInputValue(history);
+      navigateHistory("up");
     },
   });
 
@@ -300,10 +373,19 @@ function CommandLineContent(props: {
     overrideInput: true,
   });
 
+  function handleInputChange(v: string) {
+    setInputValue(v);
+    setHistorySearchActive(false);
+  }
+
   return (
     <div class="flex items-center gap-1">
       <span class="font-mono text-zinc-500">:</span>
-      <Autocomplete value={inputValue()} onValueChanged={setInputValue} />
+      <Autocomplete
+        value={inputValue()}
+        onValueChanged={handleInputChange}
+        highlightQuery={historySearchActive() ? searchQuery() : undefined}
+      />
     </div>
   );
 }
