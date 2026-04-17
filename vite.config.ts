@@ -34,6 +34,9 @@ export default defineConfig(async () => ({
       ignored: ["**/src-tauri/**"],
     },
   },
+  build: {
+    chunkSizeWarningLimit: Number.POSITIVE_INFINITY,
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "./src"),
