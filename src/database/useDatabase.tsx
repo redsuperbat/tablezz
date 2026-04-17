@@ -13,6 +13,7 @@ import { useQueryHistory } from "./QueryHistoryProvider";
 interface DatabaseConnectionContext {
   select<T = unknown>(query: string, bindValues?: unknown[]): Promise<T>;
   batchExecute(statements: string[]): Promise<void>;
+  rawExecute(sql: string): Promise<void>;
   tableStructure(
     schema: string,
     tableName: string,
@@ -66,6 +67,12 @@ export function DatabaseConnectionProvider(props: ParentProps) {
               tableStructure(schema, tableName) {
                 return wrapWithError(
                   database.tableStructure(connection(), schema, tableName),
+                );
+              },
+              rawExecute(sql) {
+                queryHistory.addEntry({ query: sql, createdAt: new Date() });
+                return wrapWithError(
+                  database.rawExecute(connection(), sql),
                 );
               },
               batchExecute(statements) {

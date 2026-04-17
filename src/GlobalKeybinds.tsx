@@ -5,12 +5,12 @@ import { message } from "./commands/Messages";
 import { useRegisterCommandOnMount } from "./commands/useRegisterCommand";
 import { useEditor } from "./editor/useEditor";
 import { useRegisterKeybindCommandOnMount } from "./keybinds/useRegisterKeybindCommand";
-import { useBatchExecute } from "./useBatchExecute";
+import { useDatabase } from "./database/useDatabase";
 
 export function GlobalKeybinds() {
   const editor = useEditor();
   const queryClient = useQueryClient();
-  const batchExecute = useBatchExecute();
+  const database = useDatabase();
 
   useRegisterKeybindCommandOnMount({
     keybindExpression: "Meta + Enter",
@@ -49,7 +49,7 @@ export function GlobalKeybinds() {
       }
 
       try {
-        await batchExecute.exec([sql]);
+        await database.rawExecute(sql);
         queryClient.invalidateQueries();
       } catch (error) {
         message.error(String(error));

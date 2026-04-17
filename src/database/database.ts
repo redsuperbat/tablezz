@@ -116,6 +116,19 @@ export async function batchExecute(
 }
 
 /**
+ * Execute a raw SQL string directly, not wrapped in a transaction
+ */
+export async function rawExecute(
+  connection: Connection,
+  sql: string,
+): Promise<void> {
+  await invoke("raw_execute", {
+    databaseUrl: connection.url,
+    sql,
+  });
+}
+
+/**
  * Get tables that reference the given table via foreign keys
  */
 export async function getTableReferences(

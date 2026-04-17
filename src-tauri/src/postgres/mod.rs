@@ -228,6 +228,23 @@ pub async fn batch_execute(
     Ok(())
 }
 
+/// Execute a raw SQL string directly on the connection, not wrapped in a transaction
+#[command]
+pub async fn raw_execute(
+    db_instances: State<'_, DbInstances>,
+    database_url: String,
+    sql: String,
+) -> Result<(), Error> {
+    let instances = db_instances.0.read().await;
+    let pool = instances
+        .get(&database_url)
+        .ok_or(Error::DatabaseNotLoaded(database_url))?;
+
+    sqlx::query(&sql).execute(pool).await?;
+
+    Ok(())
+}
+
 /// Get tables that reference the given table via foreign keys
 #[command]
 pub async fn get_table_references(
