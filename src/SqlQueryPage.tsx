@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/solid-query";
 import { Match, onMount, Switch } from "solid-js";
 import { message } from "./commands/Messages";
+import { useConnectionCredentials } from "./ConnectionCredentialsProvider";
 import type { PostgresDataType } from "./database/database";
 import { useDatabase } from "./database/useDatabase";
 import { useHopContext } from "./HopContext";
@@ -27,10 +28,11 @@ export function SqlQueryPage(props: {
   initialColumnIndex: number | undefined;
 }) {
   const database = useDatabase();
+  const { url } = useConnectionCredentials();
 
   const rowsQuery = useQuery(() => ({
     queryFn: () => database.select<Record<string, unknown>[]>(props.query),
-    queryKey: ["sql-query", props.query],
+    queryKey: ["sql-query", url(), props.query],
   }));
 
   const extractedTable = () => extractTableFromSql(props.query);

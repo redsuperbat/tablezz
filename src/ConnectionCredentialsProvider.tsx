@@ -1,4 +1,5 @@
 import { makePersisted } from "@solid-primitives/storage";
+import { useQueryClient } from "@tanstack/solid-query";
 import {
   type Accessor,
   createSignal,
@@ -46,6 +47,7 @@ export const [RootConnectionCredentialsProvider, , useConnectionCredentials] =
 
 export function ConnectionCredentialsProvider(props: ParentProps) {
   const hopsContext = useHopContext();
+  const queryClient = useQueryClient();
   const [databaseUrlRaw, setDatabaseUrlRaw] = makePersisted(
     createSignal<string>(),
     { name: "databaseurl" },
@@ -58,6 +60,7 @@ export function ConnectionCredentialsProvider(props: ParentProps) {
   const setActiveUrl = (url: string) => {
     hopsContext.clear();
     localStorage.removeItem("selectedTable");
+    queryClient.removeQueries();
     setDatabaseUrlRaw(url);
     const urls = savedUrls();
     if (!urls.includes(url)) {
