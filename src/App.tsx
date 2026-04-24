@@ -41,8 +41,8 @@ export function App() {
                             <GlobalKeybinds />
                             <RouteProvider>
                               <SchemaProvider>
+                                <Picker />
                                 <SelectedTableProvider>
-                                  <Picker />
                                   <Router />
                                 </SelectedTableProvider>
                               </SchemaProvider>

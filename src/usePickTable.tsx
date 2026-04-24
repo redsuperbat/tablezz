@@ -14,7 +14,7 @@ export function usePickTable() {
   const { schema } = useSchemaContext();
 
   return async function pickTable() {
-    const tables = tablesQuery.data;
+    const { data: tables } = await tablesQuery.refetch();
 
     if (!tables || tables.length === 0) return;
 

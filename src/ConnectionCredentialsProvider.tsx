@@ -57,6 +57,7 @@ export function ConnectionCredentialsProvider(props: ParentProps) {
 
   const setActiveUrl = (url: string) => {
     hopsContext.clear();
+    localStorage.removeItem("selectedTable");
     setDatabaseUrlRaw(url);
     const urls = savedUrls();
     if (!urls.includes(url)) {
