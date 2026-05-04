@@ -18,9 +18,9 @@ This file is auto-generated. Do not edit manually.
 | CommandLineNextHistory | Navigate to the next command in history. | `ArrowDown \| Control + j` | [src/commands/CommandLine.tsx:336](https://github.com/redsuperbat/tablezz/blob/main/src/commands/CommandLine.tsx#L336) |
 | CommandLinePreviousHistory | Navigate to the previous command in history. | `ArrowUp \| Control + k` | [src/commands/CommandLine.tsx:346](https://github.com/redsuperbat/tablezz/blob/main/src/commands/CommandLine.tsx#L346) |
 | CommandShowAutocomplete | Show the command autocomplete menu. | `Control + Space` | [src/commands/CommandLine.tsx:164](https://github.com/redsuperbat/tablezz/blob/main/src/commands/CommandLine.tsx#L164) |
-| DatabaseUrlAdd | Set the database connection URL and save it. | - | [src/ConnectionCredentialsProvider.tsx:67](https://github.com/redsuperbat/tablezz/blob/main/src/ConnectionCredentialsProvider.tsx#L67) |
-| DatabaseUrlClear | Clear the current database connection URL. | - | [src/ConnectionCredentialsProvider.tsx:76](https://github.com/redsuperbat/tablezz/blob/main/src/ConnectionCredentialsProvider.tsx#L76) |
-| DatabaseUrlRemove | Remove a saved database URL from the list. | - | [src/ConnectionCredentialsProvider.tsx:84](https://github.com/redsuperbat/tablezz/blob/main/src/ConnectionCredentialsProvider.tsx#L84) |
+| DatabaseUrlAdd | Set the database connection URL and save it. | - | [src/ConnectionCredentialsProvider.tsx:68](https://github.com/redsuperbat/tablezz/blob/main/src/ConnectionCredentialsProvider.tsx#L68) |
+| DatabaseUrlClear | Clear the current database connection URL. | - | [src/ConnectionCredentialsProvider.tsx:77](https://github.com/redsuperbat/tablezz/blob/main/src/ConnectionCredentialsProvider.tsx#L77) |
+| DatabaseUrlRemove | Remove a saved database URL from the list. | - | [src/ConnectionCredentialsProvider.tsx:85](https://github.com/redsuperbat/tablezz/blob/main/src/ConnectionCredentialsProvider.tsx#L85) |
 | DeleteRow | Mark the selected rows for deletion. | `d > d` | [src/table/DataTableProvider.tsx:560](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L560) |
 | GoBackward |  | `Control + o` | [src/table/DataTableProvider.tsx:342](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L342) |
 | GoDownHalf | Move down by half a page. | `Control + d` | [src/table/DataTableProvider.tsx:477](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L477) |
