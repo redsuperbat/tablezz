@@ -10,6 +10,16 @@ import {
 import type { JSXElement } from "solid-js";
 import type { PostgresDataType } from "@/database/database";
 import { iife } from "@/lib/iife";
+import {
+  type IconDef,
+  ICON_BRACES,
+  ICON_BRACKETS,
+  ICON_CALENDAR,
+  ICON_CASE_LOWER,
+  ICON_SIGMA,
+  ICON_SPLINE_POINTER,
+  ICON_TOGGLE_LEFT,
+} from "./canvas/icons";
 
 export abstract class DataType {
   abstract toString(data: unknown): string;
@@ -18,6 +28,10 @@ export abstract class DataType {
   abstract toSqlValue(data: unknown): string;
 
   icon(_className: string): JSXElement {
+    return null;
+  }
+
+  iconDef(): IconDef | null {
     return null;
   }
 
@@ -46,6 +60,10 @@ class JsonDataType extends DataType {
 
   override icon(className: string): JSXElement {
     return <Braces class={className} />;
+  }
+
+  override iconDef(): IconDef {
+    return ICON_BRACES;
   }
 
   override fileExtension(): string {
@@ -86,6 +104,12 @@ class ArrayDataType extends DataType {
         <Brackets class={className} />
       </>
     );
+  }
+
+  override iconDef(): IconDef {
+    const elementDef = this.#elementType.iconDef();
+    const elementOps = elementDef?.ops ?? [];
+    return { ops: [...elementOps, ...ICON_BRACKETS.ops] };
   }
 
   fromString(value: string): unknown[] {
@@ -144,6 +168,10 @@ class WithNull extends DataType {
     return this.#inner.icon(className);
   }
 
+  override iconDef(): IconDef | null {
+    return this.#inner.iconDef();
+  }
+
   override fileExtension(): string {
     return this.#inner.fileExtension();
   }
@@ -171,6 +199,10 @@ class NumberDataType extends DataType {
 
   override icon(className: string): JSXElement {
     return <Sigma class={className} />;
+  }
+
+  override iconDef(): IconDef {
+    return ICON_SIGMA;
   }
 
   toSqlValue(data: unknown): string {
@@ -211,6 +243,10 @@ class TextDataType extends DataType {
   override icon(className: string): JSXElement {
     return <CaseLower class={className} />;
   }
+
+  override iconDef(): IconDef {
+    return ICON_CASE_LOWER;
+  }
 }
 
 // Treat the date data type as a textual format
@@ -218,6 +254,10 @@ class TextDataType extends DataType {
 class DateDataType extends TextDataType {
   override icon(className: string): JSXElement {
     return <Calendar class={className} />;
+  }
+
+  override iconDef(): IconDef {
+    return ICON_CALENDAR;
   }
 }
 
@@ -256,6 +296,10 @@ class VectorDataType extends DataType {
   override icon(className: string): JSXElement {
     return <SplinePointer class={className} />;
   }
+
+  override iconDef(): IconDef {
+    return ICON_SPLINE_POINTER;
+  }
 }
 
 class DefaultDataType extends DataType {
@@ -279,6 +323,10 @@ class DefaultDataType extends DataType {
 class BooleanDataType extends DefaultDataType {
   override icon(className: string): JSXElement {
     return <ToggleLeft class={className} />;
+  }
+
+  override iconDef(): IconDef {
+    return ICON_TOGGLE_LEFT;
   }
 }
 

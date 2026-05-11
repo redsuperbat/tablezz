@@ -7,7 +7,7 @@ import { useDatabase } from "./database/useDatabase";
 import { useHopContext } from "./HopContext";
 import { extractTableFromSql } from "./lib/extractTablesFromSql";
 import { LoadingSpinner } from "./SuspenseBoundary";
-import { DataTable } from "./table/DataTable";
+import { DataTableCanvas } from "./table/DataTableCanvas";
 import { DataTableProvider } from "./table/DataTableProvider";
 import { useTableStructure } from "./useTableStructure";
 
@@ -106,7 +106,7 @@ export function SqlQueryPage(props: {
               initialRowIndex={props.initialRowIndex}
               initialColumnIndex={props.initialColumnIndex}
             >
-              <DataTable reload={rowsQuery.refetch} />
+              <DataTableCanvas reload={rowsQuery.refetch} />
             </DataTableProvider>
           )}
         </Match>

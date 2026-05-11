@@ -39,7 +39,6 @@ interface TableEditorContext {
   getTable: Accessor<Table>;
   visualSelection: Accessor<VisualSelection>;
   tableContainerRef: ReturnType<typeof useRef>;
-  rowRef: ReturnType<typeof useRef>;
   rowHeight: Accessor<number>;
   numberOfVisibleRows: Accessor<number>;
 }
@@ -108,14 +107,9 @@ export function DataTableProvider(props: {
 
   const [visualModeStartCell, setVisualModeStartCell] = createSignal<Cell>();
 
-  const rowRef = useRef();
   const tableContainerRef = useRef();
 
-  const rowHeight = () => {
-    const rowEl = rowRef.get();
-    if (!rowEl) return 37;
-    return rowEl.offsetHeight;
-  };
+  const rowHeight = () => 37;
 
   const numberOfVisibleRows = () => {
     const containerEl = tableContainerRef.get();
@@ -610,7 +604,6 @@ export function DataTableProvider(props: {
         visualSelection,
         getTable,
         tableContainerRef,
-        rowRef,
         rowHeight,
       }}
     >

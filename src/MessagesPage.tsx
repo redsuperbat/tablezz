@@ -1,5 +1,5 @@
 import { message } from "./commands/Messages";
-import { DataTable } from "./table/DataTable";
+import { DataTableCanvas } from "./table/DataTableCanvas";
 import { DataTableProvider } from "./table/DataTableProvider";
 
 export function MessagesPage() {
@@ -47,7 +47,7 @@ export function MessagesPage() {
         initialRowIndex={undefined}
         initialColumnIndex={undefined}
       >
-        <DataTable reload={() => {}} />
+        <DataTableCanvas reload={() => {}} />
       </DataTableProvider>
     </div>
   );
