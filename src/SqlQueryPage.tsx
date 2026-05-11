@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/solid-query";
 import { Match, onMount, Switch } from "solid-js";
-import { message } from "./commands/Messages";
 import { useConnectionCredentials } from "./ConnectionCredentialsProvider";
+import { message } from "./commands/Messages";
 import type { PostgresDataType } from "./database/database";
 import { useDatabase } from "./database/useDatabase";
 import { useHopContext } from "./HopContext";
 import { extractTableFromSql } from "./lib/extractTablesFromSql";
 import { LoadingSpinner } from "./SuspenseBoundary";
-import { DataTableCanvas } from "./table/DataTableCanvas";
+import { DataTable } from "./table/DataTable";
 import { DataTableProvider } from "./table/DataTableProvider";
 import { useTableStructure } from "./useTableStructure";
 
@@ -106,7 +106,7 @@ export function SqlQueryPage(props: {
               initialRowIndex={props.initialRowIndex}
               initialColumnIndex={props.initialColumnIndex}
             >
-              <DataTableCanvas reload={rowsQuery.refetch} />
+              <DataTable reload={rowsQuery.refetch} />
             </DataTableProvider>
           )}
         </Match>

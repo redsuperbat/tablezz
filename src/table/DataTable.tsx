@@ -12,7 +12,7 @@ import {
 } from "./canvas/CanvasRenderer";
 import { useTableEditorContext } from "./DataTableProvider";
 
-export function DataTableCanvas(props: { reload: () => void }) {
+export function DataTable(props: { reload?: () => void }) {
   const { currentCell, visualSelection, getTable, tableContainerRef } =
     useTableEditorContext();
 
@@ -104,11 +104,14 @@ export function DataTableCanvas(props: { reload: () => void }) {
   function handleResize() {
     const container = tableContainerRef.get();
     if (!container) return;
-    const w = container.clientWidth;
-    const h = container.clientHeight;
-    setCanvasWidth(w);
-    setCanvasHeight(h);
-    renderer.setupSize({ width: w, height: h });
+
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+
+    renderer.setupSize({ width, height });
+
+    setCanvasWidth(width);
+    setCanvasHeight(height);
   }
 
   onMount(() => {
@@ -119,8 +122,11 @@ export function DataTableCanvas(props: { reload: () => void }) {
       handleResize();
       setRenderVersion((v) => v + 1);
     });
+
     const container = tableContainerRef.get();
+
     if (container) observer.observe(container);
+
     onCleanup(() => observer.disconnect());
 
     // Kick initial render now that the canvas is initialized and sized
@@ -151,13 +157,12 @@ export function DataTableCanvas(props: { reload: () => void }) {
     () => setOpenedCell(undefined),
   );
 
-  // Keybinds (same as original DataTable)
   useRegisterKeybindCommandOnMount({
     command: "ReloadTable",
     description: "Reload the current table data.",
     keybindExpression: "r",
     action() {
-      props.reload();
+      props.reload?.();
       message.info("Reloaded table data");
     },
   });
@@ -210,7 +215,7 @@ export function DataTableCanvas(props: { reload: () => void }) {
           if (!pos) return null;
           return (
             <div
-              class="absolute z-10 max-h-96 max-w-xl overflow-auto break-words rounded-md border border-zinc-200 bg-white p-3 font-mono text-sm text-zinc-700 shadow-lg"
+              class="wrap-break-words absolute z-10 max-h-96 max-w-xl overflow-auto rounded-md border border-zinc-200 bg-white p-3 font-mono text-sm text-zinc-700 shadow-lg"
               style={{
                 top: `${pos.top}px`,
                 left: `${pos.left}px`,
