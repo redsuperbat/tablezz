@@ -56,8 +56,11 @@ export function DataTable(props: { reload?: () => void }) {
     }
   }
 
-  // Auto-scroll when cursor moves
+  // Auto-scroll when cursor moves or canvas dimensions change
   createEffect(() => {
+    // Subscribe to dimensions so we re-run after mount/resize
+    canvasWidth();
+    canvasHeight();
     const cell = currentCell();
     if (cell) {
       ensureCellVisible(cell.getRow().index, cell.getColumn().index);

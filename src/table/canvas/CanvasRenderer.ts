@@ -202,23 +202,38 @@ export class CanvasRenderer {
       ctx.strokeStyle = COLORS.border;
       ctx.lineWidth = 1;
 
-      // Horizontal lines
-      for (let r = startRow; r <= endRow + 1; r++) {
+      // Extend to fill entire viewport
+      const gridRight = canvasWidth;
+      const gridBottom = canvasHeight;
+
+      // Horizontal lines — extend across full viewport width
+      const totalVisibleRows = Math.ceil((canvasHeight - HEADER_HEIGHT) / ROW_HEIGHT);
+      for (let r = startRow; r <= startRow + totalVisibleRows; r++) {
         const y = Math.round(HEADER_HEIGHT + r * ROW_HEIGHT - scrollY) + 0.5;
-        if (y < HEADER_HEIGHT || y > canvasHeight) continue;
+        if (y < HEADER_HEIGHT || y > gridBottom) continue;
         ctx.beginPath();
         ctx.moveTo(0, y);
-        ctx.lineTo(canvasWidth, y);
+        ctx.lineTo(gridRight, y);
         ctx.stroke();
       }
 
-      // Vertical lines
+      // Vertical lines — extend down to full viewport height
       for (let c = startCol; c <= endCol + 1; c++) {
         const x = Math.round(layout.getColumnX(c) - scrollX) + 0.5;
-        if (x < 0 || x > canvasWidth) continue;
+        if (x < 0 || x > gridRight) continue;
         ctx.beginPath();
         ctx.moveTo(x, HEADER_HEIGHT);
-        ctx.lineTo(x, canvasHeight);
+        ctx.lineTo(x, gridBottom);
+        ctx.stroke();
+      }
+
+      // Right edge of last column if table is narrower than viewport
+      const tableRight = layout.totalWidth - scrollX;
+      if (tableRight < canvasWidth) {
+        const x = Math.round(tableRight) + 0.5;
+        ctx.beginPath();
+        ctx.moveTo(x, HEADER_HEIGHT);
+        ctx.lineTo(x, gridBottom);
         ctx.stroke();
       }
 
