@@ -11,7 +11,6 @@ import type { JSXElement } from "solid-js";
 import type { PostgresDataType } from "@/database/database";
 import { iife } from "@/lib/iife";
 import {
-  type IconDef,
   ICON_BRACES,
   ICON_BRACKETS,
   ICON_CALENDAR,
@@ -19,6 +18,7 @@ import {
   ICON_SIGMA,
   ICON_SPLINE_POINTER,
   ICON_TOGGLE_LEFT,
+  type IconDef,
 } from "./canvas/icons";
 
 export abstract class DataType {
@@ -350,19 +350,18 @@ export function createDataType(
       return createDataType(baseType, false);
     }
 
+    if (
+      /^(?:date|time(?: with(?:out)? time zone)?|timestamp(?:\(\d+\))?(?: with(?:out)? time zone)?)$/.test(
+        type,
+      )
+    ) {
+      return new DateDataType();
+    }
+
     switch (type) {
       case "json":
       case "jsonb":
         return new JsonDataType();
-
-      case "date":
-      case "time":
-      case "time without time zone":
-      case "time with time zone":
-      case "timestamp(3)":
-      case "timestamp(3) without time zone":
-      case "timestamp(3) with time zone":
-        return new DateDataType();
 
       case "uuid":
       case "text":
