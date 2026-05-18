@@ -47,9 +47,9 @@ This file is auto-generated. Do not edit manually.
 | PickerSelectNext | Move to the next item in the picker. | `(Control + j) \| ArrowDown` | [src/picker/usePicker.tsx:162](https://github.com/redsuperbat/tablezz/blob/main/src/picker/usePicker.tsx#L162) |
 | PickerSelectPrev | Move to the previous item in the picker. | `(Control + k) \| ArrowUp` | [src/picker/usePicker.tsx:152](https://github.com/redsuperbat/tablezz/blob/main/src/picker/usePicker.tsx#L152) |
 | ReloadFull | Reload all data from the database. | `Meta + r` | [src/GlobalKeybinds.tsx:25](https://github.com/redsuperbat/tablezz/blob/main/src/GlobalKeybinds.tsx#L25) |
-| ReloadTable | Reload the current table data. | `r` | [src/table/DataTable.tsx:160](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTable.tsx#L160) |
-| SelectionCopyToClipboard | Copy the selected cells to the clipboard. | `y` | [src/table/DataTable.tsx:170](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTable.tsx#L170) |
-| SelectionOpen | Open a cell for inline viewing. | `K` | [src/table/DataTable.tsx:185](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTable.tsx#L185) |
+| ReloadTable | Reload the current table data. | `r` | [src/table/DataTable.tsx:163](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTable.tsx#L163) |
+| SelectionCopyToClipboard | Copy the selected cells to the clipboard. | `y` | [src/table/DataTable.tsx:173](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTable.tsx#L173) |
+| SelectionOpen | Open a cell for inline viewing. | `K` | [src/table/DataTable.tsx:188](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTable.tsx#L188) |
 | SqlExecute | Execute a SQL statement without returning results. | - | [src/GlobalKeybinds.tsx:35](https://github.com/redsuperbat/tablezz/blob/main/src/GlobalKeybinds.tsx#L35) |
 | SqlSelect | Run a custom SQL select query and display the results. | - | [src/table/DataTableProvider.tsx:138](https://github.com/redsuperbat/tablezz/blob/main/src/table/DataTableProvider.tsx#L138) |
 | ToggleMaximize | Toggle maximize window. | `Meta + Enter` | [src/GlobalKeybinds.tsx:15](https://github.com/redsuperbat/tablezz/blob/main/src/GlobalKeybinds.tsx#L15) |
