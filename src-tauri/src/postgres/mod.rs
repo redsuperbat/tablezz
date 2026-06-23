@@ -42,7 +42,7 @@ pub struct ColumnInfo {
 }
 
 #[derive(Default)]
-pub struct DbInstances(pub RwLock<HashMap<String, Pool<Postgres>>>);
+pub struct DbInstances(RwLock<HashMap<String, Pool<Postgres>>>);
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -137,7 +137,6 @@ pub async fn table_structure(
         .get(&database_url)
         .ok_or(Error::DatabaseNotLoaded(database_url))?;
 
-    // Query using format_type() to get proper type names like "integer[]" instead of "ARRAY"
     let rows = sqlx::query(
         r#"
         SELECT
@@ -205,7 +204,6 @@ pub async fn table_structure(
     Ok(columns)
 }
 
-/// Execute multiple statements in a single transaction
 #[command]
 pub async fn batch_execute(
     db_instances: State<'_, DbInstances>,
@@ -228,7 +226,6 @@ pub async fn batch_execute(
     Ok(())
 }
 
-/// Execute a raw SQL string directly on the connection, not wrapped in a transaction
 #[command]
 pub async fn raw_execute(
     db_instances: State<'_, DbInstances>,
@@ -245,7 +242,6 @@ pub async fn raw_execute(
     Ok(())
 }
 
-/// Get tables that reference the given table via foreign keys
 #[command]
 pub async fn get_table_references(
     db_instances: State<'_, DbInstances>,
@@ -295,12 +291,10 @@ pub async fn get_table_references(
     Ok(references)
 }
 
-/// Initialize database state - call from setup
 pub fn init<R: Runtime>(app: &App<R>) {
     app.manage(DbInstances::default());
 }
 
-/// Cleanup connections on app exit
 pub async fn cleanup(db_instances: &DbInstances) {
     let instances = db_instances.0.read().await;
     for value in instances.values() {

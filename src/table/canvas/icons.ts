@@ -67,19 +67,10 @@ function rectToPath(
   return `M${x + rx} ${y}h${w - rx * 2}a${rx} ${rx} 0 0 1 ${rx} ${rx}v${h - rx * 2}a${rx} ${rx} 0 0 1-${rx} ${rx}h${-(w - rx * 2)}a${rx} ${rx} 0 0 1-${rx}-${rx}v${-(h - rx * 2)}a${rx} ${rx} 0 0 1 ${rx}-${rx}z`;
 }
 
-function lineToPath(
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number,
-): string {
+function lineToPath(x1: number, y1: number, x2: number, y2: number): string {
   return `M${x1} ${y1}L${x2} ${y2}`;
 }
 
-/**
- * Convert a Lucide icon node array to an IconDef for canvas rendering.
- * Handles path, circle, rect, line, and polyline SVG elements.
- */
 export function fromLucide(iconNode: IconNode): IconDef {
   const ops: IconOp[] = [];
 
@@ -92,11 +83,7 @@ export function fromLucide(iconNode: IconNode): IconDef {
         d = attrs.d as string | undefined;
         break;
       case "circle":
-        d = circleToPath(
-          Number(attrs.cx),
-          Number(attrs.cy),
-          Number(attrs.r),
-        );
+        d = circleToPath(Number(attrs.cx), Number(attrs.cy), Number(attrs.r));
         break;
       case "rect":
         d = rectToPath(
@@ -132,11 +119,14 @@ export function fromLucide(iconNode: IconNode): IconDef {
   return { ops };
 }
 
-/**
- * Draw a pre-converted icon onto a canvas context.
- * Icons are rendered at the given position and size using stroke style.
- */
-export function drawIcon({ ctx, icon, x, y, size, color }: {
+export function drawIcon({
+  ctx,
+  icon,
+  x,
+  y,
+  size,
+  color,
+}: {
   ctx: CanvasRenderingContext2D;
   icon: IconDef;
   x: number;
@@ -168,7 +158,6 @@ export function drawIcon({ ctx, icon, x, y, size, color }: {
   ctx.restore();
 }
 
-// Pre-converted icon definitions
 export const ICON_KEY = fromLucide(Key);
 export const ICON_LINK2 = fromLucide(Link2);
 export const ICON_BRACES = fromLucide(Braces);
