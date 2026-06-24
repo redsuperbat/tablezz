@@ -2,6 +2,7 @@ import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
 import z from "zod";
 import { createWatcher } from "@/commands/createWatcher";
 import { message } from "@/commands/Messages";
+import { useHopContext } from "@/HopContext";
 import { useRegisterKeybindCommandOnMount } from "@/keybinds/useRegisterKeybindCommand";
 import type { Cell } from "./Cell";
 import { CanvasColumnLayout } from "./canvas/CanvasColumnLayout";
@@ -15,10 +16,15 @@ import { useTableEditorContext } from "./DataTableProvider";
 export function DataTable(props: { reload?: () => void }) {
   const { currentCell, visualSelection, getTable, tableContainerRef } =
     useTableEditorContext();
+  const hopContext = useHopContext();
 
   const [openedCell, setOpenedCell] = createSignal<Cell>();
-  const [scrollX, setScrollX] = createSignal(0);
-  const [scrollY, setScrollY] = createSignal(0);
+  // Scroll lives in HopContext so it persists across data reloads (which
+  // remount this component) and is preserved per-hop.
+  const scrollX = () => hopContext.current().scrollX;
+  const scrollY = () => hopContext.current().scrollY;
+  const setScrollX = (value: number) => hopContext.setScrollX(() => value);
+  const setScrollY = (value: number) => hopContext.setScrollY(() => value);
   const [canvasWidth, setCanvasWidth] = createSignal(0);
   const [canvasHeight, setCanvasHeight] = createSignal(0);
   const [renderVersion, setRenderVersion] = createSignal(0);
@@ -59,8 +65,11 @@ export function DataTable(props: { reload?: () => void }) {
   // Auto-scroll when cursor moves or canvas dimensions change
   createEffect(() => {
     // Subscribe to dimensions so we re-run after mount/resize
-    canvasWidth();
-    canvasHeight();
+    const cw = canvasWidth();
+    const ch = canvasHeight();
+    // Skip until the canvas has been measured — running with zero dimensions
+    // produces a negative viewport and clobbers the persisted scroll offset.
+    if (cw === 0 || ch === 0) return;
     const cell = currentCell();
     if (cell) {
       ensureCellVisible(cell.getRow().index, cell.getColumn().index);

@@ -6,15 +6,20 @@ interface Hop {
   query: string;
   rowIndex: number;
   columnIndex: number;
+  scrollX: number;
+  scrollY: number;
 }
 
 export const [HopProvider, , useHopContext] = createSolidContext(() => {
   const [hops, setHops] = makePersisted(createSignal<Hop[]>([]), {
-    name: "jumps",
+    name: "hops",
   });
 
   function add(hop: { query: string }) {
-    setHops((h) => [...h, { query: hop.query, columnIndex: 0, rowIndex: 0 }]);
+    setHops((h) => [
+      ...h,
+      { query: hop.query, columnIndex: 0, rowIndex: 0, scrollX: 0, scrollY: 0 },
+    ]);
   }
 
   function pop() {
@@ -63,13 +68,28 @@ export const [HopProvider, , useHopContext] = createSolidContext(() => {
     });
   }
 
+  function setScrollX(cb: (scrollX: number) => number) {
+    updateCurrentHop((h) => {
+      h.scrollX = cb(h.scrollX);
+      return h;
+    });
+  }
+
+  function setScrollY(cb: (scrollY: number) => number) {
+    updateCurrentHop((h) => {
+      h.scrollY = cb(h.scrollY);
+      return h;
+    });
+  }
+
   return {
     current: currentHop,
     setRowIndex,
     setColumnIndex,
+    setScrollX,
+    setScrollY,
     clear,
     add,
     pop,
-    isEmpty: () => hops().length === 0,
   };
 });
