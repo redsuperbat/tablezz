@@ -1876,6 +1876,11 @@ mod tests {
         press(&mut app, "Escape");
         assert!(app.command_line.is_none());
 
+        // --- aliases ---
+        assert!(!app.should_quit);
+        app.trigger_command("q");
+        assert!(app.should_quit, "the built in alias reaches Quit");
+
         let _ = std::fs::remove_dir_all(&home);
     }
 }

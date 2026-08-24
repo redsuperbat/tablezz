@@ -13,7 +13,8 @@ pub fn global() -> Vec<(Command, Option<&'static str>)> {
                 app.should_quit = true;
                 Ok(())
             })
-            .described("Quit tablezz."),
+            .described("Quit tablezz.")
+            .alias("q"),
             Some("Control + q"),
         ),
         (
@@ -322,7 +323,8 @@ fn editing() -> Vec<(Command, Option<&'static str>)> {
                 app.write_changes();
                 Ok(())
             })
-            .described("Write pending cell changes and row deletions to the database."),
+            .described("Write pending cell changes and row deletions to the database.")
+            .alias("w"),
             Some("w"),
         ),
         (

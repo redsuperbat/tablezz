@@ -78,10 +78,6 @@ A JSON schema for editor completion lives in
 {
   "$schema": "https://raw.githubusercontent.com/redsuperbat/tablezz/refs/heads/main/config/schema.json",
   "leaderKey": "Space",
-  "commandAliases": {
-    "q": "Quit",
-    "w": "WriteChanges"
-  },
   "keybinds": {
     "g > l": "GoToRightEnd",
     "Leader > d": {
@@ -231,5 +227,20 @@ Three variables are expanded inside a command, from the cell the cursor is on:
 
 Prefix a variable with `\` to write it literally.
 
-Aliases from `commandAliases` work everywhere a command name does, including in
-the autocomplete list — that is how you get `:q` and `:w`.
+## Aliases
+
+`:q` and `:w` are built in, and `commandAliases` in the config file adds more:
+
+```json
+{
+  "commandAliases": {
+    "t": "TruncateTable",
+    "reload": "ReloadFull"
+  }
+}
+```
+
+Aliases work everywhere a command name does, including the autocomplete list.
+A config alias overrides a built-in one of the same name, and a real command
+name always wins over both. [config/commands.md](./config/commands.md) lists
+which commands ship with an alias.

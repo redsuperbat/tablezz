@@ -150,6 +150,7 @@ pub struct Command {
     pub description: Option<String>,
     pub args: Vec<ArgSpec>,
     pub action: Action,
+    pub aliases: Vec<String>,
 }
 
 impl Command {
@@ -159,6 +160,7 @@ impl Command {
             description: None,
             args: Vec::new(),
             action,
+            aliases: vec![],
         }
     }
 
@@ -169,6 +171,11 @@ impl Command {
 
     pub fn args(mut self, args: Vec<ArgSpec>) -> Self {
         self.args = args;
+        self
+    }
+
+    pub fn alias(mut self, alias: &str) -> Self {
+        self.aliases.push(alias.to_string());
         self
     }
 
@@ -196,20 +203,24 @@ impl Commands {
         self.commands.shift_remove(command);
     }
 
+    /// An exact command name first, then an alias from the config file, then one
+    /// the command declared itself — so a user can rebind a built in alias.
     pub fn get<'a>(&'a self, name: &str, aliases: &HashMap<String, String>) -> Option<&'a Command> {
         self.commands
             .get(name)
             .or_else(|| self.commands.get(aliases.get(name)?))
+            .or_else(|| {
+                self.commands
+                    .values()
+                    .find(|command| command.aliases.iter().any(|alias| alias == name))
+            })
     }
 
     /// Command names (aliases included) with their definition, sorted for the
-    /// autocomplete list.
+    /// autocomplete list. Config aliases are listed first so that they survive
+    /// the dedup when they shadow a built in alias, matching [`Commands::get`].
     pub fn all(&self, aliases: &HashMap<String, String>) -> Vec<(String, &Command)> {
-        let mut all: Vec<(String, &Command)> = self
-            .commands
-            .values()
-            .map(|c| (c.command.clone(), c))
-            .collect();
+        let mut all: Vec<(String, &Command)> = Vec::new();
 
         for (alias, command) in aliases {
             if let Some(command) = self.commands.get(command) {
@@ -217,7 +228,15 @@ impl Commands {
             }
         }
 
+        for command in self.commands.values() {
+            all.push((command.command.clone(), command));
+            for alias in &command.aliases {
+                all.push((alias.clone(), command));
+            }
+        }
+
         all.sort_by(|(a, _), (b, _)| a.cmp(b));
+        all.dedup_by(|(a, _), (b, _)| a == b);
         all
     }
 
@@ -234,6 +253,88 @@ impl Commands {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn registry() -> Commands {
+        let mut commands = Commands::default();
+        commands.register(Command::new("Quit", |_, _| Ok(())).alias("q"));
+        commands.register(
+            Command::new("WriteChanges", |_, _| Ok(()))
+                .alias("w")
+                .alias("write"),
+        );
+        commands.register(Command::new("Undo", |_, _| Ok(())));
+        commands
+    }
+
+    fn config(pairs: &[(&str, &str)]) -> HashMap<String, String> {
+        pairs
+            .iter()
+            .map(|(alias, command)| (alias.to_string(), command.to_string()))
+            .collect()
+    }
+
+    fn resolve(commands: &Commands, name: &str, aliases: &[(&str, &str)]) -> Option<String> {
+        commands
+            .get(name, &config(aliases))
+            .map(|command| command.command.clone())
+    }
+
+    #[test]
+    fn built_in_aliases_resolve() {
+        let commands = registry();
+        assert_eq!(resolve(&commands, "q", &[]).as_deref(), Some("Quit"));
+        assert_eq!(
+            resolve(&commands, "w", &[]).as_deref(),
+            Some("WriteChanges")
+        );
+        assert_eq!(
+            resolve(&commands, "write", &[]).as_deref(),
+            Some("WriteChanges"),
+            "a command can declare more than one"
+        );
+        assert_eq!(resolve(&commands, "nope", &[]), None);
+    }
+
+    #[test]
+    fn a_config_alias_overrides_a_built_in_one() {
+        let commands = registry();
+        assert_eq!(
+            resolve(&commands, "q", &[("q", "Undo")]).as_deref(),
+            Some("Undo")
+        );
+    }
+
+    #[test]
+    fn a_real_command_name_always_wins() {
+        let mut commands = registry();
+        // a command actually called `w` beats both alias kinds
+        commands.register(Command::new("w", |_, _| Ok(())));
+
+        assert_eq!(
+            resolve(&commands, "w", &[("w", "Undo")]).as_deref(),
+            Some("w")
+        );
+    }
+
+    #[test]
+    fn listing_includes_each_name_once() {
+        let commands = registry();
+        // `w` is both a built in alias and a config alias here
+        let all = commands.all(&config(&[("w", "Undo"), ("z", "Quit")]));
+
+        let names: Vec<&str> = all.iter().map(|(name, _)| name.as_str()).collect();
+        assert_eq!(
+            names,
+            vec!["Quit", "Undo", "WriteChanges", "q", "w", "write", "z"]
+        );
+
+        // and the config alias is the one that survived, matching get()
+        let resolved = all
+            .iter()
+            .find(|(name, _)| name == "w")
+            .map(|(_, command)| command.command.as_str());
+        assert_eq!(resolved, Some("Undo"));
+    }
 
     fn spec_parse(spec: &ArgSpec, raw: Option<&str>) -> Result<ArgValue, String> {
         spec.parse(raw)
