@@ -160,6 +160,15 @@ pub fn global() -> Vec<(Command, Option<&'static str>)> {
             Some("Control + o"),
         ),
         (
+            Command::new("DatabaseUrls", |app, _| {
+                app.hop_to(crate::app::URLS_QUERY.to_string());
+                Ok(())
+            })
+            .described("List the saved database urls as an editable table")
+            .alias("urls"),
+            None,
+        ),
+        (
             Command::new("DatabaseUrlAdd", |app, args| {
                 if let Some(url) = args.first().and_then(ArgValue::as_str) {
                     let url = url.to_string();
@@ -549,6 +558,19 @@ pub fn help_search() -> Vec<(Command, Keybind)> {
         })
         .described("Stop searching"),
         Keybind::new("KeybindHelpSearchStop", "Escape").override_input(),
+    )]
+}
+
+/// Registered only while the saved url list is on screen, so `e` does not
+/// shadow anything anywhere else.
+pub fn urls_page() -> Vec<(Command, Keybind)> {
+    vec![(
+        Command::new("DatabaseUrlEdit", |app, _| {
+            app.open_cell_editor();
+            Ok(())
+        })
+        .described("Edit the database url under the cursor."),
+        Keybind::new("DatabaseUrlEdit", "e"),
     )]
 }
 
