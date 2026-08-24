@@ -135,6 +135,20 @@ width is wasted; `ColumnLayout::visible_count` counts only whole columns and
 exists to decide when the cursor forces a scroll, which keeps the cell under
 the cursor from being cut off.
 
+### Editing through $EDITOR
+
+`table/grid.rs` is the markdown grid a multi-cell selection round trips
+through; a single cell still goes over raw with its datatype's extension. Two
+properties are load bearing, so keep them if you touch it: rows are matched by
+the `#` row number rather than by position, which is what makes reordering and
+dropping lines safe, and the whole grid is validated before a single cell is
+written, so a mangled grid reports instead of half applying.
+
+Escaping keeps one row on one line (`\|`, `\n`, `\t`, `\r`, `\\`, `\s` for
+significant edge whitespace, `␀` for NULL). `\s` is the only invented bit —
+markdown has no convention for whitespace that matters, and the alignment
+padding is trimmed on the way back.
+
 ### Errors
 
 User facing failures go to `app.messages` (shown in the status bar, kept in

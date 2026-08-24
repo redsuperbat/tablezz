@@ -223,7 +223,7 @@ Move the cursor with `hjkl`, enter visual mode with `v` to select a block, then:
 
 | Key   | Does                                                        |
 | ----- | ----------------------------------------------------------- |
-| `c`   | Open the selection in `$EDITOR` (tab/newline delimited)      |
+| `c`   | Open the selection in `$EDITOR`                               |
 | `d d` | Mark the selected rows for deletion                          |
 | `u`   | Undo the last change                                         |
 | `w`   | Write pending changes to the database, in one transaction     |
@@ -236,6 +236,46 @@ through. Writing needs a primary key on the table.
 
 `g d` follows the foreign key under the cursor, `g r` finds the tables that
 reference it. `?` lists every keybind, and `/` searches that list.
+
+### Editing in `$EDITOR`
+
+A single cell opens as its raw value, with the extension its type deserves — a
+`jsonb` cell arrives as `.json`, so you get syntax highlighting and your
+formatter.
+
+A block of cells opens as a markdown grid (`.md`, so `tabular.vim` and
+`vim-table-mode` can realign it):
+
+```markdown
+| # | id | name   | email          |
+|---|----|--------|----------------|
+| 1 | 3  | user 3 | ␀              |
+| 2 | 4  | user 4 | u4@example.com |
+| 3 | 5  | user 5 | u5@example.com |
+```
+
+`#` is the row number, and rows are matched back by it rather than by
+position — so you can reorder or sort the lines freely, and deleting a line
+means "leave that row alone" rather than deleting the row. Use `d d` in the
+table to delete rows.
+
+Only cells you actually changed are marked dirty. If the grid comes back
+structurally broken — a column missing, the header edited, a row number that
+was not in the selection — nothing is applied and the error says why, so a
+mangled grid can never half-write.
+
+Values are escaped so the grid stays one row per line:
+
+| In a value             | In the grid          |
+| ---------------------- | -------------------- |
+| `\|`                   | `\\|`                |
+| Newline, tab, return   | `\n`, `\t`, `\r`      |
+| Backslash              | `\\`                 |
+| Leading/trailing space | `\s`                 |
+| SQL `NULL`             | `␀`                  |
+
+`␀` is what makes a real `NULL` distinguishable from the string `"null"`. An
+escape sequence tablezz does not know is left exactly as you wrote it.
 
 ## Command line
 

@@ -3,6 +3,7 @@
 //! needs from its column is passed in.
 
 pub mod datatype;
+pub mod grid;
 pub mod layout;
 pub mod render;
 pub mod selection;

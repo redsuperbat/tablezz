@@ -20,6 +20,7 @@ use crate::keybinds::{Keybind, Keybinds};
 use crate::picker::{Picker, PickerAction, PickerItem};
 use crate::state::PersistedState;
 use crate::table::datatype::icons;
+use crate::table::grid::{self, GridSelection};
 use crate::table::layout::ColumnLayout;
 use crate::table::render::visible_rows;
 use crate::table::selection::VisualSelection;
@@ -101,7 +102,10 @@ pub enum Msg {
 /// the promise the original `editor.open()` returned.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EditorPurpose {
-    Cells,
+    /// One cell, as its raw value.
+    Cell,
+    /// A block of cells, as a markdown grid.
+    CellGrid,
     SqlSelect,
     SqlExecute,
 }
@@ -1376,16 +1380,27 @@ impl App {
         };
         let cells = selection.cells(cursor, table);
 
-        let extension = match cells.as_slice() {
-            [(_, column)] => table
-                .column(*column)
-                .map(|column| column.data_type().file_extension())
-                .unwrap_or(".txt"),
-            _ => ".txt",
+        // A single cell goes over as its raw value, with the datatype's own
+        // extension so the editor highlights json or sql properly. A block goes
+        // over as a grid, which needs escaping and so cannot stay raw.
+        let request = match cells.as_slice() {
+            [(_, column)] => (
+                EditorPurpose::Cell,
+                selection.to_delimited(cursor, table, COLUMN_DELIMITER, ROW_DELIMITER),
+                table
+                    .column(*column)
+                    .map(|column| column.data_type().file_extension())
+                    .unwrap_or(".txt"),
+            ),
+            cells => (
+                EditorPurpose::CellGrid,
+                grid::encode(table, &GridSelection::from_cells(cells)),
+                ".md",
+            ),
         };
 
-        let content = selection.to_delimited(cursor, table, COLUMN_DELIMITER, ROW_DELIMITER);
-        self.request_editor(EditorPurpose::Cells, content, extension);
+        let (purpose, content, extension) = request;
+        self.request_editor(purpose, content, extension);
     }
 
     pub fn on_editor_result(&mut self, purpose: EditorPurpose, content: String) {
@@ -1394,7 +1409,30 @@ impl App {
         let content = content.trim_end().to_string();
 
         match purpose {
-            EditorPurpose::Cells => {
+            EditorPurpose::CellGrid => {
+                let cursor = self.cursor();
+                let selection = self.selection;
+
+                let result = match self.table.as_mut() {
+                    Some(table) => {
+                        let cells = selection.cells(cursor, table);
+                        grid::decode(table, &GridSelection::from_cells(&cells), &content)
+                    }
+                    None => return,
+                };
+
+                match result {
+                    Ok(updated) if !updated.is_empty() => {
+                        self.undo_tree.add(Change::CellEdits(updated))
+                    }
+                    Ok(_) => {}
+                    Err(error) => self.messages.error(error),
+                }
+
+                self.exit_visual_mode();
+            }
+
+            EditorPurpose::Cell => {
                 let cursor = self.cursor();
                 let selection = self.selection;
 
@@ -1781,13 +1819,13 @@ mod tests {
         let edited = format!("{original}'s");
 
         let request = app.editor_request.take().expect("the editor was asked for");
-        assert_eq!(request.purpose, EditorPurpose::Cells);
+        assert_eq!(request.purpose, EditorPurpose::Cell);
         assert_eq!(request.initial_content, original);
         assert_eq!(request.extension, ".txt");
 
         // an apostrophe is the case the original built broken SQL for, and the
         // trailing newline is what an editor leaves behind
-        app.on_editor_result(EditorPurpose::Cells, format!("{edited}\n"));
+        app.on_editor_result(EditorPurpose::Cell, format!("{edited}\n"));
         assert_eq!(app.table.as_ref().unwrap().dirty_cells(), vec![(0, 1)]);
         assert_eq!(app.table.as_ref().unwrap().cell_display(0, 1), edited);
 
@@ -1807,6 +1845,71 @@ mod tests {
             })
         })
         .await;
+
+        // --- a block selection goes over as a grid ---
+        app.trigger_command("GoToTop | GoToLeftEnd");
+        press(&mut app, "v");
+        press(&mut app, "j");
+        press(&mut app, "l");
+        press(&mut app, "c");
+
+        let request = app.editor_request.take().expect("the editor was asked for");
+        assert_eq!(request.purpose, EditorPurpose::CellGrid);
+        assert_eq!(request.extension, ".md");
+
+        let grid = request.initial_content;
+        let lines: Vec<&str> = grid.lines().collect();
+        assert!(lines[0].starts_with("| # | id "), "grid was:\n{grid}");
+        assert!(lines[0].contains("| name"), "grid was:\n{grid}");
+        assert!(lines[1].starts_with("|---"), "grid was:\n{grid}");
+        assert_eq!(lines.len(), 4, "header, rule and two rows:\n{grid}");
+        // every line is the same width, so it lands aligned
+        assert_eq!(
+            lines
+                .iter()
+                .map(|line| line.chars().count())
+                .collect::<Vec<_>>(),
+            vec![lines[0].chars().count(); 4],
+            "grid was:\n{grid}"
+        );
+
+        // Rewrite the name cell of row 2 by position in its line, since the
+        // result order is not fixed and the values are whatever earlier runs
+        // left behind. Also swap the two rows, which decode must not care about.
+        let rewrite = |line: &str| {
+            let mut fields: Vec<String> = line.split('|').map(str::to_string).collect();
+            fields[3] = " GRID EDIT ".to_string();
+            fields.join("|")
+        };
+
+        let edited = [
+            lines[0].to_string(),
+            lines[1].to_string(),
+            rewrite(lines[3]),
+            lines[2].to_string(),
+        ]
+        .join("\n");
+        app.on_editor_result(EditorPurpose::CellGrid, edited);
+
+        assert!(!app.selection.is_selecting(), "editing leaves visual mode");
+        let dirty = app.table.as_ref().unwrap().dirty_cells();
+        assert_eq!(dirty.len(), 1, "only the edited cell is dirty");
+        assert_eq!(app.table.as_ref().unwrap().cell_display(1, 1), "GRID EDIT");
+
+        // a mangled grid is refused whole
+        app.trigger_command("Undo");
+        press(&mut app, "v");
+        press(&mut app, "j");
+        press(&mut app, "c");
+        let request = app.editor_request.take().unwrap();
+        app.on_editor_result(EditorPurpose::CellGrid, "| # |\n|---|\n| 1 |".to_string());
+        assert!(
+            app.messages
+                .current()
+                .is_some_and(|(_, text)| text.contains("nothing was changed")),
+            "a broken grid reports instead of half applying"
+        );
+        let _ = request;
 
         // --- foreign keys ---
         app.trigger_command("GoToTop | GoToLeftEnd | MoveCellRight 3");
