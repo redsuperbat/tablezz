@@ -1,96 +1,109 @@
 # Tablezz
 
-Keyboard-centric PostgreSQL table viewer. Tauri 2 shell + SolidJS frontend + Rust backend (sqlx).
+Keyboard-centric PostgreSQL table viewer for the terminal. Single Rust binary:
+ratatui frontend + sqlx talking to postgres in process.
+
+This is a port of an earlier Tauri 2 + SolidJS build; the layering was kept
+deliberately (keybind pipeline, command registry, table model, config file
+format are all 1:1). `git log main` has the TypeScript original if you need to
+compare behaviour.
 
 ## Quality gates
 
 Run before declaring work complete:
 
-- `pnpm tc` — TypeScript (strict, `noUncheckedIndexedAccess`, `noUnusedLocals`)
-- `pnpm test` — Vitest, colocated `*.test.ts`
-- `pnpm lint` — Biome (also enforces sorted Tailwind classes)
+- `cargo test` — unit tests are colocated in `#[cfg(test)] mod tests`
+- `cargo fmt`
+- `cargo clippy --all-targets`
 
-The Rust side compiles via `pnpm tauri dev` / `tauri build`; don't invoke `cargo` directly unless touching `src-tauri/`.
+The end to end test in `src/app.rs` needs a database and is skipped without
+one:
 
-## Stack
+```sh
+docker run -d --name tablezz-test -e POSTGRES_PASSWORD=pw -e POSTGRES_DB=tablezz -p 55432:5432 postgres:16-alpine
+TABLEZZ_TEST_DATABASE_URL=postgres://postgres:pw@localhost:55432/tablezz cargo test
+```
 
-- **Frontend:** SolidJS 1.9, TanStack Solid Query, Kobalte, Tailwind v4 (via `@tailwindcss/vite`), Zod 4
-- **Backend:** Rust + Tauri 2, sqlx (postgres), portable-pty, notify (config file watching)
-- **Build:** Vite 8, TypeScript 6 (strict), Biome (format + lint)
-- **Package manager:** pnpm
+After adding or renaming a command, regenerate the docs:
 
-Path alias: `@/*` → `./src/*`.
+```sh
+cargo run -- --commands > config/commands.md
+cargo run -- --config-schema > config/schema.json
+```
 
 ## Layout
 
 ```
 src/
-  App.tsx                     # Root provider tree — order matters
-  Router.tsx                  # Two-route switch: table | editor, driven by HopContext
-  commands/                   # Command registry, command line, parser
-  keybinds/                   # Tokenizer → parser → checker → KeybindProvider
-  config/                     # ~/tablezz/config.json loader + watcher
-  database/                   # Tauri IPC wrapper, connection + query history
-  table/                      # DataTable + canvas-based renderer
-    canvas/                   # CanvasRenderer, CanvasColumnLayout
-  picker/, editor/            # Fuzzy picker (fuse.js), SQL editor
-  components/ui/              # Kobalte-based primitives (button, dialog, etc.)
-  lib/                        # invariant, tryCatch, cn, iife, useRef, etc.
-src-tauri/
-  src/lib.rs                  # invoke_handler list — all Rust commands registered here
-  src/postgres/               # Connection pool, queries, type decoding
-  src/pty.rs                  # Terminal emulation
-config/                       # Auto-generated docs — do not hand-edit
-scripts/                      # gen-commands, gen-config-schema
+  main.rs         # terminal adapter: event loop, crossterm -> KeyEvent mapping, doc generators
+  app.rs          # App: the single owner of state; command definitions live here
+  ui.rs           # what is drawn, in what order
+  keybinds/       # tokenizer -> parser -> checker -> formatter + the stacked registry
+  commands/       # registry, ArgSpec, command line, `|` parser, messages
+  config.rs       # ~/tablezz/config.json, serde + notify watcher
+  state.rs        # ~/tablezz/state.json: hop stack, saved urls, command history
+  db/             # sqlx queries + postgres -> JSON decoding
+  table/          # Table/Row/Column/Cell, datatypes, column layout, renderer, SQL extraction
+  picker.rs       # fuzzy picker overlay (nucleo)
+config/           # generated docs — do not hand-edit
 ```
 
 ## Conventions
 
-### Contexts
-
-Use `createSolidContext` from `src/createSolidContext.tsx`. It returns `[Provider, useContext, useContextOrThrow]` — prefer the third (throwing) variant when the context is required. Provider tree lives in `src/App.tsx`; if a hook breaks because a context is missing, check the nesting there.
-
 ### Commands and keybinds
 
-Commands are the only way UI actions happen — keybinds trigger commands, the command line triggers commands. Register from a component with:
+Commands are the only way UI actions happen — keybinds trigger commands, the
+command line triggers commands. An action is a plain function:
 
-- `useRegisterKeybindCommandOnMount({ command, keybindExpression, action, actionArgs?, description? })` — most common
-- `useRegisterKeybindToggle`, `useRegisterKeybindValue`, `useRegisterKeybindCommandOnConditional` — see `src/keybinds/`
-- `useRegisterCommandOnMount` — command without a keybind
+```rust
+type Action = fn(&mut App, &[ArgValue]) -> anyhow::Result<()>;
+```
 
-`actionArgs` is a `ZodType[]`; args from the command line are parsed against it before `action` runs. Keybind expression grammar (`+`, `>`, `|`, `()`, `Leader`) is documented in `README.md`.
+Global commands are registered in `App::register_commands`. Commands scoped to
+an overlay are registered when it opens and unregistered when it closes (see
+`App::open_picker` / `open_command_line`) — that is the port of the original's
+`onMount` / `onCleanup` registration, and it is what lets an overlay shadow
+`Escape` or `Enter` while it is up.
 
-After adding or renaming a command, regenerate docs: `pnpm gen-commands`. This is also run by CI (`.github/workflows/commands.yaml`) and will commit on push — but generating locally avoids merge churn.
+Arguments are declared with `ArgSpec` (the replacement for `actionArgs: ZodType[]`).
+The `title` doubles as the command line hint, so keep it in `<angle>` /
+`[bracket]` form.
 
-### Rust ↔ TS IPC
+`Keybinds` holds two stacks: config file binds take precedence over binds
+registered in code, and the top of each stack wins.
 
-Frontend calls Rust via `invoke("name", args)` from `@tauri-apps/api/core`. Every Rust handler must be added to the `invoke_handler![…]` list in `src-tauri/src/lib.rs` or it won't be callable. The thin TS wrapper in `src/database/database.ts` is the canonical pattern.
+### Async work
 
-### Utilities (use these instead of rolling your own)
+Nothing blocks the event loop. A command that needs the database calls
+`App::spawn`, which sends a `Msg` back to the loop; `App::on_msg` applies it.
+`Query<T>` (Idle/Loading/Ready/Failed) is what the UI switches on. Piped
+commands wait for outstanding work via `drain_pending`, the equivalent of the
+original's `waitForQueries()`.
 
-- `invariant(value, msg?)` — `src/lib/invariant.ts`, narrows away null/undefined
-- `tryCatch(fn | promise)` — `src/lib/tryCatch.ts`, returns `[error, null] | [null, value]`
-- `cn(...)` — `src/lib/cn.ts`, `clsx` + `tailwind-merge`
-- `iife(fn)` — when you need an async block inside a sync context
-- `useDisposables()` — auto-cleanup on unmount
+State that must survive a restart goes in `state.rs` and is saved explicitly —
+there is no autosave.
 
-### TypeScript
+### Rendering
 
-Strict mode with `noUncheckedIndexedAccess` is on — `arr[i]` is `T | undefined`. Don't disable it; add the guard. Biome enforces `noUnusedImports` as an error and sorts Tailwind classes (`useSortedClasses`).
+`table/render.rs` writes into the ratatui `Buffer` directly rather than using
+the `Table` widget, because cell level styling (cursor, dirty, deleted) and
+horizontal column scrolling need per cell control. Column widths come from
+`table/layout.rs`, which samples the first 50 rows.
 
-### Styling
+Scrolling is per row and per whole column, not per pixel: `Hop.scroll_y` is the
+first visible row, `Hop.scroll_x` the first visible column.
 
-Tailwind v4 with the Vite plugin — no `tailwind.config.js` PostCSS pipeline. Class order is auto-fixed by Biome; don't hand-sort.
+### Errors
 
-### Tests
+User facing failures go to `app.messages` (shown in the status bar, kept in
+history). `anyhow::Result` from an action is turned into a message
+automatically. Reserve panics for genuine invariants.
 
-Vitest with jsdom. Place `Foo.test.ts` next to `Foo.ts`. Parser/tokenizer/checker have the best existing coverage — mirror their style for new pure-logic modules.
+## Not ported yet
 
-## Do not hand-edit
-
-- `config/commands.md`, `config/schema.json`, `config/definition.md` — regenerated by `pnpm gen-commands` / `pnpm gen-docs`
-- `pnpm-lock.yaml`, `src-tauri/Cargo.lock`, `src-tauri/gen/`, `dist/`, `node_modules/`
-
-## Configuration
-
-Runtime config lives at `~/tablezz/config.json`, watched and hot-reloaded by the Rust side (`notify`). The schema is defined in `src/config/configuration.ts` (Zod) and surfaced via `useConfig()`. Changes to keybinds in the running app come from this file, not from code reloads.
+The second pass of the port still owes: cell editing via `$EDITOR`, visual
+selection mode, `WriteChanges` / `DeleteRow` / `Undo`, foreign key navigation
+(`g > d`, `g > r`), the keybind help overlay, command line history search and
+the autocomplete popup, the messages page, clipboard yank and `TruncateTable`.
+The model layers those need are already ported, which is why `main.rs` carries
+a crate level `#![allow(dead_code)]` — remove it as they get wired up.

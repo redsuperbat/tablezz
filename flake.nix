@@ -14,12 +14,11 @@
     in {
       devShells.default = pkgs.mkShell {
         buildInputs = with pkgs; [
-          pnpm
-          nodejs
           cargo
           rustc
           rust-analyzer
           rustfmt
+          clippy
           pgcli
         ];
       };

@@ -1,94 +1,60 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Tablezz Configuration",
-  "description": "All configuration options to configure Tablezz",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Configuration",
+  "description": "All configuration options to configure Tablezz.",
   "type": "object",
   "properties": {
-    "leaderKey": {
-      "default": "Space",
-      "title": "Leader Key",
-      "description": "The leader key",
-      "examples": [
-        "Control + a"
-      ],
-      "type": "string"
-    },
-    "keybinds": {
-      "default": {},
-      "title": "Keybinds",
-      "description": "Configure custom keybinds which trigger predefined commands",
-      "examples": [
-        {
-          "w": "WriteChanges",
-          "Leader > d": {
-            "command": "PickerOpen databases",
-            "description": "Change database"
-          }
-        }
-      ],
-      "type": "object",
-      "propertyNames": {
-        "type": "string"
-      },
-      "additionalProperties": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "object",
-            "properties": {
-              "command": {
-                "type": "string"
-              },
-              "description": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "command"
-            ]
-          }
-        ]
-      }
-    },
     "commandAliases": {
+      "description": "Aliases for long named commands, e.g. { \"w\": \"WriteChanges\" }.",
       "default": {},
-      "title": "Command Aliases",
-      "description": "Specify aliases to alias long named commands",
-      "examples": [
-        {
-          "w": "WriteChanges",
-          "d": "DeleteRow"
-        }
-      ],
       "type": "object",
-      "propertyNames": {
-        "type": "string"
-      },
       "additionalProperties": {
         "type": "string"
       }
     },
     "editor": {
+      "description": "The terminal editor invoked when editing cells.",
       "default": "nvim",
-      "title": "Editor",
-      "description": "The terminal editor which will be invoked when editing cells",
-      "examples": [
-        "vim",
-        "emacs"
-      ],
       "type": "string"
     },
-    "terminalFont": {
-      "default": "JetBrains Mono",
-      "title": "Terminal Font",
-      "description": "Font family for the terminal editor",
-      "examples": [
-        "Fira Code",
-        "JetBrains Mono"
-      ],
+    "keybinds": {
+      "description": "Custom keybinds which trigger predefined commands.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/KeybindEntry"
+      }
+    },
+    "leaderKey": {
+      "description": "The leader key, e.g. \"Space\" or \"Control + a\".",
+      "default": "Space",
       "type": "string"
+    }
+  },
+  "definitions": {
+    "KeybindEntry": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "required": [
+            "command"
+          ],
+          "properties": {
+            "command": {
+              "type": "string"
+            },
+            "description": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      ]
     }
   }
 }

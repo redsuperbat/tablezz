@@ -1,0 +1,20 @@
+name: Check
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+
+      - run: cargo fmt --check
+      # not gated on -D warnings until the port's second pass lands
+      - run: cargo clippy --all-targets
+      - run: cargo test
