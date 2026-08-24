@@ -189,25 +189,29 @@ Use `|` to allow multiple keys to trigger the same command:
 
 ## Reading the table
 
-Column headers carry one-character markers before the name, and a `?` after it
-when the column is nullable:
+Tablezz needs a [Nerd Font](https://www.nerdfonts.com). Column headers carry
+icons before the name, and a `?` after it when the column is nullable:
 
-| Marker | Meaning                                                              |
-| ------ | -------------------------------------------------------------------- |
-| `*`    | Primary key                                                          |
-| `>`    | Foreign key                                                          |
-| `#`    | Number — `integer`, `bigint`, `smallint`, `numeric`, `real`, ...      |
-| `a`    | Text — `text`, `varchar`, `char`, `uuid`, `citext`                    |
-| `t`    | Date or time — `date`, `time`, `timestamp`, with or without zone      |
-| `b`    | Boolean                                                              |
-| `{`    | `json` or `jsonb`                                                    |
-| `[`    | Array                                                                |
-| `~`    | `vector`                                                             |
-| `?`    | Nullable                                                             |
+| Icon | Nerd Font glyph        | Meaning                                                         |
+| ---- | ---------------------- | --------------------------------------------------------------- |
+| `` | `nf-fa-key`            | Primary key                                                     |
+| `` | `nf-fa-link`           | Foreign key                                                     |
+| `` | `nf-fa-hashtag`        | Number — `integer`, `bigint`, `smallint`, `numeric`, `real`, ... |
+| `` | `nf-fa-font`           | Text — `text`, `varchar`, `char`, `uuid`, `citext`               |
+| `` | `nf-fa-calendar`       | Date or time — `date`, `time`, `timestamp`, with or without zone |
+| `` | `nf-fa-toggle_off`     | Boolean                                                         |
+| `󰘦` | `nf-md-code_json`      | `json` or `jsonb`                                               |
+| `󰪩` | `nf-md-code_brackets`  | Array                                                           |
+| `󰕙` | `nf-md-vector_line`    | `vector`                                                        |
+| `?`  | —                      | Nullable                                                        |
 
-Anything else — enums, domains, user-defined types — gets no type marker.
-`* # id` is a primary key holding a number, `> # org_id?` a nullable foreign
-key holding a number.
+Anything else — enums, domains, user-defined types — gets no type icon. So a
+primary key holding a number reads `  id`, and a nullable foreign key
+holding one reads `  org_id?`.
+
+Use a Mono variant of your Nerd Font (`FiraCode Nerd Font Mono`, for example).
+The non-mono variants draw these icons wider than one cell, which shifts the
+header text out of line with the column.
 
 Cells are marked by state: the cursor is inverted, a visual selection has a
 blue background with the anchor cell in cyan, edited cells are yellow until

@@ -19,6 +19,7 @@ use crate::db::{self, ColumnInfo, JsonRow};
 use crate::keybinds::{Keybind, Keybinds};
 use crate::picker::{Picker, PickerAction, PickerItem};
 use crate::state::PersistedState;
+use crate::table::datatype::icons;
 use crate::table::layout::ColumnLayout;
 use crate::table::render::visible_rows;
 use crate::table::selection::VisualSelection;
@@ -370,10 +371,14 @@ impl App {
                 }
             }
 
-            Msg::Tables(result) => self.open_list_picker(PickerAction::PickTable, '▤', result),
-            Msg::Schemas(result) => self.open_list_picker(PickerAction::PickSchema, '□', result),
+            Msg::Tables(result) => {
+                self.open_list_picker(PickerAction::PickTable, icons::TABLE, result)
+            }
+            Msg::Schemas(result) => {
+                self.open_list_picker(PickerAction::PickSchema, icons::SCHEMA, result)
+            }
             Msg::Databases(result) => {
-                self.open_list_picker(PickerAction::PickDatabase, '⛁', result)
+                self.open_list_picker(PickerAction::PickDatabase, icons::DATABASE, result)
             }
 
             Msg::References {
@@ -463,7 +468,7 @@ impl App {
                 PickerItem {
                     value: url,
                     label,
-                    icon: Some('⇄'),
+                    icon: Some(icons::LINK),
                 }
             })
             .collect();
@@ -599,7 +604,7 @@ impl App {
                     .map(|reference| PickerItem {
                         label: format!("{}.{}", reference.source_table, reference.source_column),
                         value: query(reference),
-                        icon: Some('↳'),
+                        icon: Some(icons::REFERENCE),
                     })
                     .collect();
                 self.open_picker(PickerAction::HopToQuery, items);
@@ -1647,7 +1652,10 @@ mod tests {
 
         let rendered = screen(&mut app);
         assert!(rendered.contains("user 1"), "screen was:\n{rendered}");
-        assert!(rendered.contains("* # id"), "screen was:\n{rendered}");
+        assert!(
+            rendered.contains(&format!("{} {} id", icons::KEY, icons::NUMBER)),
+            "screen was:\n{rendered}"
+        );
         assert!(
             rendered.contains("users · 42/42 rows"),
             "screen was:\n{rendered}"

@@ -5,6 +5,7 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 
+use super::datatype::icons;
 use super::layout::{ColumnLayout, CELL_PADDING, SEPARATOR_WIDTH};
 use super::selection::VisualSelection;
 use super::Table;
@@ -79,10 +80,10 @@ pub fn render(state: RenderState, area: Rect, buf: &mut Buffer) {
         };
 
         if column.is_primary {
-            icon('*', Color::Yellow);
+            icon(icons::KEY, Color::Yellow);
         }
         if column.foreign_key.is_some() {
-            icon('>', Color::Blue);
+            icon(icons::LINK, Color::Blue);
         }
         if let Some(glyph) = column.data_type().icon() {
             icon(glyph, Color::DarkGray);
@@ -284,8 +285,14 @@ mod tests {
         let lines = render_to_lines(Rect::new(0, 0, 40, 6), (0, 0), (0, 0));
 
         // primary key marker, foreign key marker, datatype glyph, nullable "?"
-        assert!(lines[0].contains("* # id"), "header was {:?}", lines[0]);
-        assert!(lines[0].contains("> # org?"), "header was {:?}", lines[0]);
+        let expected_id = format!("{} {} id", icons::KEY, icons::NUMBER);
+        let expected_org = format!("{} {} org?", icons::LINK, icons::NUMBER);
+        assert!(lines[0].contains(&expected_id), "header was {:?}", lines[0]);
+        assert!(
+            lines[0].contains(&expected_org),
+            "header was {:?}",
+            lines[0]
+        );
         assert!(lines[1].starts_with('─'));
         assert!(lines[2].contains('1'));
         assert!(lines[5].contains('4'));

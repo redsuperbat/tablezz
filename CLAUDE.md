@@ -117,6 +117,12 @@ editor's input.
 
 ### Rendering
 
+Header icons are Nerd Font glyphs, defined once in `table::datatype::icons` and
+assumed present — a Nerd Font is a requirement, not a nicety. Every codepoint
+there was checked against the font the web build bundled; if you add one, check
+it rather than guessing, since a missing glyph renders as tofu. The layout
+budgets two cells per icon, which holds for the Mono variants.
+
 `table/render.rs` writes into the ratatui `Buffer` directly rather than using
 the `Table` widget, because cell level styling (cursor, dirty, deleted) and
 horizontal column scrolling need per cell control. Column widths come from

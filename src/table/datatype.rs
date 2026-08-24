@@ -2,6 +2,37 @@
 
 use serde_json::Value as JsonValue;
 
+/// Nerd Font glyphs, standing in for the lucide icons the original rendered.
+/// Every one is verified present in the Nerd Font the web build shipped.
+pub mod icons {
+    /// nf-fa-key
+    pub const KEY: char = '\u{f084}';
+    /// nf-fa-link
+    pub const LINK: char = '\u{f0c1}';
+    /// nf-fa-hashtag, for Sigma
+    pub const NUMBER: char = '\u{f292}';
+    /// nf-fa-font, for CaseLower
+    pub const TEXT: char = '\u{f031}';
+    /// nf-fa-calendar
+    pub const DATE: char = '\u{f073}';
+    /// nf-fa-toggle_off, for ToggleLeft
+    pub const BOOLEAN: char = '\u{f204}';
+    /// nf-md-code_json, for Braces
+    pub const JSON: char = '\u{f0626}';
+    /// nf-md-code_brackets, for Brackets
+    pub const ARRAY: char = '\u{f0aa9}';
+    /// nf-md-vector_line, for SplinePointer
+    pub const VECTOR: char = '\u{f0559}';
+    /// nf-fa-table
+    pub const TABLE: char = '\u{f0ce}';
+    /// nf-fa-folder
+    pub const SCHEMA: char = '\u{f07b}';
+    /// nf-fa-database
+    pub const DATABASE: char = '\u{f1c0}';
+    /// nf-fa-arrow_right
+    pub const REFERENCE: char = '\u{f061}';
+}
+
 pub trait DataType {
     fn to_display(&self, data: &JsonValue) -> String;
     fn from_string(&self, value: &str) -> Result<JsonValue, String>;
@@ -44,7 +75,7 @@ impl DataType for JsonDataType {
     }
 
     fn icon(&self) -> Option<char> {
-        Some('{')
+        Some(icons::JSON)
     }
 
     fn file_extension(&self) -> &'static str {
@@ -94,7 +125,7 @@ impl DataType for ArrayDataType {
     }
 
     fn icon(&self) -> Option<char> {
-        Some('[')
+        Some(icons::ARRAY)
     }
 }
 
@@ -158,7 +189,7 @@ impl DataType for NumberDataType {
     }
 
     fn icon(&self) -> Option<char> {
-        Some('#')
+        Some(icons::NUMBER)
     }
 }
 
@@ -212,7 +243,7 @@ impl DataType for VectorDataType {
     }
 
     fn icon(&self) -> Option<char> {
-        Some('~')
+        Some(icons::VECTOR)
     }
 }
 
@@ -267,18 +298,20 @@ pub fn create_data_type(data_type: &str, is_nullable: bool) -> Box<dyn DataType>
             | "time without time zone"
             | "timestamp"
             | "timestamp with time zone"
-            | "timestamp without time zone" => Box::new(TextDataType { icon: 't' }),
+            | "timestamp without time zone" => Box::new(TextDataType { icon: icons::DATE }),
 
             "json" | "jsonb" => Box::new(JsonDataType),
 
             "uuid" | "text" | "varchar" | "character varying" | "char" | "character" | "citext"
-            | "name" => Box::new(TextDataType { icon: 'a' }),
+            | "name" => Box::new(TextDataType { icon: icons::TEXT }),
 
             "decimal" | "integer" | "numeric" | "bigint" | "smallint" | "real"
             | "double precision" => Box::new(NumberDataType),
 
             "vector" => Box::new(VectorDataType),
-            "boolean" => Box::new(DefaultDataType { icon: Some('b') }),
+            "boolean" => Box::new(DefaultDataType {
+                icon: Some(icons::BOOLEAN),
+            }),
 
             _ => Box::new(DefaultDataType { icon: None }),
         }
@@ -330,11 +363,11 @@ mod tests {
         );
         assert_eq!(
             create_data_type("character varying(255)", false).icon(),
-            Some('a')
+            Some(icons::TEXT)
         );
         assert_eq!(
             create_data_type("timestamp(3) with time zone", false).icon(),
-            Some('t')
+            Some(icons::DATE)
         );
     }
 
