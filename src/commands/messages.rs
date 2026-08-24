@@ -8,7 +8,6 @@ const TOAST_DURATION: Duration = Duration::from_secs(10);
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MessageType {
     Info,
-    Success,
     Error,
 }
 
@@ -16,7 +15,6 @@ impl MessageType {
     pub fn as_str(&self) -> &'static str {
         match self {
             MessageType::Info => "info",
-            MessageType::Success => "success",
             MessageType::Error => "error",
         }
     }
@@ -38,10 +36,6 @@ pub struct Messages {
 impl Messages {
     pub fn info(&mut self, text: impl Into<String>) {
         self.show(MessageType::Info, text.into());
-    }
-
-    pub fn success(&mut self, text: impl Into<String>) {
-        self.show(MessageType::Success, text.into());
     }
 
     pub fn error(&mut self, text: impl Into<String>) {

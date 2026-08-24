@@ -10,6 +10,8 @@ pub enum PickerAction {
     PickSchema,
     PickDatabase,
     PickUrl,
+    /// The item values are complete queries to hop to.
+    HopToQuery,
 }
 
 #[derive(Debug, Clone)]

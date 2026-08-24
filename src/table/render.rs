@@ -6,6 +6,7 @@ use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 
 use super::layout::{ColumnLayout, CELL_PADDING, SEPARATOR_WIDTH};
+use super::selection::VisualSelection;
 use super::Table;
 
 pub const HEADER_HEIGHT: u16 = 2;
@@ -25,6 +26,7 @@ pub struct RenderState<'a> {
     pub cursor: (usize, usize),
     /// (first visible row, first visible column).
     pub scroll: (usize, usize),
+    pub selection: VisualSelection,
 }
 
 /// Rows of table data that fit in `area`.
@@ -38,6 +40,7 @@ pub fn render(state: RenderState, area: Rect, buf: &mut Buffer) {
         layout,
         cursor,
         scroll,
+        selection,
     } = state;
 
     if table.columns().is_empty() || area.width == 0 || area.height == 0 {
@@ -132,16 +135,13 @@ pub fn render(state: RenderState, area: Rect, buf: &mut Buffer) {
             let width = layout.width(column_index);
             let slot = layout.slot_width(column_index) as u16;
 
-            let mut style = Style::default();
-            if row.is_deleted() {
-                style = style.fg(Color::Red).add_modifier(Modifier::CROSSED_OUT);
-            }
-            if cell.is_dirty() {
-                style = style.fg(Color::Black).bg(Color::Yellow);
-            }
-            if (row_index, column_index) == cursor {
-                style = style.add_modifier(Modifier::REVERSED);
-            }
+            let style = cell_style(CellState {
+                is_current: (row_index, column_index) == cursor,
+                is_selected: selection.contains_cell(cursor, (row_index, column_index)),
+                is_selection_start: selection.start == Some((row_index, column_index)),
+                is_dirty: cell.is_dirty(),
+                is_deleted: row.is_deleted(),
+            });
 
             let cell_width = (width + CELL_PADDING * 2) as u16;
             let painted = Rect {
@@ -175,6 +175,38 @@ pub fn render(state: RenderState, area: Rect, buf: &mut Buffer) {
     let _ = SEPARATOR_WIDTH;
 }
 
+struct CellState {
+    is_current: bool,
+    is_selected: bool,
+    is_selection_start: bool,
+    is_dirty: bool,
+    is_deleted: bool,
+}
+
+/// Port of `#cellBgColor`, same precedence: dirtiness beats selection, the
+/// cursor is always marked on top.
+fn cell_style(state: CellState) -> Style {
+    let mut style = Style::default();
+
+    if state.is_deleted {
+        style = style.fg(Color::Red).add_modifier(Modifier::CROSSED_OUT);
+    }
+
+    if state.is_dirty {
+        style = style.fg(Color::Black).bg(Color::Yellow);
+    } else if state.is_selection_start {
+        style = style.fg(Color::Black).bg(Color::Cyan);
+    } else if state.is_selected {
+        style = style.fg(Color::White).bg(Color::Blue);
+    }
+
+    if state.is_current {
+        style = style.add_modifier(Modifier::REVERSED);
+    }
+
+    style
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -188,7 +220,6 @@ mod tests {
             data_type: data_type.to_string(),
             is_primary: primary,
             is_nullable: false,
-            column_default: None,
             foreign_key: None,
         }
     }
@@ -231,6 +262,7 @@ mod tests {
                 layout: &layout,
                 cursor,
                 scroll,
+                selection: VisualSelection::default(),
             },
             area,
             &mut buf,
@@ -267,6 +299,44 @@ mod tests {
     }
 
     #[test]
+    fn a_visual_selection_is_painted() {
+        let table = table();
+        let layout = ColumnLayout::compute(&table);
+        let area = Rect::new(0, 0, 40, 6);
+        let mut buf = Buffer::empty(area);
+
+        render(
+            RenderState {
+                table: &table,
+                layout: &layout,
+                cursor: (2, 0),
+                scroll: (0, 0),
+                selection: VisualSelection {
+                    start: Some((0, 0)),
+                },
+            },
+            area,
+            &mut buf,
+        );
+
+        let x = 1;
+        // the anchor cell reads differently from the rest of the range
+        assert_eq!(buf[(x, HEADER_HEIGHT)].style().bg, Some(Color::Cyan));
+        assert_eq!(buf[(x, HEADER_HEIGHT + 1)].style().bg, Some(Color::Blue));
+        // the cursor row is selected and current
+        assert!(buf[(x, HEADER_HEIGHT + 2)]
+            .style()
+            .add_modifier
+            .contains(Modifier::REVERSED));
+        // a column outside the selection is untouched
+        let outside = layout.slot_width(0) as u16 + 1;
+        assert_eq!(
+            buf[(outside, HEADER_HEIGHT + 1)].style().bg,
+            Some(Color::Reset)
+        );
+    }
+
+    #[test]
     fn the_cursor_cell_is_highlighted() {
         let table = table();
         let layout = ColumnLayout::compute(&table);
@@ -279,6 +349,7 @@ mod tests {
                 layout: &layout,
                 cursor: (1, 1),
                 scroll: (0, 0),
+                selection: VisualSelection::default(),
             },
             area,
             &mut buf,

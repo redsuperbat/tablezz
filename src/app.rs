@@ -9,10 +9,11 @@ use sqlx::PgPool;
 use std::collections::VecDeque;
 use tokio::sync::mpsc::UnboundedSender;
 
+use crate::commands::builtin;
 use crate::commands::command_line::CommandLine;
 use crate::commands::messages::Messages;
 use crate::commands::parse::{expand_variables, parse_command, CommandVariables, ParsedCommand};
-use crate::commands::{ArgSpec, ArgValue, Command, Commands};
+use crate::commands::{Command, Commands};
 use crate::config::{self, Configuration};
 use crate::db::{self, ColumnInfo, JsonRow};
 use crate::keybinds::{Keybind, Keybinds};
@@ -20,8 +21,17 @@ use crate::picker::{Picker, PickerAction, PickerItem};
 use crate::state::PersistedState;
 use crate::table::layout::ColumnLayout;
 use crate::table::render::visible_rows;
+use crate::table::selection::VisualSelection;
 use crate::table::sql::extract_table_from_sql;
+use crate::table::undo::{Change, UndoTree};
 use crate::table::Table;
+
+/// The hop query that shows the message log instead of a database table.
+pub const MESSAGES_QUERY: &str = "__messages__";
+
+/// Delimiters the cell editor round trips a selection through.
+const COLUMN_DELIMITER: &str = "\u{1f}";
+const ROW_DELIMITER: &str = "\u{1f}\n";
 
 /// Port of the `useQuery` states the UI switched on.
 #[derive(Debug, Default)]
@@ -74,8 +84,38 @@ pub enum Msg {
     Tables(Result<Vec<String>, String>),
     Schemas(Result<Vec<String>, String>),
     Databases(Result<Vec<String>, String>),
-    Executed(Result<(), String>),
+    References {
+        target_column: String,
+        filter_value: String,
+        result: Result<Vec<db::TableReference>, String>,
+    },
+    Executed {
+        message: Option<String>,
+        result: Result<(), String>,
+    },
     ConfigChanged,
+}
+
+/// What the content coming back from the editor is for — the enum that replaces
+/// the promise the original `editor.open()` returned.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EditorPurpose {
+    Cells,
+    SqlSelect,
+    SqlExecute,
+}
+
+pub struct EditorRequest {
+    pub purpose: EditorPurpose,
+    pub initial_content: String,
+    pub extension: String,
+}
+
+/// Port of the keybind help panel's local state.
+#[derive(Debug, Default)]
+pub struct Help {
+    pub search: String,
+    pub searching: bool,
 }
 
 pub struct App {
@@ -93,10 +133,21 @@ pub struct App {
     pub structure: Query<Vec<ColumnInfo>>,
     pub count: Option<i64>,
     pub table: Option<Table>,
+    /// The schema the loaded table came from, used when writing changes back.
+    pub table_schema: String,
     pub layout: ColumnLayout,
+    pub selection: VisualSelection,
+    pub undo_tree: UndoTree,
+    /// The cell whose full value is shown in a popup, if any.
+    pub opened_cell: Option<(usize, usize)>,
 
     pub picker: Option<Picker>,
     pub command_line: Option<CommandLine>,
+    /// Index of the highlighted autocomplete entry while the menu is open.
+    pub autocomplete: Option<usize>,
+    pub help: Option<Help>,
+    /// Set by a command, picked up and run by the event loop.
+    pub editor_request: Option<EditorRequest>,
 
     /// Area the table is drawn into, refreshed every frame — the equivalent of
     /// measuring the canvas container.
@@ -127,9 +178,16 @@ impl App {
             structure: Query::Idle,
             count: None,
             table: None,
+            table_schema: "public".to_string(),
             layout: ColumnLayout::default(),
+            selection: VisualSelection::default(),
+            undo_tree: UndoTree::default(),
+            opened_cell: None,
             picker: None,
             command_line: None,
+            autocomplete: None,
+            help: None,
+            editor_request: None,
             viewport: Rect::default(),
             should_quit: false,
             tx,
@@ -318,8 +376,19 @@ impl App {
                 self.open_list_picker(PickerAction::PickDatabase, '⛁', result)
             }
 
-            Msg::Executed(result) => match result {
-                Ok(()) => self.reload_table(),
+            Msg::References {
+                target_column,
+                filter_value,
+                result,
+            } => self.on_references(target_column, filter_value, result),
+
+            Msg::Executed { message, result } => match result {
+                Ok(()) => {
+                    if let Some(message) = message {
+                        self.messages.info(message);
+                    }
+                    self.reload_table();
+                }
                 Err(error) => self.messages.error(error),
             },
         }
@@ -416,14 +485,26 @@ impl App {
     /// Port of `SqlQueryPage`: fetch rows, structure and the row count for the
     /// current hop.
     pub fn load_current_hop(&mut self) {
-        let Some(pool) = self.pool.clone() else {
-            return;
-        };
         let Some(hop) = self.state.current_hop() else {
             return;
         };
 
         let query = hop.query.clone();
+
+        // The message log is a table like any other, it just needs no database
+        if query == MESSAGES_QUERY {
+            self.loaded_key = Some(query);
+            self.rows = Query::Ready(self.message_rows());
+            self.structure = Query::Ready(messages_structure());
+            self.count = None;
+            self.try_build_table();
+            return;
+        }
+
+        let Some(pool) = self.pool.clone() else {
+            return;
+        };
+
         let key = query.clone();
         self.loaded_key = Some(key.clone());
         self.rows = Query::Loading;
@@ -483,6 +564,49 @@ impl App {
         }
     }
 
+    /// Port of the second half of `GoToReferences`: one match navigates, several
+    /// go through the picker.
+    fn on_references(
+        &mut self,
+        target_column: String,
+        filter_value: String,
+        result: Result<Vec<db::TableReference>, String>,
+    ) {
+        let references = match result {
+            Ok(references) => references,
+            Err(error) => return self.messages.error(error),
+        };
+
+        let schema = self.table_schema.clone();
+        let relevant: Vec<db::TableReference> = references
+            .into_iter()
+            .filter(|reference| reference.target_column == target_column)
+            .collect();
+
+        let query = |reference: &db::TableReference| {
+            format!(
+                "SELECT * FROM \"{schema}\".\"{}\" WHERE \"{}\" = {filter_value}",
+                reference.source_table, reference.source_column
+            )
+        };
+
+        match relevant.as_slice() {
+            [] => self.messages.info("No references found"),
+            [only] => self.hop_to(query(only)),
+            many => {
+                let items = many
+                    .iter()
+                    .map(|reference| PickerItem {
+                        label: format!("{}.{}", reference.source_table, reference.source_column),
+                        value: query(reference),
+                        icon: Some('↳'),
+                    })
+                    .collect();
+                self.open_picker(PickerAction::HopToQuery, items);
+            }
+        }
+    }
+
     pub fn reload_table(&mut self) {
         self.load_current_hop();
     }
@@ -497,11 +621,17 @@ impl App {
             return;
         };
 
+        let is_messages = hop.query == MESSAGES_QUERY;
         let extracted = extract_table_from_sql(&hop.query);
-        let table_name = extracted
+        let table_name = match extracted.as_ref().map(|e| e.table.clone()) {
+            Some(name) => name,
+            None if is_messages => "messages".to_string(),
+            None => String::new(),
+        };
+        let schema = extracted
             .as_ref()
-            .map(|e| e.table.clone())
-            .unwrap_or_default();
+            .and_then(|e| e.schema.clone())
+            .unwrap_or_else(|| self.schema());
 
         let structure: Vec<ColumnInfo> = if structure.is_empty() {
             infer_structure(rows.first())
@@ -520,19 +650,51 @@ impl App {
         let table = Table::new(table_name, &structure, rows);
         self.layout = ColumnLayout::compute(&table);
         self.table = Some(table);
+        self.table_schema = schema;
+
+        // Fresh data means the recorded edits no longer point anywhere.
+        self.undo_tree.clear();
+        self.exit_visual_mode();
+        self.opened_cell = None;
         self.clamp_cursor();
+    }
+
+    /// Port of `MessagesPage`: the message log rendered as a table.
+    fn message_rows(&self) -> Vec<JsonRow> {
+        self.messages
+            .history()
+            .iter()
+            .map(|message| {
+                [
+                    (
+                        "time".to_string(),
+                        JsonValue::String(format_time(message.timestamp)),
+                    ),
+                    (
+                        "type".to_string(),
+                        JsonValue::String(message.kind.as_str().to_string()),
+                    ),
+                    (
+                        "message".to_string(),
+                        JsonValue::String(message.text.clone()),
+                    ),
+                ]
+                .into_iter()
+                .collect()
+            })
+            .collect()
     }
 
     // ---------------------------------------------------------------- cursor
 
-    fn max_row(&self) -> usize {
+    pub fn max_row(&self) -> usize {
         self.table
             .as_ref()
             .map(|t| t.rows().len().saturating_sub(1))
             .unwrap_or(0)
     }
 
-    fn max_column(&self) -> usize {
+    pub fn max_column(&self) -> usize {
         self.table
             .as_ref()
             .map(|t| t.columns().len().saturating_sub(1))
@@ -564,36 +726,42 @@ impl App {
         (self.visible_row_count() / 2).max(1)
     }
 
-    fn move_row(&mut self, delta: isize) {
+    /// Port of the effects that dismissed the cell popup when the cursor moved.
+    fn after_cursor_move(&mut self) {
+        self.opened_cell = None;
+        self.ensure_cursor_visible();
+    }
+
+    pub fn move_row(&mut self, delta: isize) {
         let max = self.max_row();
         if let Some(hop) = self.state.current_hop_mut() {
             hop.row_index = hop.row_index.saturating_add_signed(delta).min(max);
         }
-        self.ensure_cursor_visible();
+        self.after_cursor_move();
     }
 
-    fn move_column(&mut self, delta: isize) {
+    pub fn move_column(&mut self, delta: isize) {
         let max = self.max_column();
         if let Some(hop) = self.state.current_hop_mut() {
             hop.column_index = hop.column_index.saturating_add_signed(delta).min(max);
         }
-        self.ensure_cursor_visible();
+        self.after_cursor_move();
     }
 
-    fn set_row(&mut self, row: usize) {
+    pub fn set_row(&mut self, row: usize) {
         let max = self.max_row();
         if let Some(hop) = self.state.current_hop_mut() {
             hop.row_index = row.min(max);
         }
-        self.ensure_cursor_visible();
+        self.after_cursor_move();
     }
 
-    fn set_column(&mut self, column: usize) {
+    pub fn set_column(&mut self, column: usize) {
         let max = self.max_column();
         if let Some(hop) = self.state.current_hop_mut() {
             hop.column_index = column.min(max);
         }
-        self.ensure_cursor_visible();
+        self.after_cursor_move();
     }
 
     /// Port of `ensureCellVisible`, in rows and columns instead of pixels.
@@ -692,62 +860,17 @@ impl App {
         }
 
         self.picker = Some(Picker::new(action, items));
-
-        // Port of the picker's own `useRegisterKeybindCommandOnMount` calls
-        self.register_scoped(vec![
-            (
-                Command::new("PickerClose", |app, _| {
-                    app.close_picker();
-                    Ok(())
-                })
-                .described("Close the picker dialog."),
-                Keybind::new("PickerClose", "Escape").override_input(),
-            ),
-            (
-                Command::new("PickerSelect", |app, _| {
-                    app.accept_picker();
-                    Ok(())
-                })
-                .described("Select the highlighted item in the picker."),
-                Keybind::new("PickerSelect", "Enter").override_input(),
-            ),
-            (
-                Command::new("PickerSelectNext", |app, _| {
-                    if let Some(picker) = app.picker.as_mut() {
-                        picker.select_next();
-                    }
-                    Ok(())
-                })
-                .described("Move to the next item in the picker."),
-                Keybind::new("PickerSelectNext", "(Control + j) | ArrowDown").override_input(),
-            ),
-            (
-                Command::new("PickerSelectPrev", |app, _| {
-                    if let Some(picker) = app.picker.as_mut() {
-                        picker.select_prev();
-                    }
-                    Ok(())
-                })
-                .described("Move to the previous item in the picker."),
-                Keybind::new("PickerSelectPrev", "(Control + k) | ArrowUp").override_input(),
-            ),
-        ]);
+        self.register_all(builtin::picker());
     }
 
     pub fn close_picker(&mut self) {
         if self.picker.take().is_none() {
             return;
         }
-
-        self.unregister_scoped(&[
-            ("PickerClose", "Escape"),
-            ("PickerSelect", "Enter"),
-            ("PickerSelectNext", "(Control + j) | ArrowDown"),
-            ("PickerSelectPrev", "(Control + k) | ArrowUp"),
-        ]);
+        self.unregister_all(builtin::picker());
     }
 
-    fn accept_picker(&mut self) {
+    pub fn accept_picker(&mut self) {
         let Some(picker) = self.picker.as_mut() else {
             return;
         };
@@ -763,10 +886,7 @@ impl App {
         match action {
             PickerAction::PickTable => {
                 let schema = self.schema();
-                self.state
-                    .add_hop(format!("SELECT * FROM \"{schema}\".\"{value}\" LIMIT 100;"));
-                self.state.save();
-                self.load_current_hop();
+                self.hop_to(format!("SELECT * FROM \"{schema}\".\"{value}\" LIMIT 100;"));
             }
 
             // Port of setSchemaAndClearHops: a new schema invalidates the hop
@@ -793,6 +913,7 @@ impl App {
             }
 
             PickerAction::PickUrl => self.set_active_url(&value),
+            PickerAction::HopToQuery => self.hop_to(value),
         }
     }
 
@@ -803,71 +924,33 @@ impl App {
 
         self.messages.clear();
         self.command_line = Some(CommandLine::default());
-
-        self.register_scoped(vec![
-            (
-                Command::new("CommandLineClose", |app, _| {
-                    app.close_command_line();
-                    Ok(())
-                })
-                .described("Close the command line."),
-                Keybind::new("CommandLineClose", "Escape").override_input(),
-            ),
-            (
-                Command::new("CommandLineClear", |app, _| {
-                    if let Some(line) = app.command_line.as_mut() {
-                        line.clear();
-                    }
-                    Ok(())
-                })
-                .described("Clear the command line input."),
-                Keybind::new("CommandLineClear", "Control + c").override_input(),
-            ),
-            (
-                Command::new("CommandAccept", |app, _| {
-                    app.accept_command_line();
-                    Ok(())
-                })
-                .described("Execute the current command."),
-                Keybind::new("CommandAccept", "Enter").override_input(),
-            ),
-            (
-                Command::new("CommandComplete", |app, _| {
-                    app.complete_command_line();
-                    Ok(())
-                })
-                .described("Autocomplete the current command."),
-                Keybind::new("CommandComplete", "Tab").override_input(),
-            ),
-        ]);
+        self.register_all(builtin::command_line());
     }
 
     pub fn close_command_line(&mut self) {
+        self.close_autocomplete();
+
         if self.command_line.take().is_none() {
             return;
         }
-
-        self.unregister_scoped(&[
-            ("CommandLineClose", "Escape"),
-            ("CommandLineClear", "Control + c"),
-            ("CommandAccept", "Enter"),
-            ("CommandComplete", "Tab"),
-        ]);
+        self.unregister_all(builtin::command_line());
     }
 
-    fn complete_command_line(&mut self) {
-        let aliases = self.config.command_aliases.clone();
-        let Some(line) = self.command_line.as_mut() else {
-            return;
-        };
+    pub fn complete_command_line(&mut self) {
+        let matches = self.autocomplete_matches();
 
-        let matches = line.matches(&self.commands, &aliases);
-        if let [only] = matches.as_slice() {
-            line.set(&format!("{only} "));
+        match matches.as_slice() {
+            [only] => {
+                if let Some(line) = self.command_line.as_mut() {
+                    line.set(&format!("{only} "));
+                }
+            }
+            [_, _, ..] => self.open_autocomplete(),
+            [] => {}
         }
     }
 
-    fn accept_command_line(&mut self) {
+    pub fn accept_command_line(&mut self) {
         let Some(line) = self.command_line.as_ref() else {
             return;
         };
@@ -879,14 +962,165 @@ impl App {
             return;
         }
 
-        self.state.command_history.retain(|c| c != &command);
+        self.state.command_history.retain(|entry| entry != &command);
         self.state.command_history.insert(0, command.clone());
+        self.state.save();
         self.trigger_command(&command);
     }
 
-    /// Registers a command together with its keybind, the pairing
-    /// `useRegisterKeybindCommandOnMount` did.
-    fn register_scoped(&mut self, entries: Vec<(Command, Keybind)>) {
+    /// Port of `navigateHistory`: the first press turns what is typed into a
+    /// filter over the history, later presses walk the matches.
+    pub fn navigate_history(&mut self, backwards: bool) {
+        let history = self.state.command_history.clone();
+        let Some(line) = self.command_line.as_mut() else {
+            return;
+        };
+
+        line.navigate_history(&history, backwards);
+    }
+
+    // --- autocomplete popup ---
+
+    pub fn autocomplete_matches(&self) -> Vec<String> {
+        self.command_line
+            .as_ref()
+            .map(|line| line.matches(&self.commands, &self.config.command_aliases))
+            .unwrap_or_default()
+    }
+
+    pub fn open_autocomplete(&mut self) {
+        if self.autocomplete.is_some() || self.command_line.is_none() {
+            return;
+        }
+
+        self.autocomplete = Some(0);
+        self.register_all(builtin::autocomplete());
+    }
+
+    pub fn close_autocomplete(&mut self) {
+        if self.autocomplete.take().is_none() {
+            return;
+        }
+        self.unregister_all(builtin::autocomplete());
+    }
+
+    pub fn autocomplete_selected(&self) -> usize {
+        let len = self.autocomplete_matches().len();
+        match (self.autocomplete, len) {
+            (Some(selected), len) if len > 0 => selected.min(len - 1),
+            _ => 0,
+        }
+    }
+
+    pub fn autocomplete_next(&mut self) {
+        let matches = self.autocomplete_matches();
+
+        // A single candidate needs no menu, just take it
+        if let [only] = matches.as_slice() {
+            let only = only.clone();
+            return self.accept_completion(&only);
+        }
+
+        if !matches.is_empty() {
+            self.autocomplete = Some((self.autocomplete_selected() + 1) % matches.len());
+        }
+    }
+
+    pub fn autocomplete_prev(&mut self) {
+        let len = self.autocomplete_matches().len();
+        if len > 0 {
+            self.autocomplete = Some((self.autocomplete_selected() + len - 1) % len);
+        }
+    }
+
+    pub fn accept_autocomplete(&mut self) {
+        let Some(name) = self
+            .autocomplete_matches()
+            .get(self.autocomplete_selected())
+            .cloned()
+        else {
+            return;
+        };
+
+        self.accept_completion(&name);
+    }
+
+    fn accept_completion(&mut self, name: &str) {
+        if let Some(line) = self.command_line.as_mut() {
+            line.set(name);
+        }
+        self.close_autocomplete();
+    }
+
+    // --- keybind help ---
+
+    pub fn toggle_help(&mut self) {
+        match self.help.is_some() {
+            true => self.close_help(),
+            false => {
+                self.help = Some(Help::default());
+                self.register_all(builtin::help());
+            }
+        }
+    }
+
+    pub fn close_help(&mut self) {
+        if self.help.take().is_none() {
+            return;
+        }
+        self.unregister_all(builtin::help());
+    }
+
+    pub fn start_help_search(&mut self) {
+        let Some(help) = self.help.as_mut() else {
+            return;
+        };
+        if help.searching {
+            return;
+        }
+
+        help.searching = true;
+        self.register_all(builtin::help_search());
+    }
+
+    pub fn stop_help_search(&mut self) {
+        let Some(help) = self.help.as_mut() else {
+            return;
+        };
+        if !help.searching {
+            return;
+        }
+
+        help.searching = false;
+        help.search.clear();
+        self.unregister_all(builtin::help_search());
+    }
+
+    // --- visual mode ---
+
+    pub fn set_visual_mode(&mut self, on: bool) {
+        match on {
+            true => {
+                self.selection.start = Some(self.cursor());
+                self.unregister_all(builtin::visual_enter());
+                self.register_all(builtin::visual_exit());
+            }
+            false => {
+                self.selection.exit();
+                self.unregister_all(builtin::visual_exit());
+                self.register_all(builtin::visual_enter());
+            }
+        }
+    }
+
+    /// Port of `VisualSelection.exit()`: only does something while selecting.
+    fn exit_visual_mode(&mut self) {
+        if self.selection.is_selecting() {
+            self.set_visual_mode(false);
+        }
+    }
+
+    fn register_all(&mut self, entries: Vec<(Command, Keybind)>) {
         for (command, mut keybind) in entries {
             keybind.description = command.description.clone();
             if let Err(error) = self.keybinds.register(&keybind) {
@@ -897,256 +1131,322 @@ impl App {
         }
     }
 
-    fn unregister_scoped(&mut self, entries: &[(&str, &str)]) {
-        for (command, expression) in entries {
-            self.keybinds.unregister(&Keybind::new(command, expression));
-            self.commands.unregister(command);
+    fn unregister_all(&mut self, entries: Vec<(Command, Keybind)>) {
+        for (command, keybind) in entries {
+            self.keybinds.unregister(&keybind);
+            self.commands.unregister(&command.command);
         }
     }
 
     pub fn input_focused(&self) -> bool {
-        self.command_line.is_some() || self.picker.is_some()
+        self.command_line.is_some()
+            || self.picker.is_some()
+            || self.help.as_ref().is_some_and(|help| help.searching)
     }
 
-    // ---------------------------------------------------- command definitions
+    // --------------------------------------------------------------- editing
+
+    /// Port of `WriteChanges`: one transaction of UPDATEs and DELETEs built from
+    /// the dirty cells and the rows marked for deletion.
+    pub fn write_changes(&mut self) {
+        let Some(table) = self.table.as_ref() else {
+            return;
+        };
+        let schema = self.table_schema.clone();
+        let name = table.name.clone();
+
+        let mut statements: Vec<String> = Vec::new();
+        let mut errors: Vec<String> = Vec::new();
+
+        for (row, column) in table.dirty_cells() {
+            let (Some(column_ref), Some(cell)) = (table.column(column), table.cell(row, column))
+            else {
+                continue;
+            };
+
+            match (table.primary_key(row), cell.to_sql_value(column_ref)) {
+                (Ok(keys), Ok(value)) if !keys.is_empty() => statements.push(format!(
+                    "UPDATE \"{schema}\".\"{name}\" SET \"{}\" = {value} WHERE {}",
+                    column_ref.name,
+                    where_clause(&keys)
+                )),
+                (Ok(_), Ok(_)) => {
+                    errors.push(format!("Can't update, no primary key in table \"{name}\""))
+                }
+                (Err(error), _) | (_, Err(error)) => errors.push(error),
+            }
+        }
+
+        for row in table.deleted_rows() {
+            match table.primary_key(row) {
+                Ok(keys) if !keys.is_empty() => statements.push(format!(
+                    "DELETE FROM \"{schema}\".\"{name}\" WHERE {}",
+                    where_clause(&keys)
+                )),
+                Ok(_) => errors.push(format!(
+                    "Can't delete row, no primary key in table \"{name}\""
+                )),
+                Err(error) => errors.push(error),
+            }
+        }
+
+        for error in errors {
+            self.messages.error(error);
+        }
+
+        if statements.is_empty() {
+            return;
+        }
+
+        let Some(pool) = self.pool.clone() else {
+            return;
+        };
+
+        self.spawn(async move {
+            Msg::Executed {
+                message: Some("Successfully updated".to_string()),
+                result: db::batch_execute(&pool, statements)
+                    .await
+                    .map_err(|e| e.to_string()),
+            }
+        });
+    }
+
+    pub fn undo(&mut self) {
+        if let Some(table) = self.table.as_mut() {
+            self.undo_tree.undo(table);
+        }
+    }
+
+    pub fn delete_selected_rows(&mut self) {
+        let cursor = self.cursor();
+        let selection = self.selection;
+
+        let Some(table) = self.table.as_mut() else {
+            return;
+        };
+        let rows = selection.rows(cursor, table);
+
+        let already_deleted = rows
+            .iter()
+            .all(|row| table.row(*row).is_some_and(|row| row.is_deleted()));
+
+        if !already_deleted {
+            for row in &rows {
+                if let Some(row) = table.row_mut(*row) {
+                    row.mark_for_deletion();
+                }
+            }
+            self.undo_tree.add(Change::RowDeletions(rows));
+        }
+
+        self.exit_visual_mode();
+    }
+
+    pub fn copy_selection(&mut self) {
+        let cursor = self.cursor();
+        let selection = self.selection;
+
+        let Some(table) = self.table.as_ref() else {
+            return;
+        };
+        let text = selection.to_delimited(cursor, table, "\t", "\n");
+
+        match arboard::Clipboard::new().and_then(|mut clipboard| clipboard.set_text(text)) {
+            Ok(()) => self.messages.info("Copied to clipboard"),
+            Err(error) => self.messages.error(error.to_string()),
+        }
+
+        self.exit_visual_mode();
+    }
+
+    /// Port of `SelectionOpen`: show a cell's full value in a popup.
+    pub fn open_cell(&mut self, row: usize, column: usize) {
+        let exists = self
+            .table
+            .as_ref()
+            .is_some_and(|table| table.cell(row, column).is_some());
+
+        self.opened_cell = exists.then_some((row, column));
+    }
+
+    // ------------------------------------------------------- foreign keys
+
+    pub fn go_to_foreign_key_relation(&mut self) {
+        let (row, column) = self.cursor();
+        let schema = self.table_schema.clone();
+
+        let query = {
+            let Some(table) = self.table.as_ref() else {
+                return;
+            };
+            let (Some(column_ref), Some(cell)) = (table.column(column), table.cell(row, column))
+            else {
+                return;
+            };
+            let Some(foreign_key) = column_ref.foreign_key.as_ref() else {
+                return;
+            };
+
+            cell.to_sql_value(column_ref).map(|value| {
+                format!(
+                    "SELECT * FROM \"{schema}\".\"{}\" WHERE \"{}\" = {value}",
+                    foreign_key.table, foreign_key.column
+                )
+            })
+        };
+
+        match query {
+            Ok(query) => self.hop_to(query),
+            Err(error) => self.messages.error(error),
+        }
+    }
+
+    pub fn go_to_references(&mut self) {
+        let (row, column) = self.cursor();
+        let schema = self.table_schema.clone();
+
+        let target = {
+            let Some(table) = self.table.as_ref() else {
+                return;
+            };
+            let (Some(column_ref), Some(cell)) = (table.column(column), table.cell(row, column))
+            else {
+                return;
+            };
+
+            // A column can be both a primary and a foreign key; the foreign key
+            // wins, since that is the table the value really belongs to.
+            let (target_table, target_column) = match column_ref.foreign_key.as_ref() {
+                Some(foreign_key) => (foreign_key.table.clone(), foreign_key.column.clone()),
+                None if column_ref.is_primary => (table.name.clone(), column_ref.name.clone()),
+                None => return,
+            };
+
+            cell.to_sql_value(column_ref)
+                .map(|filter_value| (target_table, target_column, filter_value))
+        };
+
+        let (target_table, target_column, filter_value) = match target {
+            Ok(target) => target,
+            Err(error) => return self.messages.error(error),
+        };
+
+        let Some(pool) = self.pool.clone() else {
+            return;
+        };
+
+        self.spawn(async move {
+            Msg::References {
+                target_column,
+                filter_value,
+                result: db::get_table_references(&pool, &schema, &target_table)
+                    .await
+                    .map_err(|e| e.to_string()),
+            }
+        });
+    }
+
+    // -------------------------------------------------------------- editor
+
+    pub fn request_editor(
+        &mut self,
+        purpose: EditorPurpose,
+        initial_content: String,
+        extension: &str,
+    ) {
+        self.editor_request = Some(EditorRequest {
+            purpose,
+            initial_content,
+            extension: extension.to_string(),
+        });
+    }
+
+    pub fn open_cell_editor(&mut self) {
+        let cursor = self.cursor();
+        let selection = self.selection;
+
+        let Some(table) = self.table.as_ref() else {
+            return;
+        };
+        let cells = selection.cells(cursor, table);
+
+        let extension = match cells.as_slice() {
+            [(_, column)] => table
+                .column(*column)
+                .map(|column| column.data_type().file_extension())
+                .unwrap_or(".txt"),
+            _ => ".txt",
+        };
+
+        let content = selection.to_delimited(cursor, table, COLUMN_DELIMITER, ROW_DELIMITER);
+        self.request_editor(EditorPurpose::Cells, content, extension);
+    }
+
+    pub fn on_editor_result(&mut self, purpose: EditorPurpose, content: String) {
+        // Editors add a trailing newline, which would otherwise be written into
+        // the row after the selection.
+        let content = content.trim_end().to_string();
+
+        match purpose {
+            EditorPurpose::Cells => {
+                let cursor = self.cursor();
+                let selection = self.selection;
+
+                let result = match self.table.as_mut() {
+                    Some(table) => selection.update_cells(
+                        cursor,
+                        table,
+                        &content,
+                        COLUMN_DELIMITER,
+                        ROW_DELIMITER,
+                    ),
+                    None => return,
+                };
+
+                match result {
+                    Ok(updated) if !updated.is_empty() => {
+                        self.undo_tree.add(Change::CellEdits(updated))
+                    }
+                    Ok(_) => {}
+                    Err(error) => self.messages.error(error),
+                }
+
+                self.exit_visual_mode();
+            }
+
+            EditorPurpose::SqlSelect if !content.is_empty() => self.hop_to(content),
+            EditorPurpose::SqlExecute if !content.is_empty() => self.raw_execute(content, None),
+            _ => {}
+        }
+    }
+
+    // ------------------------------------------------------------ plumbing
+
+    pub fn hop_to(&mut self, query: String) {
+        self.state.add_hop(query);
+        self.state.save();
+        self.load_current_hop();
+    }
+
+    pub fn raw_execute(&mut self, sql: String, message: Option<String>) {
+        let Some(pool) = self.pool.clone() else {
+            return;
+        };
+
+        self.spawn(async move {
+            Msg::Executed {
+                message,
+                result: db::raw_execute(&pool, &sql)
+                    .await
+                    .map_err(|e| e.to_string()),
+            }
+        });
+    }
 
     fn register_commands(&mut self) {
-        let global: Vec<(Command, Option<&str>)> = vec![
-            (
-                Command::new("Quit", |app, _| {
-                    app.should_quit = true;
-                    Ok(())
-                })
-                .described("Quit tablezz."),
-                Some("Control + q"),
-            ),
-            (
-                Command::new("ReloadFull", |app, _| {
-                    app.count = None;
-                    app.load_current_hop();
-                    app.messages.info("Reloaded all data");
-                    Ok(())
-                })
-                .described("Reload all data from the database."),
-                Some("Control + r"),
-            ),
-            (
-                Command::new("ReloadTable", |app, _| {
-                    app.reload_table();
-                    app.messages.info("Reloaded table data");
-                    Ok(())
-                })
-                .described("Reload the current table data."),
-                Some("r"),
-            ),
-            (
-                Command::new("CommandLineActivate", |app, _| {
-                    app.open_command_line();
-                    Ok(())
-                })
-                .described("Open the command line."),
-                Some(":"),
-            ),
-            (
-                Command::new("PickerOpen", |app, args| {
-                    match args.first().and_then(ArgValue::as_str) {
-                        Some("schemas") => app.load_schemas(),
-                        Some("databases") => app.load_databases(),
-                        Some("urls") => app.open_url_picker(),
-                        _ => app.load_tables(),
-                    }
-                    Ok(())
-                })
-                .described("Open the picker to pick items")
-                .args(vec![ArgSpec::one_of(
-                    "<type>",
-                    &["tables", "schemas", "databases", "urls"],
-                )
-                .with_default("tables")]),
-                Some("Leader > Space"),
-            ),
-            (
-                Command::new("SqlSelect", |app, args| {
-                    let Some(sql) = args.first().and_then(ArgValue::as_str) else {
-                        return Ok(());
-                    };
-                    app.state.add_hop(sql.to_string());
-                    app.state.save();
-                    app.load_current_hop();
-                    Ok(())
-                })
-                .described("Run a custom SQL select query and display the results.")
-                .args(vec![ArgSpec::string("<sql>")]),
-                None,
-            ),
-            (
-                Command::new("SqlExecute", |app, args| {
-                    let Some(sql) = args.first().and_then(ArgValue::as_str) else {
-                        return Ok(());
-                    };
-                    let Some(pool) = app.pool.clone() else {
-                        return Ok(());
-                    };
-                    let sql = sql.to_string();
-                    app.spawn(async move {
-                        Msg::Executed(
-                            db::raw_execute(&pool, &sql)
-                                .await
-                                .map_err(|e| e.to_string()),
-                        )
-                    });
-                    Ok(())
-                })
-                .described("Execute a SQL statement without returning results.")
-                .args(vec![ArgSpec::string("<sql>")]),
-                None,
-            ),
-            (
-                Command::new("GoBackward", |app, _| {
-                    app.state.pop_hop();
-                    app.state.save();
-                    app.load_current_hop();
-                    Ok(())
-                })
-                .described("Go back to the previous query."),
-                Some("Control + o"),
-            ),
-            (
-                Command::new("DatabaseUrlAdd", |app, args| {
-                    if let Some(url) = args.first().and_then(ArgValue::as_str) {
-                        let url = url.to_string();
-                        app.set_active_url(&url);
-                    }
-                    Ok(())
-                })
-                .described("Set the database connection URL and save it.")
-                .args(vec![ArgSpec::url("<url>")]),
-                None,
-            ),
-            (
-                Command::new("DatabaseUrlClear", |app, _| {
-                    app.state.database_url = None;
-                    app.pool = None;
-                    app.table = None;
-                    app.state.clear_hops();
-                    app.state.save();
-                    Ok(())
-                })
-                .described("Clear the current database connection URL."),
-                None,
-            ),
-            (
-                Command::new("DatabaseUrlRemove", |app, args| {
-                    let Some(url) = args.first().and_then(ArgValue::as_str) else {
-                        return Ok(());
-                    };
-                    app.state.saved_urls.retain(|u| u != url);
-                    if app.state.database_url.as_deref() == Some(url) {
-                        app.state.database_url = None;
-                        app.pool = None;
-                    }
-                    app.state.save();
-                    Ok(())
-                })
-                .described("Remove a saved database URL from the list.")
-                .args(vec![ArgSpec::url("<url>")]),
-                None,
-            ),
-        ];
-
-        let navigation: Vec<(Command, Option<&str>)> = vec![
-            (
-                Command::new("MoveCellDown", |app, args| {
-                    app.move_row(distance(args) as isize);
-                    Ok(())
-                })
-                .described("Move the cursor down by one or more cells.")
-                .args(vec![ArgSpec::number("<distance>").optional()]),
-                Some("j"),
-            ),
-            (
-                Command::new("MoveCellUp", |app, args| {
-                    app.move_row(-(distance(args) as isize));
-                    Ok(())
-                })
-                .described("Move the cursor up by one or more cells.")
-                .args(vec![ArgSpec::number("<distance>").optional()]),
-                Some("k"),
-            ),
-            (
-                Command::new("MoveCellRight", |app, args| {
-                    app.move_column(distance(args) as isize);
-                    Ok(())
-                })
-                .described("Move the cursor right by one or more cells.")
-                .args(vec![ArgSpec::number("<distance>").optional()]),
-                Some("l"),
-            ),
-            (
-                Command::new("MoveCellLeft", |app, args| {
-                    app.move_column(-(distance(args) as isize));
-                    Ok(())
-                })
-                .described("Move the cursor left by one or more cells.")
-                .args(vec![ArgSpec::number("<distance>").optional()]),
-                Some("h"),
-            ),
-            (
-                Command::new("GoToTop", |app, _| {
-                    app.set_row(0);
-                    Ok(())
-                })
-                .described("Move to the first row of the table."),
-                Some("g > g"),
-            ),
-            (
-                Command::new("GoToBottom", |app, _| {
-                    let max = app.max_row();
-                    app.set_row(max);
-                    Ok(())
-                })
-                .described("Move to the last row of the table."),
-                Some("G"),
-            ),
-            (
-                Command::new("GoToLeftEnd", |app, _| {
-                    app.set_column(0);
-                    Ok(())
-                })
-                .described("Move the cursor to the left end of the table."),
-                Some("^"),
-            ),
-            (
-                Command::new("GoToRightEnd", |app, _| {
-                    let max = app.max_column();
-                    app.set_column(max);
-                    Ok(())
-                })
-                .described("Move the cursor to the right end of the table."),
-                Some("$"),
-            ),
-            (
-                Command::new("GoDownHalf", |app, _| {
-                    let half = app.half_page() as isize;
-                    app.move_row(half);
-                    Ok(())
-                })
-                .described("Move down by half a page."),
-                Some("Control + d"),
-            ),
-            (
-                Command::new("GoUpHalf", |app, _| {
-                    let half = app.half_page() as isize;
-                    app.move_row(-half);
-                    Ok(())
-                })
-                .described("Move up by half a page."),
-                Some("Control + u"),
-            ),
-        ];
-
-        for (command, keybind) in global.into_iter().chain(navigation) {
-            if let Some(expression) = keybind {
+        for (command, expression) in builtin::global() {
+            if let Some(expression) = expression {
                 let mut keybind = Keybind::new(&command.command, expression);
                 keybind.description = command.description.clone();
                 if let Err(error) = self.keybinds.register(&keybind) {
@@ -1155,14 +1455,33 @@ impl App {
             }
             self.commands.register(command);
         }
+
+        self.register_all(builtin::visual_enter());
     }
 }
 
-fn distance(args: &[ArgValue]) -> usize {
-    args.first()
-        .and_then(ArgValue::as_usize)
-        .filter(|d| *d > 0)
-        .unwrap_or(1)
+fn where_clause(keys: &[(String, String)]) -> String {
+    keys.iter()
+        .map(|(column, value)| format!("\"{column}\" = {value}"))
+        .collect::<Vec<_>>()
+        .join(" AND ")
+}
+
+fn messages_structure() -> Vec<ColumnInfo> {
+    ["time", "type", "message"]
+        .iter()
+        .map(|name| ColumnInfo {
+            column_name: name.to_string(),
+            data_type: "text".to_string(),
+            is_primary: false,
+            is_nullable: false,
+            foreign_key: None,
+        })
+        .collect()
+}
+
+fn format_time(at: time::OffsetDateTime) -> String {
+    format!("{:02}:{:02}:{:02}", at.hour(), at.minute(), at.second())
 }
 
 /// Port of the `getDataType` fallback in `SqlQueryPage`: infer columns from the
@@ -1180,7 +1499,6 @@ fn infer_structure(row: Option<&JsonRow>) -> Vec<ColumnInfo> {
                 },
                 is_primary: false,
                 is_nullable: true,
-                column_default: None,
                 foreign_key: None,
             })
             .collect()
@@ -1197,6 +1515,7 @@ mod tests {
     use crate::keybinds::{KeyEvent, KeyOutcome};
     use crate::ui;
     use ratatui::backend::TestBackend;
+    use ratatui::layout::Rect;
     use ratatui::Terminal;
     use std::time::Duration;
     use tokio::sync::mpsc::UnboundedReceiver;
@@ -1220,6 +1539,22 @@ mod tests {
             }
         }
         assert!(done(app), "timed out waiting for {what}");
+    }
+
+    /// Let outstanding database work finish, so queued piped commands run.
+    /// `drain_pending` deliberately holds them back while anything is in
+    /// flight.
+    async fn settle(app: &mut App, rx: &mut UnboundedReceiver<Msg>) {
+        while app.is_busy() {
+            match tokio::time::timeout(Duration::from_secs(15), rx.recv()).await {
+                Ok(Some(msg)) => {
+                    app.on_msg(msg);
+                    app.drain_pending();
+                }
+                _ => break,
+            }
+        }
+        app.drain_pending();
     }
 
     fn press(app: &mut App, key: &str) {
@@ -1337,9 +1672,16 @@ mod tests {
         assert_eq!(app.cursor().0, 0, "g > g goes back to the top");
         assert_eq!(app.state.current_hop().unwrap().scroll_y, 0);
 
+        // a viewport too narrow for every column, so scrolling is forced
+        // regardless of how wide the data happens to render
+        app.viewport = Rect::new(0, 0, 40, 19);
         press(&mut app, "$");
         assert_eq!(app.cursor().1, 7, "$ goes to the last column");
         assert!(app.state.current_hop().unwrap().scroll_x > 0);
+
+        press(&mut app, "^");
+        assert_eq!(app.state.current_hop().unwrap().scroll_x, 0);
+        app.viewport = Rect::new(0, 0, 120, 19);
 
         // --- command line ---
         press(&mut app, ":");
@@ -1380,6 +1722,159 @@ mod tests {
             .messages
             .current()
             .is_some_and(|(_, text)| text.contains("Invalid command")));
+
+        // --- visual mode swaps its own keybinds ---
+        press(&mut app, "g");
+        press(&mut app, "g");
+        press(&mut app, "^");
+        press(&mut app, "v");
+        assert_eq!(app.selection.start, Some((0, 0)));
+        press(&mut app, "j");
+        press(&mut app, "j");
+        assert_eq!(
+            app.selection
+                .cells(app.cursor(), app.table.as_ref().unwrap())
+                .len(),
+            3
+        );
+        // a live message owns the status line, so clear it to see the mode
+        app.messages.clear();
+        assert!(screen(&mut app).contains("-- VISUAL --"));
+
+        press(&mut app, "v"); // the same key now exits
+        assert!(!app.selection.is_selecting());
+
+        // --- marking rows for deletion, and taking it back ---
+        press(&mut app, "v");
+        press(&mut app, "j");
+        press(&mut app, "d");
+        press(&mut app, "d");
+        assert_eq!(app.table.as_ref().unwrap().deleted_rows().len(), 2);
+        assert!(!app.selection.is_selecting(), "deleting leaves visual mode");
+        assert!(
+            screen(&mut app).contains("[+2]"),
+            "pending changes are counted"
+        );
+
+        press(&mut app, "u");
+        assert!(app.table.as_ref().unwrap().deleted_rows().is_empty());
+
+        // --- editing a cell and writing it back ---
+        app.trigger_command("GoToTop | GoToLeftEnd");
+        press(&mut app, "l"); // the name column
+        assert_eq!(app.cursor(), (0, 1));
+        press(&mut app, "c");
+
+        // the row order is not fixed and the test is run repeatedly, so work
+        // from whatever the cell holds now
+        let original = app.table.as_ref().unwrap().cell_display(0, 1);
+        let edited = format!("{original}'s");
+
+        let request = app.editor_request.take().expect("the editor was asked for");
+        assert_eq!(request.purpose, EditorPurpose::Cells);
+        assert_eq!(request.initial_content, original);
+        assert_eq!(request.extension, ".txt");
+
+        // an apostrophe is the case the original built broken SQL for, and the
+        // trailing newline is what an editor leaves behind
+        app.on_editor_result(EditorPurpose::Cells, format!("{edited}\n"));
+        assert_eq!(app.table.as_ref().unwrap().dirty_cells(), vec![(0, 1)]);
+        assert_eq!(app.table.as_ref().unwrap().cell_display(0, 1), edited);
+
+        press(&mut app, "w");
+        pump(&mut app, &mut rx, "the write to land", |app| {
+            app.messages
+                .history()
+                .iter()
+                .any(|m| m.text.contains("Successfully updated"))
+        })
+        .await;
+        // the reloaded table has the new value and no pending edits
+        pump(&mut app, &mut rx, "the reload", |app| {
+            app.table.as_ref().is_some_and(|table| {
+                table.dirty_cells().is_empty()
+                    && (0..table.rows().len()).any(|row| table.cell_display(row, 1) == edited)
+            })
+        })
+        .await;
+        settle(&mut app, &mut rx).await;
+
+        // --- foreign keys ---
+        app.trigger_command("GoToTop | GoToLeftEnd | MoveCellRight 3");
+        assert_eq!(app.cursor(), (0, 3), "org_id");
+
+        press(&mut app, "g");
+        press(&mut app, "d");
+        pump(&mut app, &mut rx, "the foreign key hop", |app| {
+            app.table.as_ref().is_some_and(|t| t.name == "orgs")
+        })
+        .await;
+        settle(&mut app, &mut rx).await;
+        assert_eq!(app.table.as_ref().unwrap().rows().len(), 1);
+        assert_eq!(app.count, Some(2), "the count follows the hop's table");
+        assert!(screen(&mut app).contains("orgs · 1/2 rows"));
+
+        // orgs.id is referenced by users.org_id, so this is a single match
+        press(&mut app, "g");
+        press(&mut app, "r");
+        pump(&mut app, &mut rx, "the references hop", |app| {
+            app.table.as_ref().is_some_and(|t| t.name == "users")
+        })
+        .await;
+        settle(&mut app, &mut rx).await;
+        assert!(app.table.as_ref().unwrap().rows().len() > 1);
+
+        // --- the message log is a table too ---
+        app.trigger_command("Messages");
+        assert_eq!(app.table.as_ref().unwrap().name, "messages");
+        assert!(app.table.as_ref().unwrap().rows().len() > 1);
+        assert!(screen(&mut app).contains("Successfully updated"));
+        app.trigger_command("GoBackward");
+        pump(&mut app, &mut rx, "the hop back", |app| {
+            app.table.as_ref().is_some_and(|t| t.name == "users")
+        })
+        .await;
+        settle(&mut app, &mut rx).await;
+
+        // --- help overlay ---
+        press(&mut app, "?");
+        let rendered = screen(&mut app);
+        // full command names, not clipped by the column split
+        for command in [
+            "WriteChanges",
+            "MoveCellDown",
+            "GoToForeignKeyRelation",
+            "SelectionCopyToClipboard",
+            "CommandLineActivate",
+            "OpenCellEditor",
+        ] {
+            assert!(rendered.contains(command), "{command} in:\n{rendered}");
+        }
+
+        press(&mut app, "/");
+        assert!(app.input_focused(), "the search box takes the keys");
+        app.help.as_mut().unwrap().search = "Write".to_string();
+        assert!(screen(&mut app).contains("WriteChanges"));
+        press(&mut app, "Escape"); // stops the search
+        assert!(app.help.is_some());
+        press(&mut app, "Escape"); // closes the panel
+        assert!(app.help.is_none());
+
+        // --- autocomplete ---
+        press(&mut app, ":");
+        app.command_line.as_mut().unwrap().set("Go");
+        press(&mut app, "Tab");
+        assert!(app.autocomplete.is_some(), "several matches open the menu");
+        let rendered = screen(&mut app);
+        assert!(rendered.contains("GoToTop"), "screen was:\n{rendered}");
+
+        press(&mut app, "Tab"); // moves the selection while the menu is up
+        press(&mut app, "Enter"); // accepts it instead of running the command
+        assert!(app.autocomplete.is_none());
+        assert!(app.command_line.is_some(), "the prompt stays open");
+        assert!(app.command_line.as_ref().unwrap().value().starts_with("Go"));
+        press(&mut app, "Escape");
+        assert!(app.command_line.is_none());
 
         let _ = std::fs::remove_dir_all(&home);
     }

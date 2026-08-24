@@ -5,7 +5,9 @@
 pub mod datatype;
 pub mod layout;
 pub mod render;
+pub mod selection;
 pub mod sql;
+pub mod undo;
 
 use serde_json::Value as JsonValue;
 
@@ -17,7 +19,6 @@ pub struct Column {
     pub name: String,
     pub is_primary: bool,
     pub is_nullable: bool,
-    pub column_default: Option<String>,
     pub foreign_key: Option<ForeignKey>,
     data_type: Box<dyn DataType>,
 }
@@ -95,10 +96,6 @@ pub struct Row {
 }
 
 impl Row {
-    pub fn cells(&self) -> &[Cell] {
-        &self.cells
-    }
-
     pub fn cell(&self, column_index: usize) -> Option<&Cell> {
         self.cells.get(column_index)
     }
@@ -132,7 +129,6 @@ impl Table {
                 name: info.column_name.clone(),
                 is_primary: info.is_primary,
                 is_nullable: info.is_nullable,
-                column_default: info.column_default.clone(),
                 foreign_key: info.foreign_key.clone(),
                 data_type: create_data_type(&info.data_type, info.is_nullable),
             })
@@ -199,6 +195,62 @@ impl Table {
     pub fn is_empty(&self) -> bool {
         self.rows.is_empty() || self.columns.is_empty()
     }
+
+    /// `columns` and `rows` are separate fields, so the column can be read while
+    /// the cell is borrowed mutably.
+    pub fn update_cell(&mut self, row: usize, column: usize, value: &str) -> Result<(), String> {
+        let Some(column_ref) = self.columns.get(column) else {
+            return Ok(());
+        };
+        let Some(cell) = self
+            .rows
+            .get_mut(row)
+            .and_then(|row| row.cells.get_mut(column))
+        else {
+            return Ok(());
+        };
+
+        cell.update_data(column_ref, value)
+    }
+
+    /// Edited cells in rows that are not being deleted anyway.
+    pub fn dirty_cells(&self) -> Vec<selection::CellRef> {
+        self.rows
+            .iter()
+            .filter(|row| !row.is_deleted())
+            .flat_map(|row| {
+                row.cells
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, cell)| cell.is_dirty())
+                    .map(move |(column, _)| (row.index, column))
+            })
+            .collect()
+    }
+
+    pub fn deleted_rows(&self) -> Vec<usize> {
+        self.rows
+            .iter()
+            .filter(|row| row.is_deleted())
+            .map(|row| row.index)
+            .collect()
+    }
+
+    /// `("column", "value")` pairs identifying a row, from its original values.
+    pub fn primary_key(&self, row: usize) -> Result<Vec<(String, String)>, String> {
+        let Some(row) = self.row(row) else {
+            return Ok(Vec::new());
+        };
+
+        self.columns
+            .iter()
+            .filter(|column| column.is_primary)
+            .map(|column| {
+                let cell = row.cell(column.index).ok_or("missing primary key cell")?;
+                Ok((column.name.clone(), cell.original_to_sql_value(column)?))
+            })
+            .collect()
+    }
 }
 
 #[cfg(test)]
@@ -212,7 +264,6 @@ mod tests {
             data_type: data_type.to_string(),
             is_primary: name == "id",
             is_nullable: false,
-            column_default: None,
             foreign_key: None,
         }
     }

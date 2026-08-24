@@ -183,24 +183,6 @@ impl Keybinds {
             .collect()
     }
 
-    /// Only the bindings registered in code — what the checked in command
-    /// reference documents.
-    pub fn default_keybinds(&self) -> Vec<PotentialKeybind> {
-        self.component
-            .all_tops()
-            .into_iter()
-            .map(|k| PotentialKeybind {
-                bind: formatter::format(&k.ast),
-                command: k.command,
-                description: k.description,
-            })
-            .collect()
-    }
-
-    pub fn show_all_potential_keybinds(&mut self) {
-        self.potential = Some(self.all_keybinds());
-    }
-
     fn reset(&mut self) {
         self.sequence_index = 0;
         self.pending = None;

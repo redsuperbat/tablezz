@@ -41,6 +41,10 @@ A JSON schema for editor completion lives in
 {
   "$schema": "https://raw.githubusercontent.com/redsuperbat/tablezz/refs/heads/main/config/schema.json",
   "leaderKey": "Space",
+  "commandAliases": {
+    "q": "Quit",
+    "w": "WriteChanges"
+  },
   "keybinds": {
     "g > l": "GoToRightEnd",
     "Leader > d": {
@@ -60,8 +64,9 @@ Tablezz uses a powerful keybind expression system inspired by Vim. Keybinds can 
 
 ### Available Commands
 
-For a complete auto-generated list of all commands with their arguments and
-default keybinds, see [config/commands.md](./config/commands.md).
+For a complete auto-generated list of all commands with their arguments, default
+keybinds and the scope they are active in, see
+[config/commands.md](./config/commands.md).
 
 ### Syntax
 
@@ -128,7 +133,7 @@ Use `>` to create multi-key sequences:
 {
   "keybinds": {
     "g > g": "GoToTop",
-    "g > e": "GoToBottom"
+    "d > d": "DeleteRow"
   }
 }
 ```
@@ -142,11 +147,32 @@ Use `|` to allow multiple keys to trigger the same command:
 ```json
 {
   "keybinds": {
+    "Escape | v": "VisualModeExit",
     "(Control + j) | ArrowDown": "MoveCellDown",
     "(Control + k) | ArrowUp": "MoveCellUp"
   }
 }
 ```
+
+## Editing
+
+Move the cursor with `hjkl`, enter visual mode with `v` to select a block, then:
+
+| Key   | Does                                                        |
+| ----- | ----------------------------------------------------------- |
+| `c`   | Open the selection in `$EDITOR` (tab/newline delimited)      |
+| `d d` | Mark the selected rows for deletion                          |
+| `u`   | Undo the last change                                         |
+| `w`   | Write pending changes to the database, in one transaction     |
+| `y`   | Copy the selection to the clipboard                          |
+| `K`   | Show the full value of the cell under the cursor             |
+
+Edits are local until `w`; the status bar shows `[+n]` while changes are
+pending, dirty cells are highlighted and rows marked for deletion are struck
+through. Writing needs a primary key on the table.
+
+`g d` follows the foreign key under the cursor, `g r` finds the tables that
+reference it. `?` lists every keybind, and `/` searches that list.
 
 ## Command line
 
@@ -167,3 +193,6 @@ Three variables are expanded inside a command, from the cell the cursor is on:
 ```
 
 Prefix a variable with `\` to write it literally.
+
+Aliases from `commandAliases` work everywhere a command name does, including in
+the autocomplete list — that is how you get `:q` and `:w`.

@@ -2,6 +2,7 @@
 //! only way UI actions happen: keybinds trigger commands, the command line
 //! triggers commands.
 
+pub mod builtin;
 pub mod command_line;
 pub mod messages;
 pub mod parse;
@@ -136,10 +137,6 @@ impl ArgValue {
     /// Numeric arguments are always used as positive cell distances.
     pub fn as_usize(&self) -> Option<usize> {
         self.as_num().map(|n| n.max(0.0) as usize)
-    }
-
-    pub fn is_none(&self) -> bool {
-        matches!(self, ArgValue::None)
     }
 }
 

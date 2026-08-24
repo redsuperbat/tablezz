@@ -59,11 +59,13 @@ command line triggers commands. An action is a plain function:
 type Action = fn(&mut App, &[ArgValue]) -> anyhow::Result<()>;
 ```
 
-Global commands are registered in `App::register_commands`. Commands scoped to
-an overlay are registered when it opens and unregistered when it closes (see
-`App::open_picker` / `open_command_line`) — that is the port of the original's
-`onMount` / `onCleanup` registration, and it is what lets an overlay shadow
-`Escape` or `Enter` while it is up.
+Every command lives in `commands/builtin.rs`, grouped by scope. `global()` is
+always registered; the other sets (`picker()`, `command_line()`,
+`autocomplete()`, `help()`, `visual_enter()` / `visual_exit()`) are registered
+by `App::register_all` when their overlay or mode opens and dropped by
+`unregister_all` when it closes — the port of the original's `onMount` /
+`onCleanup`, and what lets an overlay shadow `Escape` or `Enter` while it is up.
+Add a command to the right set rather than registering it ad hoc.
 
 Arguments are declared with `ArgSpec` (the replacement for `actionArgs: ZodType[]`).
 The `title` doubles as the command line hint, so keep it in `<angle>` /
@@ -83,6 +85,12 @@ original's `waitForQueries()`.
 State that must survive a restart goes in `state.rs` and is saved explicitly —
 there is no autosave.
 
+The editor is the one thing the loop has to do synchronously: a command sets
+`app.editor_request`, and `main.rs` drops the event stream, hands the terminal
+over, runs `$EDITOR`, then feeds the result back through
+`App::on_editor_result`. Dropping the stream matters — otherwise it eats the
+editor's input.
+
 ### Rendering
 
 `table/render.rs` writes into the ratatui `Buffer` directly rather than using
@@ -99,11 +107,13 @@ User facing failures go to `app.messages` (shown in the status bar, kept in
 history). `anyhow::Result` from an action is turned into a message
 automatically. Reserve panics for genuine invariants.
 
-## Not ported yet
+## Known gaps
 
-The second pass of the port still owes: cell editing via `$EDITOR`, visual
-selection mode, `WriteChanges` / `DeleteRow` / `Undo`, foreign key navigation
-(`g > d`, `g > r`), the keybind help overlay, command line history search and
-the autocomplete popup, the messages page, clipboard yank and `TruncateTable`.
-The model layers those need are already ported, which is why `main.rs` carries
-a crate level `#![allow(dead_code)]` — remove it as they get wired up.
+- `ToggleMaximize` is gone; a terminal has no window to maximize. `Quit`
+  (`Control + q`) is new, and `ReloadFull` moved to `Control + r` because
+  terminals rarely deliver `Meta`.
+- Table queries have no `ORDER BY`, so after a write postgres may return rows
+  in a different order and the cursor ends up on a different row. The original
+  behaved the same way; adding a sort would be a behaviour change.
+- Timestamps render the way `time`'s `Display` writes them
+  (`2026-08-24 9:18:54.939428 +00:00:00`), matching the old backend.
