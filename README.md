@@ -187,6 +187,32 @@ Use `|` to allow multiple keys to trigger the same command:
 }
 ```
 
+## Reading the table
+
+Column headers carry one-character markers before the name, and a `?` after it
+when the column is nullable:
+
+| Marker | Meaning                                                              |
+| ------ | -------------------------------------------------------------------- |
+| `*`    | Primary key                                                          |
+| `>`    | Foreign key                                                          |
+| `#`    | Number — `integer`, `bigint`, `smallint`, `numeric`, `real`, ...      |
+| `a`    | Text — `text`, `varchar`, `char`, `uuid`, `citext`                    |
+| `t`    | Date or time — `date`, `time`, `timestamp`, with or without zone      |
+| `b`    | Boolean                                                              |
+| `{`    | `json` or `jsonb`                                                    |
+| `[`    | Array                                                                |
+| `~`    | `vector`                                                             |
+| `?`    | Nullable                                                             |
+
+Anything else — enums, domains, user-defined types — gets no type marker.
+`* # id` is a primary key holding a number, `> # org_id?` a nullable foreign
+key holding a number.
+
+Cells are marked by state: the cursor is inverted, a visual selection has a
+blue background with the anchor cell in cyan, edited cells are yellow until
+written, and rows marked for deletion are struck through in red.
+
 ## Editing
 
 Move the cursor with `hjkl`, enter visual mode with `v` to select a block, then:
