@@ -75,8 +75,10 @@ impl ColumnLayout {
         self.width(index) + CELL_PADDING * 2 + SEPARATOR_WIDTH
     }
 
-    /// How many columns fit starting at `first` in `available` terminal columns.
-    /// Always at least one so a very wide column still renders (clipped).
+    /// How many columns fit *entirely* starting at `first`. The renderer draws
+    /// past this and lets the edge clip; this is what decides when the cursor
+    /// forces a scroll, so that the cell under it is never cut off. Always at
+    /// least one, so a column wider than the viewport can still be reached.
     pub fn visible_count(&self, first: usize, available: usize) -> usize {
         let mut used = 0;
         let mut count = 0;

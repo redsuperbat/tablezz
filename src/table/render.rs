@@ -48,19 +48,23 @@ pub fn render(state: RenderState, area: Rect, buf: &mut Buffer) {
     }
 
     let (scroll_y, scroll_x) = scroll;
-    let column_count = layout.visible_count(scroll_x, area.width as usize);
     let row_count = visible_rows(area).min(table.rows().len().saturating_sub(scroll_y));
+
+    // Every column from the scroll offset onwards is drawn; the last one is
+    // clipped at the edge rather than dropped, so the width is never wasted.
+    // Scrolling only moves when the cursor lands somewhere not fully visible.
+    let columns = scroll_x..table.columns().len();
 
     // --- header ---
     let mut x = area.x;
-    for column_index in scroll_x..(scroll_x + column_count) {
+    for column_index in columns.clone() {
         let Some(column) = table.column(column_index) else {
             break;
         };
         let width = layout.width(column_index);
 
         let mut cursor_x = x + CELL_PADDING as u16;
-        let limit = x + (width + CELL_PADDING) as u16;
+        let limit = (x + (width + CELL_PADDING) as u16).min(area.right());
 
         let mut icon = |glyph: char, color: Color| {
             if cursor_x + 1 < limit {
@@ -124,7 +128,7 @@ pub fn render(state: RenderState, area: Rect, buf: &mut Buffer) {
         };
 
         let mut x = area.x;
-        for column_index in scroll_x..(scroll_x + column_count) {
+        for column_index in columns.clone() {
             let Some(column) = table.column(column_index) else {
                 break;
             };
@@ -152,13 +156,9 @@ pub fn render(state: RenderState, area: Rect, buf: &mut Buffer) {
             };
             buf.set_style(painted, style);
 
-            buf.set_stringn(
-                x + CELL_PADDING as u16,
-                y,
-                cell.to_display(column),
-                width,
-                style,
-            );
+            let text_x = x + CELL_PADDING as u16;
+            let room = width.min(area.right().saturating_sub(text_x) as usize);
+            buf.set_stringn(text_x, y, cell.to_display(column), room, style);
 
             let separator_x = x + cell_width;
             if separator_x < area.right() {
@@ -289,6 +289,53 @@ mod tests {
         assert!(lines[1].starts_with('─'));
         assert!(lines[2].contains('1'));
         assert!(lines[5].contains('4'));
+    }
+
+    #[test]
+    fn a_column_that_only_half_fits_is_still_drawn() {
+        let structure: Vec<ColumnInfo> = ["alpha", "bravo", "charlie"]
+            .iter()
+            .map(|name| column(name, "text", false))
+            .collect();
+        let rows: Vec<JsonRow> = vec![["alpha", "bravo", "charlie"]
+            .iter()
+            .map(|name| (name.to_string(), json!(format!("{name}-value"))))
+            .collect()];
+
+        let table = Table::new("t".into(), &structure, &rows);
+        let layout = ColumnLayout::compute(&table);
+
+        // two whole columns and part of a third
+        let width = (layout.slot_width(0) + layout.slot_width(1) + 4) as u16;
+        assert!(width < (0..3).map(|i| layout.slot_width(i)).sum::<usize>() as u16);
+
+        let area = Rect::new(0, 0, width, 4);
+        let mut buf = Buffer::empty(area);
+        render(
+            RenderState {
+                table: &table,
+                layout: &layout,
+                cursor: (0, 0),
+                scroll: (0, 0),
+                selection: VisualSelection::default(),
+            },
+            area,
+            &mut buf,
+        );
+
+        let row: String = (0..area.width)
+            .map(|x| buf[(x, HEADER_HEIGHT)].symbol().to_string())
+            .collect();
+
+        assert!(
+            row.contains("cha"),
+            "the clipped column should still show what fits, row was {row:?}"
+        );
+        assert_eq!(
+            row.trim_end().chars().count(),
+            area.width as usize,
+            "no dead space at the right edge, row was {row:?}"
+        );
     }
 
     #[test]

@@ -1528,7 +1528,7 @@ mod tests {
     ) {
         for _ in 0..64 {
             if done(app) {
-                return;
+                break;
             }
             match tokio::time::timeout(Duration::from_secs(15), rx.recv()).await {
                 Ok(Some(msg)) => {
@@ -1539,11 +1539,13 @@ mod tests {
             }
         }
         assert!(done(app), "timed out waiting for {what}");
+
+        // The predicate can be satisfied while other queries are still in
+        // flight, and `drain_pending` deliberately holds commands back until
+        // they land. Quiesce here so a command issued next actually runs.
+        settle(app, rx).await;
     }
 
-    /// Let outstanding database work finish, so queued piped commands run.
-    /// `drain_pending` deliberately holds them back while anything is in
-    /// flight.
     async fn settle(app: &mut App, rx: &mut UnboundedReceiver<Msg>) {
         while app.is_busy() {
             match tokio::time::timeout(Duration::from_secs(15), rx.recv()).await {
@@ -1797,7 +1799,6 @@ mod tests {
             })
         })
         .await;
-        settle(&mut app, &mut rx).await;
 
         // --- foreign keys ---
         app.trigger_command("GoToTop | GoToLeftEnd | MoveCellRight 3");
@@ -1809,7 +1810,6 @@ mod tests {
             app.table.as_ref().is_some_and(|t| t.name == "orgs")
         })
         .await;
-        settle(&mut app, &mut rx).await;
         assert_eq!(app.table.as_ref().unwrap().rows().len(), 1);
         assert_eq!(app.count, Some(2), "the count follows the hop's table");
         assert!(screen(&mut app).contains("orgs · 1/2 rows"));
@@ -1821,7 +1821,6 @@ mod tests {
             app.table.as_ref().is_some_and(|t| t.name == "users")
         })
         .await;
-        settle(&mut app, &mut rx).await;
         assert!(app.table.as_ref().unwrap().rows().len() > 1);
 
         // --- the message log is a table too ---
@@ -1834,7 +1833,6 @@ mod tests {
             app.table.as_ref().is_some_and(|t| t.name == "users")
         })
         .await;
-        settle(&mut app, &mut rx).await;
 
         // --- help overlay ---
         press(&mut app, "?");

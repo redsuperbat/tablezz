@@ -123,7 +123,11 @@ horizontal column scrolling need per cell control. Column widths come from
 `table/layout.rs`, which samples the first 50 rows.
 
 Scrolling is per row and per whole column, not per pixel: `Hop.scroll_y` is the
-first visible row, `Hop.scroll_x` the first visible column.
+first visible row, `Hop.scroll_x` the first visible column. The renderer draws
+every column from that offset and lets the right edge clip the last one, so no
+width is wasted; `ColumnLayout::visible_count` counts only whole columns and
+exists to decide when the cursor forces a scroll, which keeps the cell under
+the cursor from being cut off.
 
 ### Errors
 
