@@ -24,4 +24,4 @@ sqlparser = "0.53"
 dirs = "5"
 url = "2"
 schemars = { version = "0.8", features = ["indexmap2"] }
-arboard = "3"
+arboard = { version = "3", default-features = false }

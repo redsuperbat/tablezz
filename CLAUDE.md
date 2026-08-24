@@ -8,6 +8,28 @@ deliberately (keybind pipeline, command registry, table model, config file
 format are all 1:1). `git log main` has the TypeScript original if you need to
 compare behaviour.
 
+## Platforms
+
+The code is platform neutral — no `std::os::*`, no `cfg(target_os)`. Keep it
+that way: `dirs::home_dir`, `std::env::temp_dir` and `std::process::Command`
+cover what the editor and the config need on all three targets.
+
+CI builds and tests on linux, macos and windows. Nix covers the four unix
+systems `flake-utils` enumerates (x86_64 and aarch64 × linux and darwin); there
+is no nix target for windows, so windows binaries come from cargo.
+
+## Nix
+
+`flake.nix` exposes `packages.default`, `apps.default` and `overlays.default`
+(so other flakes can consume this one as an input), plus the dev shell, for each
+system `flake-utils.lib.eachDefaultSystem` yields. The derivation lives in the
+overlay so `pkgs.tablezz` works for overlay consumers; the version is read out
+of `Cargo.toml` and the source is a `fileset` of `Cargo.{toml,lock}` and `src/`,
+so editing docs does not trigger a rebuild. Adding a dependency that needs
+system libraries means adding them to the derivation's `buildInputs` — prefer
+turning the dependency's default features off first, the way `arboard` is
+text-only here.
+
 ## Quality gates
 
 Run before declaring work complete:
@@ -17,10 +39,12 @@ Run before declaring work complete:
 - `cargo clippy --all-targets`
 
 The end to end test in `src/app.rs` needs a database and is skipped without
-one:
+one. `.github/fixtures/schema.sql` is the schema it expects, and CI applies the
+same file:
 
 ```sh
 docker run -d --name tablezz-test -e POSTGRES_PASSWORD=pw -e POSTGRES_DB=tablezz -p 55432:5432 postgres:16-alpine
+docker exec -i tablezz-test psql -q -U postgres -d tablezz < .github/fixtures/schema.sql
 TABLEZZ_TEST_DATABASE_URL=postgres://postgres:pw@localhost:55432/tablezz cargo test
 ```
 

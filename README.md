@@ -3,6 +3,43 @@
 Tablezz is a keyboard-centric PostgreSQL table viewer for the terminal, built
 with [ratatui](https://ratatui.rs).
 
+## Installing
+
+With nix flakes, either take the package straight from the input:
+
+```nix
+{
+  inputs.tablezz.url = "github:redsuperbat/tablezz";
+
+  outputs = {nixpkgs, tablezz, ...}: {
+    # nixos, home-manager, anywhere a package list goes
+    environment.systemPackages = [tablezz.packages.x86_64-linux.default];
+  };
+}
+```
+
+or add the overlay and use `pkgs.tablezz`:
+
+```nix
+{
+  nixpkgs.overlays = [tablezz.overlays.default];
+  environment.systemPackages = [pkgs.tablezz];
+}
+```
+
+To try it without installing anything:
+
+```sh
+nix run github:redsuperbat/tablezz -- postgres://user:password@localhost/mydb
+```
+
+The flake covers `x86_64-linux`, `aarch64-linux`, `x86_64-darwin` and
+`aarch64-darwin`. Windows is not a nix platform, so build it with cargo there:
+
+```sh
+cargo build --release
+```
+
 ## Running
 
 ```sh
