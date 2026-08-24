@@ -93,6 +93,11 @@ impl VisualSelection {
 
     /// Write a delimited block back into the table, anchored at the top left of
     /// the selection.
+    ///
+    /// The block has to have exactly the shape of the selection. Anything else
+    /// is refused: the offsets are positional, so a row gained or lost in the
+    /// editor would otherwise shift every value after it and write into cells
+    /// that were never selected.
     pub fn update_cells(
         &self,
         current: CellRef,
@@ -101,16 +106,37 @@ impl VisualSelection {
         column_delimiter: &str,
         row_delimiter: &str,
     ) -> Result<Vec<CellRef>, String> {
-        let (start_row, start_column) = match self.bounds(current) {
-            Some((min, _)) => min,
-            None => current,
-        };
+        let (start, end) = self.bounds(current).unwrap_or((current, current));
+        let expected_rows = end.0 - start.0 + 1;
+        let expected_columns = end.1 - start.1 + 1;
+
+        let lines: Vec<&str> = text.split(row_delimiter).collect();
+        if lines.len() != expected_rows {
+            return Err(format!(
+                "expected {expected_rows} row(s) back, got {}; nothing was changed",
+                lines.len()
+            ));
+        }
+
+        // Validate the whole block before touching anything, so a rejected
+        // edit leaves the table exactly as it was.
+        let mut block: Vec<Vec<&str>> = Vec::with_capacity(expected_rows);
+        for (offset, line) in lines.iter().enumerate() {
+            let values: Vec<&str> = line.split(column_delimiter).collect();
+            if values.len() != expected_columns {
+                return Err(format!(
+                    "expected {expected_columns} column(s) in row {}, got {}; nothing was changed",
+                    offset + 1,
+                    values.len()
+                ));
+            }
+            block.push(values);
+        }
 
         let mut updated = Vec::new();
-
-        for (row_offset, line) in text.split(row_delimiter).enumerate() {
-            for (column_offset, value) in line.split(column_delimiter).enumerate() {
-                let cell = (start_row + row_offset, start_column + column_offset);
+        for (row_offset, values) in block.into_iter().enumerate() {
+            for (column_offset, value) in values.into_iter().enumerate() {
+                let cell = (start.0 + row_offset, start.1 + column_offset);
 
                 if table.cell(cell.0, cell.1).is_none() {
                     continue;
@@ -203,14 +229,49 @@ mod tests {
     }
 
     #[test]
-    fn pasting_past_the_edge_is_ignored() {
+    fn a_block_of_the_wrong_shape_is_refused() {
+        let selection = VisualSelection {
+            start: Some((0, 0)),
+        };
+        let mut table = table();
+
+        // the editor came back with one row instead of two
+        let error = selection
+            .update_cells((1, 1), &mut table, "x\ty", "\t", "\n")
+            .unwrap_err();
+        assert!(error.contains("expected 2 row(s)"), "{error}");
+
+        // ...and with an extra column
+        let error = selection
+            .update_cells((1, 1), &mut table, "x\ty\tz\nq\tw", "\t", "\n")
+            .unwrap_err();
+        assert!(error.contains("expected 2 column(s) in row 1"), "{error}");
+
+        assert_eq!(
+            table.cell_display(0, 0),
+            "r0c0",
+            "a refused block changes nothing"
+        );
+        assert_eq!(table.cell_display(0, 2), "r0c2", "least of all outside it");
+        assert!(table.dirty_cells().is_empty());
+    }
+
+    #[test]
+    fn a_single_cell_can_hold_newlines() {
         let selection = VisualSelection::default();
         let mut table = table();
 
         let updated = selection
-            .update_cells((2, 2), &mut table, "x\ty\nz", "\t", "\n")
+            .update_cells(
+                (0, 0),
+                &mut table,
+                "line one\nline two",
+                "\u{1f}",
+                "\u{1f}\n",
+            )
             .unwrap();
 
-        assert_eq!(updated, vec![(2, 2)], "only the in-bounds cell was written");
+        assert_eq!(updated, vec![(0, 0)]);
+        assert_eq!(table.cell_display(0, 0), "line one\nline two");
     }
 }
