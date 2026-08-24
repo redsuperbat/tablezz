@@ -66,12 +66,12 @@ Configuration is stored in a JSON format at:
 The configuration file is watched for changes and automatically reloaded. Set
 `TABLEZZ_HOME` to keep it (and the persisted session state) somewhere else.
 
-| Option           | Default   | Description                                        |
-| ---------------- | --------- | -------------------------------------------------- |
-| `leaderKey`      | `Space`   | Prefix used by the `Leader` token in keybinds       |
-| `keybinds`       | `{}`      | Keybind expression -> command                       |
-| `commandAliases` | `{}`      | Short name -> command name                          |
-| `editor`         | `nvim`    | Terminal editor invoked when editing cells          |
+| Option           | Default | Description                                   |
+| ---------------- | ------- | --------------------------------------------- |
+| `leaderKey`      | `Space` | Prefix used by the `Leader` token in keybinds |
+| `keybinds`       | `{}`    | Keybind expression -> command                 |
+| `commandAliases` | `{}`    | Short name -> command name                    |
+| `editor`         | `nvim`  | Terminal editor invoked when editing cells    |
 
 A JSON schema for editor completion lives in
 [config/schema.json](./config/schema.json):
@@ -191,35 +191,36 @@ Use `|` to allow multiple keys to trigger the same command:
 
 ## Reading the table
 
-Tablezz needs a [Nerd Font](https://www.nerdfonts.com). 
+Tablezz needs a [Nerd Font](https://www.nerdfonts.com). Column headers carry
+icons before the name, and a `?` after it when the column is nullable. The
+icons are private-use glyphs that will not render on GitHub, so they are
+described here rather than shown:
 
-Column headers carry icons before the name:
-
-| Icon | Meaning                                                         |
-| ---- | --------------------------------------------------------------- |
-| ``   | Primary key                                                     |
-| ``   | Foreign key                                                     |
-| ``   | Number — `integer`, `bigint`, `smallint`, `numeric`, `real`, ...|
-| ``   | Text — `text`, `varchar`, `char`, `uuid`, `citext`              |
-| ``   | Date or time — `date`, `time`, `timestamp`, with or without zone|
-| ``   | Boolean                                                         |
-| `󰘦`  | `json` or `jsonb`                                               |
-| `󰪩`  | Array                                                           |
-| `󰕙`  | `vector`                                                        |
-| `?`  | Nullable                                                        |
+| Icon                        | Meaning                                                          |
+| --------------------------- | ---------------------------------------------------------------- |
+| A key                       | Primary key                                                      |
+| Two chain links             | Foreign key                                                      |
+| A hash, `#`                 | Number - `integer`, `bigint`, `smallint`, `numeric`, `real`      |
+| A capital `A`               | Text - `text`, `varchar`, `char`, `uuid`, `citext`               |
+| A calendar page             | Date or time - `date`, `time`, `timestamp`, with or without zone |
+| A toggle switch, set to off | Boolean                                                          |
+| Curly braces                | `json` or `jsonb`                                                |
+| Square brackets             | Array                                                            |
+| A line between two points   | `vector`                                                         |
+| A literal `?`               | Nullable                                                         |
 
 ## Editing
 
 Move the cursor with `hjkl`, enter visual mode with `v` to select a block, then:
 
-| Key   | Does                                                        |
-| ----- | ----------------------------------------------------------- |
-| `c`   | Open the selection in `$EDITOR`                               |
-| `d d` | Mark the selected rows for deletion                          |
-| `u`   | Undo the last change                                         |
-| `w`   | Write pending changes to the database, in one transaction     |
-| `y`   | Copy the selection to the clipboard                          |
-| `K`   | Show the full value of the cell under the cursor             |
+| Key   | Does                                                      |
+| ----- | --------------------------------------------------------- |
+| `c`   | Open the selection in `$EDITOR`                           |
+| `d d` | Mark the selected rows for deletion                       |
+| `u`   | Undo the last change                                      |
+| `w`   | Write pending changes to the database, in one transaction |
+| `y`   | Copy the selection to the clipboard                       |
+| `K`   | Show the full value of the cell under the cursor          |
 
 Edits are local until `w`; the status bar shows `[+n]` while changes are
 pending, dirty cells are highlighted and rows marked for deletion are struck
@@ -230,43 +231,27 @@ reference it. `?` lists every keybind, and `/` searches that list.
 
 ### Editing in `$EDITOR`
 
-A single cell opens as its raw value, with the extension its type deserves — a
-`jsonb` cell arrives as `.json`, so you get syntax highlighting and your
-formatter.
+A single cell opens as its raw value, a `jsonb` cell arrives as `.json`, so you get syntax highlighting and your formatter.
 
-A block of cells opens as a markdown grid (`.md`, so `tabular.vim` and
-`vim-table-mode` can realign it):
+A block of cells opens as a markdown grid (`.md`, so `tabular.vim` and `vim-table-mode` can realign it):
 
 ```markdown
-| # | id | name   | email          |
-|---|----|--------|----------------|
-| 1 | 3  | user 3 | ␀              |
-| 2 | 4  | user 4 | u4@example.com |
-| 3 | 5  | user 5 | u5@example.com |
+| #   | id  | name   | email          |
+| --- | --- | ------ | -------------- |
+| 1   | 3   | user 3 | ␀              |
+| 2   | 4   | user 4 | u4@example.com |
+| 3   | 5   | user 5 | u5@example.com |
 ```
 
 `#` is the row number, and rows are matched back by it rather than by
-position — so you can reorder or sort the lines freely, and deleting a line
+position - so you can reorder or sort the lines freely, and deleting a line
 means "leave that row alone" rather than deleting the row. Use `d d` in the
 table to delete rows.
 
 Only cells you actually changed are marked dirty. If the grid comes back
-structurally broken — a column missing, the header edited, a row number that
-was not in the selection — nothing is applied and the error says why, so a
+structurally broken - a column missing, the header edited, a row number that
+was not in the selection - nothing is applied and the error says why, so a
 mangled grid can never half-write.
-
-Values are escaped so the grid stays one row per line:
-
-| In a value             | In the grid          |
-| ---------------------- | -------------------- |
-| `\|`                   | `\\|`                |
-| Newline, tab, return   | `\n`, `\t`, `\r`      |
-| Backslash              | `\\`                 |
-| Leading/trailing space | `\s`                 |
-| SQL `NULL`             | `␀`                  |
-
-`␀` is what makes a real `NULL` distinguishable from the string `"null"`. An
-escape sequence tablezz does not know is left exactly as you wrote it.
 
 ## Command line
 
