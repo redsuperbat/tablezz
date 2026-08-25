@@ -213,14 +213,14 @@ described here rather than shown:
 
 Move the cursor with `hjkl`, enter visual mode with `v` to select a block, then:
 
-| Key   | Does                                                      |
-| ----- | --------------------------------------------------------- |
-| `c`   | Open the selection in `$EDITOR`                           |
-| `d d` | Mark the selected rows for deletion                       |
-| `u`   | Undo the last change                                      |
-| `w`   | Write pending changes to the database, in one transaction |
-| `y`   | Copy the selection to the clipboard                       |
-| `K`   | Show the full value of the cell under the cursor          |
+| Key     | Does                                                      |
+| ------- | --------------------------------------------------------- |
+| `c`     | Open the selection in `$EDITOR`                           |
+| `d > d` | Mark the selected rows for deletion                       |
+| `u`     | Undo the last change                                      |
+| `w`     | Write pending changes to the database, in one transaction |
+| `y`     | Copy the selection to the clipboard                       |
+| `K`     | Show the full value of the cell under the cursor          |
 
 Edits are local until `w`; the status bar shows `[+n]` while changes are
 pending, dirty cells are highlighted and rows marked for deletion are struck
@@ -233,14 +233,14 @@ reference it. `?` lists every keybind, and `/` searches that list.
 
 A single cell opens as its raw value, a `jsonb` cell arrives as `.json`, so you get syntax highlighting and your formatter.
 
-A block of cells opens as a markdown grid (`.md`, so `tabular.vim` and `vim-table-mode` can realign it):
+A block of cells opens as a markdown grid:
 
 ```markdown
-| #   | id  | name   | email          |
-| --- | --- | ------ | -------------- |
-| 1   | 3   | user 3 | ␀              |
-| 2   | 4   | user 4 | u4@example.com |
-| 3   | 5   | user 5 | u5@example.com |
+| #   | id                   | name   | email          |
+| --- | -------------------- | ------ | -------------- |
+| 1   | usr_jfjasidvjaesijv2 | user 2 | NULL           |
+| 2   | usr_jfjasidvjaesijv3 | user 3 | u3@example.com |
+| 3   | usr_jfjasidvjaesijv4 | user 4 | u4@example.com |
 ```
 
 `#` is the row number, and rows are matched back by it rather than by
