@@ -12,6 +12,7 @@ mod state;
 mod table;
 mod ui;
 
+use clap::Parser;
 use crossterm::event::{Event, EventStream, KeyCode, KeyEventKind, KeyModifiers};
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
@@ -24,25 +25,47 @@ use tokio::sync::mpsc;
 use app::App;
 use keybinds::{KeyEvent, KeyOutcome};
 
+/// Keyboard-centric PostgreSQL table viewer.
+#[derive(Parser)]
+#[command(version)]
+struct Cli {
+    /// Database url to connect to, e.g. postgres://localhost/mydb
+    /// (defaults to the last used url)
+    #[arg(value_parser = valid_url)]
+    url: Option<String>,
+
+    /// Print the command reference as markdown and exit
+    #[arg(long)]
+    commands: bool,
+
+    /// Print the JSON schema for the config file and exit
+    #[arg(long)]
+    config_schema: bool,
+}
+
+fn valid_url(raw: &str) -> Result<String, String> {
+    db::credentials(raw).map(|_| raw.to_string())
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let (tx, mut rx) = mpsc::unbounded_channel();
-    let mut app = App::new(tx.clone());
+    let cli = Cli::parse();
 
-    // Replaces `pnpm gen-commands` / `pnpm gen-docs`: the registry and the
-    // config struct are the source of truth.
-    if std::env::args().any(|arg| arg == "--commands") {
+    if cli.commands {
         print!("{}", commands_markdown());
         return Ok(());
     }
 
-    if std::env::args().any(|arg| arg == "--config-schema") {
+    if cli.config_schema {
         let schema = schemars::schema_for!(config::Configuration);
         println!("{}", serde_json::to_string_pretty(&schema)?);
         return Ok(());
     }
 
-    match std::env::args().nth(1) {
+    let (tx, mut rx) = mpsc::unbounded_channel();
+    let mut app = App::new(tx.clone());
+
+    match cli.url {
         Some(url) => app.set_active_url(&url),
         None => app.connect(),
     }

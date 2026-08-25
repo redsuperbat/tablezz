@@ -290,6 +290,11 @@ impl App {
 
     /// Port of `setActiveUrl`: forget everything tied to the old connection.
     pub fn set_active_url(&mut self, url: &str) {
+        if let Err(error) = db::credentials(url) {
+            self.messages.error(format!("Invalid database url: {error}"));
+            return;
+        }
+
         self.state.clear_hops();
         self.state.schema = None;
         self.table = None;
