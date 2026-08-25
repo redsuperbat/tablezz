@@ -1413,7 +1413,6 @@ impl App {
 
         self.messages.info(match removed {
             0 => "Saved database urls".to_string(),
-            1 => "Saved database urls, 1 removed".to_string(),
             removed => format!("Saved database urls, {removed} removed"),
         });
     }
