@@ -216,7 +216,11 @@ impl App {
     }
 
     pub fn schema(&self) -> String {
-        self.state.schema.clone().unwrap_or_else(|| "public".into())
+        self.state
+            .schema
+            .clone()
+            .or_else(|| self.db.as_ref().map(|db| db.default_schema()))
+            .unwrap_or_else(|| "public".into())
     }
 
     // ---------------------------------------------------------------- config
@@ -290,7 +294,8 @@ impl App {
     /// Port of `setActiveUrl`: forget everything tied to the old connection.
     pub fn set_active_url(&mut self, url: &str) {
         if let Err(error) = db::credentials(url) {
-            self.messages.error(format!("Invalid database url: {error}"));
+            self.messages
+                .error(format!("Invalid database url: {error}"));
             return;
         }
 
@@ -454,18 +459,14 @@ impl App {
         let Some(db) = self.db.clone() else {
             return;
         };
-        self.spawn(
-            async move { Msg::Schemas(db.schemas().await.map_err(|e| e.to_string())) },
-        );
+        self.spawn(async move { Msg::Schemas(db.schemas().await.map_err(|e| e.to_string())) });
     }
 
     pub fn load_databases(&mut self) {
         let Some(db) = self.db.clone() else {
             return;
         };
-        self.spawn(
-            async move { Msg::Databases(db.databases().await.map_err(|e| e.to_string())) },
-        );
+        self.spawn(async move { Msg::Databases(db.databases().await.map_err(|e| e.to_string())) });
     }
 
     /// Saved urls need no query — they come straight out of the persisted state.
@@ -496,9 +497,7 @@ impl App {
         };
         let schema = self.schema();
 
-        self.spawn(async move {
-            Msg::Tables(db.tables(&schema).await.map_err(|e| e.to_string()))
-        });
+        self.spawn(async move { Msg::Tables(db.tables(&schema).await.map_err(|e| e.to_string())) });
     }
 
     /// Port of `SqlQueryPage`: fetch rows, structure and the row count for the
@@ -1599,10 +1598,7 @@ impl App {
         self.spawn(async move {
             Msg::Executed {
                 message,
-                result: db
-                    .raw_execute(&sql)
-                    .await
-                    .map_err(|e| e.to_string()),
+                result: db.raw_execute(&sql).await.map_err(|e| e.to_string()),
             }
         });
     }

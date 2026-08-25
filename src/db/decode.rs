@@ -1,9 +1,11 @@
-//! Port of `src-tauri/src/postgres/decode.rs`, unchanged apart from the error
-//! type living next door instead of behind an IPC boundary.
+//! Raw database values to JSON, one entry point per adapter. The postgres half
+//! is a port of `src-tauri/src/postgres/decode.rs`, unchanged apart from the
+//! error type living next door instead of behind an IPC boundary.
 
 use pgvector::Vector;
 use serde_json::Value as JsonValue;
-use sqlx::{postgres::PgValueRef, TypeInfo, Value, ValueRef};
+use sqlx::{mysql::MySqlValueRef, postgres::PgValueRef, sqlite::SqliteValueRef};
+use sqlx::{TypeInfo, Value, ValueRef};
 use time::{Date, OffsetDateTime, PrimitiveDateTime, Time};
 
 use super::Error;
@@ -70,6 +72,65 @@ pub fn to_json(v: PgValueRef) -> Result<JsonValue, Error> {
             },
             Err(_) => return Err(Error::UnsupportedDatatype(type_name)),
         },
+    };
+
+    Ok(res)
+}
+
+pub fn mysql_to_json(v: MySqlValueRef) -> Result<JsonValue, Error> {
+    if v.is_null() {
+        return Ok(JsonValue::Null);
+    }
+
+    let bytes_array =
+        |bytes: Vec<u8>| JsonValue::Array(bytes.into_iter().map(JsonValue::from).collect());
+
+    let res = match v.type_info().name() {
+        "BOOLEAN" => decode!(&v, bool, JsonValue::Bool),
+        "TINYINT" | "SMALLINT" | "MEDIUMINT" | "INT" | "BIGINT" => {
+            decode!(&v, i64, JsonValue::from)
+        }
+        "TINYINT UNSIGNED" | "SMALLINT UNSIGNED" | "MEDIUMINT UNSIGNED" | "INT UNSIGNED"
+        | "BIGINT UNSIGNED" => decode!(&v, u64, JsonValue::from),
+        "FLOAT" => decode!(&v, f32, JsonValue::from),
+        "DOUBLE" => decode!(&v, f64, JsonValue::from),
+        "DECIMAL" => decode!(&v, sqlx::types::Decimal, |d| JsonValue::String(
+            d.to_string()
+        )),
+        "CHAR" | "VARCHAR" | "TEXT" | "TINYTEXT" | "MEDIUMTEXT" | "LONGTEXT" | "ENUM" | "SET" => {
+            decode!(&v, String, JsonValue::String)
+        }
+        "DATE" => decode!(&v, Date, |d| JsonValue::String(d.to_string())),
+        "TIME" => decode!(&v, Time, |t| JsonValue::String(t.to_string())),
+        "DATETIME" => decode!(&v, PrimitiveDateTime, |t| JsonValue::String(t.to_string())),
+        "TIMESTAMP" => decode!(&v, OffsetDateTime, |t| JsonValue::String(t.to_string())),
+        "JSON" => ValueRef::to_owned(&v).try_decode().unwrap_or_default(),
+        "BINARY" | "VARBINARY" | "TINYBLOB" | "BLOB" | "MEDIUMBLOB" | "LONGBLOB" => {
+            decode!(&v, Vec<u8>, bytes_array)
+        }
+        // The macro falls back to Null when the string decode fails too.
+        _ => decode!(&v, String, JsonValue::String),
+    };
+
+    Ok(res)
+}
+
+pub fn sqlite_to_json(v: SqliteValueRef) -> Result<JsonValue, Error> {
+    if v.is_null() {
+        return Ok(JsonValue::Null);
+    }
+
+    let bytes_array =
+        |bytes: Vec<u8>| JsonValue::Array(bytes.into_iter().map(JsonValue::from).collect());
+
+    let res = match v.type_info().name() {
+        "BOOLEAN" => decode!(&v, bool, JsonValue::Bool),
+        "INTEGER" | "BIGINT" | "INT" => decode!(&v, i64, JsonValue::from),
+        "REAL" | "NUMERIC" => decode!(&v, f64, JsonValue::from),
+        // Sqlite stores dates and times as text; keep them as the stored string.
+        "TEXT" | "DATE" | "TIME" | "DATETIME" => decode!(&v, String, JsonValue::String),
+        "BLOB" => decode!(&v, Vec<u8>, bytes_array),
+        _ => decode!(&v, String, JsonValue::String),
     };
 
     Ok(res)

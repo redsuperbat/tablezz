@@ -4,7 +4,9 @@
 //! [`connect`].
 
 mod decode;
+mod mysql;
 mod postgres;
+mod sqlite;
 
 use async_trait::async_trait;
 use indexmap::IndexMap;
@@ -50,6 +52,9 @@ pub enum Error {
 /// One open database connection.
 #[async_trait]
 pub trait Database: Send + Sync {
+    /// The schema queried when the user has not picked one.
+    fn default_schema(&self) -> String;
+
     async fn select(&self, query: &str, values: Vec<JsonValue>) -> Result<Vec<JsonRow>, Error>;
 
     async fn table_structure(
@@ -83,23 +88,22 @@ pub trait Database: Send + Sync {
 pub type Connection = Arc<dyn Database>;
 
 /// Url schemes with an adapter behind them.
-const SCHEMES: &[&str] = &["postgres", "postgresql"];
+const SCHEMES: &[&str] = &["postgres", "postgresql", "mysql", "mariadb", "sqlite"];
 
 pub async fn connect(database_url: &str) -> Result<Connection, Error> {
     let url = url::Url::parse(database_url).map_err(|e| Error::InvalidUrl(e.to_string()))?;
 
     match url.scheme() {
-        "postgres" | "postgresql" => {
-            Ok(Arc::new(postgres::Postgres::connect(database_url).await?))
-        }
+        "postgres" | "postgresql" => Ok(Arc::new(postgres::Postgres::connect(database_url).await?)),
+        "mysql" | "mariadb" => Ok(Arc::new(mysql::MySql::connect(database_url).await?)),
+        "sqlite" => Ok(Arc::new(sqlite::Sqlite::connect(database_url).await?)),
         other => Err(Error::UnsupportedScheme(other.to_string())),
     }
 }
 
 /// Split a connection url into the url actually used and the database it points
-/// at, defaulting to the `postgres` database — port of
-/// `ConnectionCredentialsProvider.tsx`. Also the validation gate before a url
-/// is persisted, so it rejects schemes no adapter handles.
+/// at — port of `ConnectionCredentialsProvider.tsx`. Also the validation gate
+/// before a url is persisted, so it rejects schemes no adapter handles.
 pub fn credentials(raw: &str) -> Result<(String, String), String> {
     let mut url = url::Url::parse(raw).map_err(|e| e.to_string())?;
 
@@ -113,7 +117,9 @@ pub fn credentials(raw: &str) -> Result<(String, String), String> {
 
     let database = url.path().trim_start_matches('/').to_string();
 
-    if database.is_empty() {
+    // Postgres always connects to a database, so an empty path falls back to
+    // the maintenance one. The other adapters take the url as given.
+    if database.is_empty() && matches!(url.scheme(), "postgres" | "postgresql") {
         url.set_path("/postgres");
         return Ok((url.to_string(), "postgres".to_string()));
     }

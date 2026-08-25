@@ -16,6 +16,10 @@ impl Postgres {
 
 #[async_trait]
 impl Database for Postgres {
+    fn default_schema(&self) -> String {
+        "public".to_string()
+    }
+
     async fn select(&self, query: &str, values: Vec<JsonValue>) -> Result<Vec<JsonRow>, Error> {
         let mut query = sqlx::query(query);
 
