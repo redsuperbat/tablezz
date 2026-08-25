@@ -317,6 +317,20 @@ impl App {
         self.connect();
     }
 
+    /// Enter on the urls page: connect to the url on the cursor's row.
+    pub fn select_url_under_cursor(&mut self) {
+        let Some(table) = self.table.as_ref() else {
+            return;
+        };
+
+        let url = table.cell_display(self.cursor().0, 0).trim().to_string();
+        if url.is_empty() {
+            return;
+        }
+
+        self.set_active_url(&url);
+    }
+
     // ----------------------------------------------------------- async tasks
 
     fn spawn<F>(&mut self, future: F)

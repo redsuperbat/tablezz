@@ -564,14 +564,24 @@ pub fn help_search() -> Vec<(Command, Keybind)> {
 /// Registered only while the saved url list is on screen, so `e` does not
 /// shadow anything anywhere else.
 pub fn urls_page() -> Vec<(Command, Keybind)> {
-    vec![(
-        Command::new("DatabaseUrlEdit", |app, _| {
-            app.open_cell_editor();
-            Ok(())
-        })
-        .described("Edit the database url under the cursor."),
-        Keybind::new("DatabaseUrlEdit", "e"),
-    )]
+    vec![
+        (
+            Command::new("DatabaseUrlEdit", |app, _| {
+                app.open_cell_editor();
+                Ok(())
+            })
+            .described("Edit the database url under the cursor."),
+            Keybind::new("DatabaseUrlEdit", "e"),
+        ),
+        (
+            Command::new("DatabaseUrlSelect", |app, _| {
+                app.select_url_under_cursor();
+                Ok(())
+            })
+            .described("Connect to the database url under the cursor."),
+            Keybind::new("DatabaseUrlSelect", "Enter"),
+        ),
+    ]
 }
 
 /// Port of `useRegisterKeybindCommandOnConditional`: exactly one of these two is
