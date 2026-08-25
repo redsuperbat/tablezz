@@ -183,7 +183,7 @@ pub fn global() -> Vec<(Command, Option<&'static str>)> {
         (
             Command::new("DatabaseUrlClear", |app, _| {
                 app.state.database_url = None;
-                app.pool = None;
+                app.db = None;
                 app.table = None;
                 app.state.clear_hops();
                 app.state.save();
@@ -200,7 +200,7 @@ pub fn global() -> Vec<(Command, Option<&'static str>)> {
                 app.state.saved_urls.retain(|saved| saved != url);
                 if app.state.database_url.as_deref() == Some(url) {
                     app.state.database_url = None;
-                    app.pool = None;
+                    app.db = None;
                 }
                 app.state.save();
                 Ok(())

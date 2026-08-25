@@ -5,7 +5,6 @@
 
 use ratatui::layout::Rect;
 use serde_json::Value as JsonValue;
-use sqlx::PgPool;
 use std::collections::VecDeque;
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -72,7 +71,7 @@ impl<T> Query<T> {
 pub enum Msg {
     Connected {
         url: String,
-        result: Result<PgPool, String>,
+        result: Result<db::Connection, String>,
     },
     Rows {
         key: String,
@@ -133,7 +132,7 @@ pub struct App {
     pub commands: Commands,
     pub messages: Messages,
 
-    pub pool: Option<PgPool>,
+    pub db: Option<db::Connection>,
     pub connecting: bool,
     pub connection_error: Option<String>,
 
@@ -181,7 +180,7 @@ impl App {
             state: PersistedState::load(),
             commands: Commands::default(),
             messages: Messages::default(),
-            pool: None,
+            db: None,
             connecting: false,
             connection_error: None,
             rows: Query::Idle,
@@ -302,7 +301,7 @@ impl App {
         self.structure = Query::Idle;
         self.count = None;
         self.loaded_key = None;
-        self.pool = None;
+        self.db = None;
         self.state.database_url = Some(url.to_string());
 
         if !self.state.saved_urls.iter().any(|u| u == url) {
@@ -341,8 +340,8 @@ impl App {
             Msg::Connected { url, result } => {
                 self.connecting = false;
                 match result {
-                    Ok(pool) => {
-                        self.pool = Some(pool);
+                    Ok(db) => {
+                        self.db = Some(db);
                         self.connection_error = None;
                         if self.state.current_hop().is_some() {
                             self.load_current_hop();
@@ -452,20 +451,20 @@ impl App {
     }
 
     pub fn load_schemas(&mut self) {
-        let Some(pool) = self.pool.clone() else {
+        let Some(db) = self.db.clone() else {
             return;
         };
         self.spawn(
-            async move { Msg::Schemas(db::schemas(&pool).await.map_err(|e| e.to_string())) },
+            async move { Msg::Schemas(db.schemas().await.map_err(|e| e.to_string())) },
         );
     }
 
     pub fn load_databases(&mut self) {
-        let Some(pool) = self.pool.clone() else {
+        let Some(db) = self.db.clone() else {
             return;
         };
         self.spawn(
-            async move { Msg::Databases(db::databases(&pool).await.map_err(|e| e.to_string())) },
+            async move { Msg::Databases(db.databases().await.map_err(|e| e.to_string())) },
         );
     }
 
@@ -492,13 +491,13 @@ impl App {
     }
 
     pub fn load_tables(&mut self) {
-        let Some(pool) = self.pool.clone() else {
+        let Some(db) = self.db.clone() else {
             return;
         };
         let schema = self.schema();
 
         self.spawn(async move {
-            Msg::Tables(db::tables(&pool, &schema).await.map_err(|e| e.to_string()))
+            Msg::Tables(db.tables(&schema).await.map_err(|e| e.to_string()))
         });
     }
 
@@ -535,7 +534,7 @@ impl App {
 
         self.sync_page_scope();
 
-        let Some(pool) = self.pool.clone() else {
+        let Some(db) = self.db.clone() else {
             return;
         };
 
@@ -545,13 +544,14 @@ impl App {
         self.count = None;
 
         {
-            let pool = pool.clone();
+            let db = db.clone();
             let query = query.clone();
             let key = key.clone();
             self.spawn(async move {
                 Msg::Rows {
                     key,
-                    result: db::select(&pool, &query, Vec::new())
+                    result: db
+                        .select(&query, Vec::new())
                         .await
                         .map_err(|e| e.to_string()),
                 }
@@ -568,14 +568,15 @@ impl App {
             Some(table_name) => {
                 self.structure = Query::Loading;
                 {
-                    let pool = pool.clone();
+                    let db = db.clone();
                     let key = key.clone();
                     let schema = schema.clone();
                     let table_name = table_name.clone();
                     self.spawn(async move {
                         Msg::Structure {
                             key,
-                            result: db::table_structure(&pool, &schema, &table_name)
+                            result: db
+                                .table_structure(&schema, &table_name)
                                 .await
                                 .map_err(|e| e.to_string()),
                         }
@@ -586,7 +587,8 @@ impl App {
                 self.spawn(async move {
                     Msg::Count {
                         key,
-                        result: db::count(&pool, &schema, &table_name)
+                        result: db
+                            .count(&schema, &table_name)
                             .await
                             .map_err(|e| e.to_string()),
                     }
@@ -1272,14 +1274,15 @@ impl App {
             return;
         }
 
-        let Some(pool) = self.pool.clone() else {
+        let Some(db) = self.db.clone() else {
             return;
         };
 
         self.spawn(async move {
             Msg::Executed {
                 message: Some("Successfully updated".to_string()),
-                result: db::batch_execute(&pool, statements)
+                result: db
+                    .batch_execute(statements)
                     .await
                     .map_err(|e| e.to_string()),
             }
@@ -1456,7 +1459,7 @@ impl App {
             Err(error) => return self.messages.error(error),
         };
 
-        let Some(pool) = self.pool.clone() else {
+        let Some(db) = self.db.clone() else {
             return;
         };
 
@@ -1464,7 +1467,8 @@ impl App {
             Msg::References {
                 target_column,
                 filter_value,
-                result: db::get_table_references(&pool, &schema, &target_table)
+                result: db
+                    .get_table_references(&schema, &target_table)
                     .await
                     .map_err(|e| e.to_string()),
             }
@@ -1588,14 +1592,15 @@ impl App {
     }
 
     pub fn raw_execute(&mut self, sql: String, message: Option<String>) {
-        let Some(pool) = self.pool.clone() else {
+        let Some(db) = self.db.clone() else {
             return;
         };
 
         self.spawn(async move {
             Msg::Executed {
                 message,
-                result: db::raw_execute(&pool, &sql)
+                result: db
+                    .raw_execute(&sql)
                     .await
                     .map_err(|e| e.to_string()),
             }

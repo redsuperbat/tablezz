@@ -26,3 +26,4 @@ url = "2"
 schemars = { version = "0.8", features = ["indexmap2"] }
 arboard = { version = "3", default-features = false }
 clap = { version = "4.6.6", features = ["derive"] }
+async-trait = "0.1.92"
