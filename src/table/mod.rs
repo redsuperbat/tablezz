@@ -30,28 +30,69 @@ impl Column {
     }
 }
 
+/// A cell's value, keeping database NULL apart from every JSON value — a json
+/// column can hold a JSON null without it meaning NULL. In the editor the two
+/// spell differently: `NULL` is the database null, `null` a json one.
+#[derive(Debug, Clone, PartialEq)]
+pub enum CellValue {
+    Null,
+    Value(JsonValue),
+}
+
+impl From<JsonValue> for CellValue {
+    fn from(data: JsonValue) -> Self {
+        match data {
+            // The decoder hands both SQL NULL and a stored json null back as
+            // JsonValue::Null; a bare Null from the database means SQL NULL.
+            JsonValue::Null => CellValue::Null,
+            data => CellValue::Value(data),
+        }
+    }
+}
+
+impl CellValue {
+    fn to_display(&self, column: &Column) -> String {
+        match self {
+            CellValue::Null => "NULL".to_string(),
+            CellValue::Value(data) => column.data_type().to_display(data),
+        }
+    }
+
+    fn to_sql_value(&self, column: &Column) -> Result<String, String> {
+        match self {
+            CellValue::Null => Ok("null".to_string()),
+            CellValue::Value(data) => column.data_type().to_sql_value(data),
+        }
+    }
+}
+
 pub struct Cell {
     /// Every version of the value; the first is what the database returned.
-    data: Vec<JsonValue>,
+    data: Vec<CellValue>,
     dirty: bool,
 }
 
 impl Cell {
     fn new(data: JsonValue) -> Self {
         Self {
-            data: vec![data],
+            data: vec![data.into()],
             dirty: false,
         }
     }
 
     /// The current (potentially modified) value of the cell.
-    pub fn data(&self) -> &JsonValue {
+    pub fn data(&self) -> &CellValue {
         self.data.last().expect("cell always has a value")
     }
 
     /// The original unmodified value of the cell.
-    pub fn original_data(&self) -> &JsonValue {
+    pub fn original_data(&self) -> &CellValue {
         self.data.first().expect("cell always has a value")
+    }
+
+    /// Database NULL — not to be confused with a json column holding null.
+    pub fn is_null(&self) -> bool {
+        matches!(self.data(), CellValue::Null)
     }
 
     pub fn is_dirty(&self) -> bool {
@@ -59,15 +100,15 @@ impl Cell {
     }
 
     pub fn to_display(&self, column: &Column) -> String {
-        column.data_type().to_display(self.data())
+        self.data().to_display(column)
     }
 
     pub fn to_sql_value(&self, column: &Column) -> Result<String, String> {
-        column.data_type().to_sql_value(self.data())
+        self.data().to_sql_value(column)
     }
 
     pub fn original_to_sql_value(&self, column: &Column) -> Result<String, String> {
-        column.data_type().to_sql_value(self.original_data())
+        self.original_data().to_sql_value(column)
     }
 
     pub fn update_data(&mut self, column: &Column, value: &str) -> Result<(), String> {
@@ -75,7 +116,13 @@ impl Cell {
             return Ok(());
         }
 
-        self.data.push(column.data_type().from_string(value)?);
+        let next = if value == "NULL" && column.is_nullable {
+            CellValue::Null
+        } else {
+            CellValue::Value(column.data_type().from_string(value)?)
+        };
+
+        self.data.push(next);
         self.dirty = true;
         Ok(())
     }
@@ -131,7 +178,7 @@ impl Table {
                 is_primary: info.is_primary,
                 is_nullable: info.is_nullable,
                 foreign_key: info.foreign_key.clone(),
-                data_type: create_data_type(&info.data_type, info.is_nullable),
+                data_type: create_data_type(&info.data_type),
             })
             .collect();
 
@@ -293,7 +340,63 @@ mod tests {
         let rows = vec![row(&[("id", json!(1))])];
         let table = Table::new("users".into(), &structure, &rows);
 
-        assert_eq!(table.cell(0, 1).unwrap().data(), &JsonValue::Null);
+        assert!(table.cell(0, 1).unwrap().is_null());
+    }
+
+    fn nullable(name: &str, data_type: &str) -> ColumnInfo {
+        ColumnInfo {
+            is_nullable: true,
+            ..column(name, data_type)
+        }
+    }
+
+    #[test]
+    fn upper_case_null_is_the_database_null() {
+        let structure = vec![nullable("name", "text")];
+        let rows = vec![row(&[("name", json!("ada"))])];
+        let mut table = Table::new("users".into(), &structure, &rows);
+
+        table.update_cell(0, 0, "NULL").unwrap();
+        let (cell, column) = (table.cell(0, 0).unwrap(), table.column(0).unwrap());
+        assert!(cell.is_null());
+        assert_eq!(cell.to_display(column), "NULL");
+        assert_eq!(cell.to_sql_value(column).unwrap(), "null");
+
+        // the lower case null is just text
+        table.update_cell(0, 0, "null").unwrap();
+        let (cell, column) = (table.cell(0, 0).unwrap(), table.column(0).unwrap());
+        assert!(!cell.is_null());
+        assert_eq!(cell.to_sql_value(column).unwrap(), "'null'");
+    }
+
+    #[test]
+    fn lower_case_null_in_a_json_column_is_the_json_null() {
+        let structure = vec![nullable("meta", "jsonb")];
+        let rows = vec![row(&[("meta", json!({"a": 1}))])];
+        let mut table = Table::new("things".into(), &structure, &rows);
+
+        table.update_cell(0, 0, "null").unwrap();
+        let (cell, column) = (table.cell(0, 0).unwrap(), table.column(0).unwrap());
+        assert!(!cell.is_null(), "a json null is not the database null");
+        assert_eq!(cell.to_display(column), "null");
+        assert_eq!(cell.to_sql_value(column).unwrap(), "'null'");
+
+        table.update_cell(0, 0, "NULL").unwrap();
+        let (cell, column) = (table.cell(0, 0).unwrap(), table.column(0).unwrap());
+        assert!(cell.is_null());
+        assert_eq!(cell.to_sql_value(column).unwrap(), "null");
+    }
+
+    #[test]
+    fn upper_case_null_in_a_non_nullable_column_is_a_value() {
+        let structure = vec![column("name", "text")];
+        let rows = vec![row(&[("name", json!("ada"))])];
+        let mut table = Table::new("users".into(), &structure, &rows);
+
+        table.update_cell(0, 0, "NULL").unwrap();
+        let (cell, column) = (table.cell(0, 0).unwrap(), table.column(0).unwrap());
+        assert!(!cell.is_null());
+        assert_eq!(cell.to_sql_value(column).unwrap(), "'NULL'");
     }
 
     #[test]
@@ -311,7 +414,7 @@ mod tests {
         cell.update_data(column, "grace").unwrap();
         assert!(cell.is_dirty());
         assert_eq!(cell.to_display(column), "grace");
-        assert_eq!(cell.original_data(), &json!("ada"));
+        assert_eq!(cell.original_data(), &CellValue::Value(json!("ada")));
 
         cell.undo();
         assert!(!cell.is_dirty());

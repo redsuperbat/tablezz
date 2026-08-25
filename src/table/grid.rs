@@ -88,7 +88,7 @@ pub fn encode(table: &Table, selection: &GridSelection) -> String {
 
 fn encode_cell(table: &Table, row: usize, column: usize) -> String {
     match (table.cell(row, column), table.column(column)) {
-        (Some(cell), Some(_)) if cell.data().is_null() => NULL.to_string(),
+        (Some(cell), Some(_)) if cell.is_null() => NULL.to_string(),
         (Some(cell), Some(column)) => escape(&cell.to_display(column)),
         _ => String::new(),
     }
@@ -205,8 +205,8 @@ pub fn decode(
                 continue;
             };
 
-            // The datatype already turns "null" into a NULL for nullable columns
-            let value = if value == NULL { "null" } else { &value };
+            // The cell turns "NULL" into a database NULL for nullable columns
+            let value = if value == NULL { "NULL" } else { &value };
 
             let before = table.cell(row, column).map(|cell| cell.is_dirty());
             table.update_cell(row, column, value)?;
@@ -412,9 +412,9 @@ mod tests {
         let mut applied = table_with(&[[json!("a"), json!("b")], [json!("c"), json!("d")]]);
         decode(&mut applied, &selection(), &grid).unwrap();
 
-        assert!(applied.cell(0, 0).unwrap().data().is_null());
+        assert!(applied.cell(0, 0).unwrap().is_null());
         assert_eq!(applied.cell_display(0, 1), "null");
-        assert!(applied.cell(1, 1).unwrap().data().is_null());
+        assert!(applied.cell(1, 1).unwrap().is_null());
     }
 
     #[test]

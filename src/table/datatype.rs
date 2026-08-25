@@ -129,39 +129,6 @@ impl DataType for ArrayDataType {
     }
 }
 
-struct WithNull(Box<dyn DataType>);
-
-impl DataType for WithNull {
-    fn to_display(&self, data: &JsonValue) -> String {
-        if data.is_null() {
-            return "null".to_string();
-        }
-        self.0.to_display(data)
-    }
-
-    fn from_string(&self, value: &str) -> Result<JsonValue, String> {
-        if value == "null" {
-            return Ok(JsonValue::Null);
-        }
-        self.0.from_string(value)
-    }
-
-    fn to_sql_value(&self, data: &JsonValue) -> Result<String, String> {
-        if data.is_null() {
-            return Ok("null".to_string());
-        }
-        self.0.to_sql_value(data)
-    }
-
-    fn icon(&self) -> Option<char> {
-        self.0.icon()
-    }
-
-    fn file_extension(&self) -> &'static str {
-        self.0.file_extension()
-    }
-}
-
 struct NumberDataType;
 
 impl DataType for NumberDataType {
@@ -284,10 +251,11 @@ fn strip_precision(data_type: &str) -> String {
         .to_string()
 }
 
-pub fn create_data_type(data_type: &str, is_nullable: bool) -> Box<dyn DataType> {
-    let inner: Box<dyn DataType> = if let Some(element) = data_type.strip_suffix("[]") {
-        // We cannot have nullable elements in arrays
-        Box::new(ArrayDataType(create_data_type(element, false)))
+/// Database NULL is not a datatype concern: it lives in [`super::CellValue`],
+/// so a json column can tell `null` (a json value) apart from `NULL`.
+pub fn create_data_type(data_type: &str) -> Box<dyn DataType> {
+    if let Some(element) = data_type.strip_suffix("[]") {
+        Box::new(ArrayDataType(create_data_type(element)))
     } else {
         let base = strip_precision(data_type);
 
@@ -315,13 +283,7 @@ pub fn create_data_type(data_type: &str, is_nullable: bool) -> Box<dyn DataType>
 
             _ => Box::new(DefaultDataType { icon: None }),
         }
-    };
-
-    if is_nullable {
-        return Box::new(WithNull(inner));
     }
-
-    inner
 }
 
 #[cfg(test)]
@@ -330,22 +292,23 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn nullable_types_round_trip_null() {
-        let t = create_data_type("text", true);
-        assert_eq!(t.to_display(&JsonValue::Null), "null");
-        assert_eq!(t.to_sql_value(&JsonValue::Null).unwrap(), "null");
+    fn json_null_stays_a_json_value() {
+        let t = create_data_type("jsonb");
         assert_eq!(t.from_string("null").unwrap(), JsonValue::Null);
+        assert_eq!(t.to_display(&JsonValue::Null), "null");
+        // quoted, so the database reads it as the json null, not SQL NULL
+        assert_eq!(t.to_sql_value(&JsonValue::Null).unwrap(), "'null'");
     }
 
     #[test]
     fn text_values_are_quote_escaped() {
-        let t = create_data_type("text", false);
+        let t = create_data_type("text");
         assert_eq!(t.to_sql_value(&json!("o'brien")).unwrap(), "'o''brien'");
     }
 
     #[test]
     fn arrays_use_postgres_literal_syntax() {
-        let t = create_data_type("integer[]", false);
+        let t = create_data_type("integer[]");
         assert_eq!(t.to_display(&json!([1, 2, 3])), "{1,2,3}");
         assert_eq!(t.to_sql_value(&json!([1, 2])).unwrap(), "ARRAY[1,2]");
         assert_eq!(t.from_string("{1, 2}").unwrap(), json!([1.0, 2.0]));
@@ -362,11 +325,11 @@ mod tests {
             "timestamp with time zone"
         );
         assert_eq!(
-            create_data_type("character varying(255)", false).icon(),
+            create_data_type("character varying(255)").icon(),
             Some(icons::TEXT)
         );
         assert_eq!(
-            create_data_type("timestamp(3) with time zone", false).icon(),
+            create_data_type("timestamp(3) with time zone").icon(),
             Some(icons::DATE)
         );
     }
@@ -374,7 +337,7 @@ mod tests {
     #[test]
     fn display_never_panics_on_a_mismatched_value() {
         // the decoder can hand us a string where the catalog promised a number
-        let t = create_data_type("integer", false);
+        let t = create_data_type("integer");
         assert_eq!(t.to_display(&json!("12")), "12");
         assert!(t.to_sql_value(&json!("12")).is_err());
     }
