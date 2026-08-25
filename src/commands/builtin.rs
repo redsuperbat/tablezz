@@ -344,6 +344,14 @@ fn editing() -> Vec<(Command, Option<&'static str>)> {
             Some("c"),
         ),
         (
+            Command::new("SelectionSetNull", |app, _| {
+                app.set_selected_cells_null();
+                Ok(())
+            })
+            .described("Set the selected cells to NULL, pending until written."),
+            Some("x"),
+        ),
+        (
             Command::new("SelectionCopyToClipboard", |app, _| {
                 app.copy_selection();
                 Ok(())

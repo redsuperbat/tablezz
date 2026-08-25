@@ -1220,6 +1220,50 @@ impl App {
         self.exit_visual_mode();
     }
 
+    /// Set every selected cell (or the cursor's) to the database NULL, pending
+    /// until written like any other edit.
+    pub fn set_selected_cells_null(&mut self) {
+        let cursor = self.cursor();
+        let selection = self.selection;
+
+        let Some(table) = self.table.as_mut() else {
+            return;
+        };
+        let cells = selection.cells(cursor, table);
+
+        // All or nothing, like every other block edit.
+        if let Some(column) = cells
+            .iter()
+            .filter_map(|(_, column)| table.column(*column))
+            .find(|column| !column.is_nullable)
+        {
+            let error = format!(
+                "Column \"{}\" is not nullable; nothing was changed",
+                column.name
+            );
+            self.messages.error(error);
+            return;
+        }
+
+        let mut updated = Vec::new();
+        for (row, column) in cells {
+            if table.cell(row, column).is_none() {
+                continue;
+            }
+            if let Err(error) = table.update_cell(row, column, "NULL") {
+                self.messages.error(error);
+                return;
+            }
+            updated.push((row, column));
+        }
+
+        if !updated.is_empty() {
+            self.undo_tree.add(Change::CellEdits(updated));
+        }
+
+        self.exit_visual_mode();
+    }
+
     pub fn copy_selection(&mut self) {
         let cursor = self.cursor();
         let selection = self.selection;
@@ -1620,6 +1664,56 @@ mod tests {
             .map(|line| line.iter().map(|c| c.symbol()).collect::<String>())
             .collect::<Vec<_>>()
             .join("\n")
+    }
+
+    #[tokio::test]
+    async fn x_sets_the_cell_under_the_cursor_to_null() {
+        let home = std::env::temp_dir().join("tablezz-set-null-home");
+        let _ = std::fs::remove_dir_all(&home);
+        std::env::set_var("TABLEZZ_HOME", &home);
+
+        let (tx, _rx) = tokio::sync::mpsc::unbounded_channel();
+        let mut app = App::new(tx);
+
+        let nullable = |name: &str, is_nullable| ColumnInfo {
+            column_name: name.to_string(),
+            data_type: "text".to_string(),
+            is_primary: false,
+            is_nullable,
+            foreign_key: None,
+        };
+        let row: JsonRow = [("name".to_string(), serde_json::json!("ada"))]
+            .into_iter()
+            .collect();
+
+        app.table = Some(Table::new(
+            "users".into(),
+            &[nullable("name", true)],
+            &[row.clone()],
+        ));
+
+        press(&mut app, "x");
+        let table = app.table.as_ref().unwrap();
+        assert!(table.cell(0, 0).unwrap().is_null());
+        assert_eq!(table.dirty_cells(), vec![(0, 0)], "pending until written");
+
+        app.trigger_command("Undo");
+        assert!(!app.table.as_ref().unwrap().cell(0, 0).unwrap().is_null());
+
+        // a non nullable column is refused with an error
+        app.table = Some(Table::new(
+            "users".into(),
+            &[nullable("name", false)],
+            &[row],
+        ));
+        press(&mut app, "x");
+        let table = app.table.as_ref().unwrap();
+        assert!(!table.cell(0, 0).unwrap().is_null());
+        assert!(table.dirty_cells().is_empty());
+        assert!(app
+            .messages
+            .current()
+            .is_some_and(|(_, text)| text.contains("is not nullable")));
     }
 
     #[tokio::test]
