@@ -1,5 +1,5 @@
 //! Port of `src/commands/Messages.tsx`. The toast becomes a transient line in
-//! the status bar; the history is kept for the `Messages` command.
+//! the status bar.
 
 use std::time::{Duration, Instant};
 
@@ -11,25 +11,9 @@ pub enum MessageType {
     Error,
 }
 
-impl MessageType {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            MessageType::Info => "info",
-            MessageType::Error => "error",
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct StoredMessage {
-    pub kind: MessageType,
-    pub text: String,
-    pub timestamp: time::OffsetDateTime,
-}
-
 #[derive(Default)]
 pub struct Messages {
-    history: Vec<StoredMessage>,
+    history: Vec<String>,
     current: Option<(MessageType, String, Instant)>,
 }
 
@@ -43,11 +27,7 @@ impl Messages {
     }
 
     fn show(&mut self, kind: MessageType, text: String) {
-        self.history.push(StoredMessage {
-            kind,
-            text: text.clone(),
-            timestamp: now(),
-        });
+        self.history.push(text.clone());
         self.current = Some((kind, text, Instant::now()));
     }
 
@@ -63,15 +43,9 @@ impl Messages {
             .map(|(kind, text, _)| (*kind, text.as_str()))
     }
 
-    pub fn history(&self) -> &[StoredMessage] {
+    /// Everything ever shown, kept for the tests to observe.
+    #[cfg(test)]
+    pub fn history(&self) -> &[String] {
         &self.history
     }
-
-    pub fn clear_history(&mut self) {
-        self.history.clear();
-    }
-}
-
-fn now() -> time::OffsetDateTime {
-    time::OffsetDateTime::now_local().unwrap_or_else(|_| time::OffsetDateTime::now_utc())
 }

@@ -176,7 +176,6 @@ fn commands_markdown() -> String {
         ("visual mode", builtin::visual_enter()),
         ("visual mode", builtin::visual_exit()),
         ("picker", builtin::picker()),
-        ("urls page", builtin::urls_page()),
         ("command line", builtin::command_line()),
         ("autocomplete", builtin::autocomplete()),
         ("help", builtin::help()),

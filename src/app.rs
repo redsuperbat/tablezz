@@ -27,12 +27,6 @@ use crate::table::sql::extract_table_from_sql;
 use crate::table::undo::{Change, UndoTree};
 use crate::table::Table;
 
-/// The hop query that shows the message log instead of a database table.
-pub const MESSAGES_QUERY: &str = "__messages__";
-
-/// The hop query that shows the saved connection urls as an editable table.
-pub const URLS_QUERY: &str = "__urls__";
-
 /// Delimiters the cell editor round trips a selection through.
 const COLUMN_DELIMITER: &str = "\u{1f}";
 const ROW_DELIMITER: &str = "\u{1f}\n";
@@ -108,6 +102,8 @@ pub enum EditorPurpose {
     Cell,
     /// A block of cells, as a markdown grid.
     CellGrid,
+    /// The saved database urls, one per line.
+    Urls,
     SqlSelect,
     SqlExecute,
 }
@@ -155,8 +151,6 @@ pub struct App {
     pub help: Option<Help>,
     /// Set by a command, picked up and run by the event loop.
     pub editor_request: Option<EditorRequest>,
-    /// Whether the url list's own keys are currently registered.
-    urls_scope: bool,
 
     /// Area the table is drawn into, refreshed every frame — the equivalent of
     /// measuring the canvas container.
@@ -197,7 +191,6 @@ impl App {
             autocomplete: None,
             help: None,
             editor_request: None,
-            urls_scope: false,
             viewport: Rect::default(),
             should_quit: false,
             tx,
@@ -315,20 +308,6 @@ impl App {
 
         self.state.save();
         self.connect();
-    }
-
-    /// Enter on the urls page: connect to the url on the cursor's row.
-    pub fn select_url_under_cursor(&mut self) {
-        let Some(table) = self.table.as_ref() else {
-            return;
-        };
-
-        let url = table.cell_display(self.cursor().0, 0).trim().to_string();
-        if url.is_empty() {
-            return;
-        }
-
-        self.set_active_url(&url);
     }
 
     // ----------------------------------------------------------- async tasks
@@ -523,30 +502,6 @@ impl App {
 
         let query = hop.query.clone();
 
-        // The message log and the url list are tables like any other, they just
-        // need no database
-        if query == MESSAGES_QUERY {
-            self.loaded_key = Some(query);
-            self.rows = Query::Ready(self.message_rows());
-            self.structure = Query::Ready(messages_structure());
-            self.count = None;
-            self.try_build_table();
-            self.sync_page_scope();
-            return;
-        }
-
-        if query == URLS_QUERY {
-            self.loaded_key = Some(query);
-            self.rows = Query::Ready(self.url_rows());
-            self.structure = Query::Ready(urls_structure());
-            self.count = None;
-            self.try_build_table();
-            self.sync_page_scope();
-            return;
-        }
-
-        self.sync_page_scope();
-
         let Some(db) = self.db.clone() else {
             return;
         };
@@ -670,15 +625,11 @@ impl App {
             return;
         };
 
-        let is_messages = hop.query == MESSAGES_QUERY;
-        let is_urls = hop.query == URLS_QUERY;
         let extracted = extract_table_from_sql(&hop.query);
-        let table_name = match extracted.as_ref().map(|e| e.table.clone()) {
-            Some(name) => name,
-            None if is_messages => "messages".to_string(),
-            None if is_urls => "urls".to_string(),
-            None => String::new(),
-        };
+        let table_name = extracted
+            .as_ref()
+            .map(|e| e.table.clone())
+            .unwrap_or_default();
         let schema = extracted
             .as_ref()
             .and_then(|e| e.schema.clone())
@@ -708,66 +659,6 @@ impl App {
         self.exit_visual_mode();
         self.opened_cell = None;
         self.clamp_cursor();
-    }
-
-    pub fn is_urls_page(&self) -> bool {
-        self.state
-            .current_hop()
-            .is_some_and(|hop| hop.query == URLS_QUERY)
-    }
-
-    /// `e` only exists while the url list is on screen, the same way the picker
-    /// and the command line own their keys while they are open.
-    fn sync_page_scope(&mut self) {
-        match (self.is_urls_page(), self.urls_scope) {
-            (true, false) => {
-                self.urls_scope = true;
-                self.register_all(builtin::urls_page());
-            }
-            (false, true) => {
-                self.urls_scope = false;
-                self.unregister_all(builtin::urls_page());
-            }
-            _ => {}
-        }
-    }
-
-    fn url_rows(&self) -> Vec<JsonRow> {
-        self.state
-            .saved_urls
-            .iter()
-            .map(|url| {
-                [("url".to_string(), JsonValue::String(url.clone()))]
-                    .into_iter()
-                    .collect()
-            })
-            .collect()
-    }
-
-    /// Port of `MessagesPage`: the message log rendered as a table.
-    fn message_rows(&self) -> Vec<JsonRow> {
-        self.messages
-            .history()
-            .iter()
-            .map(|message| {
-                [
-                    (
-                        "time".to_string(),
-                        JsonValue::String(format_time(message.timestamp)),
-                    ),
-                    (
-                        "type".to_string(),
-                        JsonValue::String(message.kind.as_str().to_string()),
-                    ),
-                    (
-                        "message".to_string(),
-                        JsonValue::String(message.text.clone()),
-                    ),
-                ]
-                .into_iter()
-                .collect()
-            })
-            .collect()
     }
 
     // ---------------------------------------------------------------- cursor
@@ -1234,10 +1125,6 @@ impl App {
     /// Port of `WriteChanges`: one transaction of UPDATEs and DELETEs built from
     /// the dirty cells and the rows marked for deletion.
     pub fn write_changes(&mut self) {
-        if self.is_urls_page() {
-            return self.write_urls();
-        }
-
         let Some(table) = self.table.as_ref() else {
             return;
         };
@@ -1300,56 +1187,6 @@ impl App {
                     .map_err(|e| e.to_string()),
             }
         });
-    }
-
-    /// `w` on the url list rewrites the saved list rather than the database.
-    /// The live connection is left alone: editing a bookmark does not move you
-    /// off the database you are on.
-    fn write_urls(&mut self) {
-        let Some(table) = self.table.as_ref() else {
-            return;
-        };
-
-        let mut urls: Vec<String> = Vec::new();
-        let mut errors: Vec<String> = Vec::new();
-
-        for row in table.rows() {
-            if row.is_deleted() {
-                continue;
-            }
-
-            let url = table.cell_display(row.index, 0).trim().to_string();
-            if url.is_empty() {
-                continue;
-            }
-
-            match db::credentials(&url) {
-                // Keep the list in the order the table shows, without duplicates
-                Ok(_) if !urls.contains(&url) => urls.push(url),
-                Ok(_) => {}
-                Err(error) => errors.push(format!("\"{url}\" is not a valid url: {error}")),
-            }
-        }
-
-        // Nothing is applied unless every row is usable
-        if !errors.is_empty() {
-            for error in errors {
-                self.messages.error(error);
-            }
-            return;
-        }
-
-        let removed = self.state.saved_urls.len().saturating_sub(urls.len());
-        self.state.saved_urls = urls;
-        self.state.save();
-
-        self.messages.info(match removed {
-            0 => "Saved database urls".to_string(),
-            1 => "Saved database urls, 1 removed".to_string(),
-            removed => format!("Saved database urls, {removed} removed"),
-        });
-
-        self.load_current_hop();
     }
 
     pub fn undo(&mut self) {
@@ -1535,6 +1372,52 @@ impl App {
         self.request_editor(purpose, content, extension);
     }
 
+    /// `DatabaseUrlEdit`: the saved urls as a newline delimited editor buffer.
+    pub fn open_urls_editor(&mut self) {
+        let mut content = self.state.saved_urls.join("\n");
+        content.push('\n');
+        self.request_editor(EditorPurpose::Urls, content, ".txt");
+    }
+
+    /// The urls buffer written back: one url per line, applied all or nothing.
+    /// The live connection is left alone: editing a bookmark does not move you
+    /// off the database you are on.
+    fn save_urls(&mut self, content: &str) {
+        let mut urls: Vec<String> = Vec::new();
+        let mut errors: Vec<String> = Vec::new();
+
+        for line in content.lines() {
+            let url = line.trim();
+            if url.is_empty() {
+                continue;
+            }
+
+            match db::credentials(url) {
+                // Keep the list in the order the buffer shows, without duplicates
+                Ok(_) if !urls.iter().any(|u| u == url) => urls.push(url.to_string()),
+                Ok(_) => {}
+                Err(error) => errors.push(format!("\"{url}\" is not a valid url: {error}")),
+            }
+        }
+
+        if !errors.is_empty() {
+            for error in errors {
+                self.messages.error(error);
+            }
+            return;
+        }
+
+        let removed = self.state.saved_urls.len().saturating_sub(urls.len());
+        self.state.saved_urls = urls;
+        self.state.save();
+
+        self.messages.info(match removed {
+            0 => "Saved database urls".to_string(),
+            1 => "Saved database urls, 1 removed".to_string(),
+            removed => format!("Saved database urls, {removed} removed"),
+        });
+    }
+
     pub fn on_editor_result(&mut self, purpose: EditorPurpose, content: String) {
         // Editors add a trailing newline, which would otherwise be written into
         // the row after the selection.
@@ -1590,6 +1473,7 @@ impl App {
                 self.exit_visual_mode();
             }
 
+            EditorPurpose::Urls => self.save_urls(&content),
             EditorPurpose::SqlSelect if !content.is_empty() => self.hop_to(content),
             EditorPurpose::SqlExecute if !content.is_empty() => self.raw_execute(content, None),
             _ => {}
@@ -1638,33 +1522,6 @@ fn where_clause(keys: &[(String, String)]) -> String {
         .map(|(column, value)| format!("\"{column}\" = {value}"))
         .collect::<Vec<_>>()
         .join(" AND ")
-}
-
-fn urls_structure() -> Vec<ColumnInfo> {
-    vec![ColumnInfo {
-        column_name: "url".to_string(),
-        data_type: "text".to_string(),
-        is_primary: false,
-        is_nullable: false,
-        foreign_key: None,
-    }]
-}
-
-fn messages_structure() -> Vec<ColumnInfo> {
-    ["time", "type", "message"]
-        .iter()
-        .map(|name| ColumnInfo {
-            column_name: name.to_string(),
-            data_type: "text".to_string(),
-            is_primary: false,
-            is_nullable: false,
-            foreign_key: None,
-        })
-        .collect()
-}
-
-fn format_time(at: time::OffsetDateTime) -> String {
-    format!("{:02}:{:02}:{:02}", at.hour(), at.minute(), at.second())
 }
 
 /// Port of the `getDataType` fallback in `SqlQueryPage`: infer columns from the
@@ -1764,6 +1621,36 @@ mod tests {
             .map(|line| line.iter().map(|c| c.symbol()).collect::<String>())
             .collect::<Vec<_>>()
             .join("\n")
+    }
+
+    #[tokio::test]
+    async fn a_failed_connection_still_lets_the_urls_be_edited() {
+        let home = std::env::temp_dir().join("tablezz-connection-error-home");
+        let _ = std::fs::remove_dir_all(&home);
+        std::env::set_var("TABLEZZ_HOME", &home);
+
+        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+        let mut app = App::new(tx);
+        app.viewport = Rect::new(0, 0, 120, 19);
+
+        let url = "sqlite:/nonexistent/tablezz-test/foo.db";
+        app.set_active_url(url);
+        pump(&mut app, &mut rx, "the connection error", |app| {
+            app.connection_error.is_some()
+        })
+        .await;
+
+        assert!(screen(&mut app).contains("unable to open database file"));
+
+        // The way out of a broken url is the urls editor (or the picker) — both
+        // must keep working with no connection.
+        app.trigger_command("DatabaseUrlEdit");
+        let request = app.editor_request.take().expect("the editor was asked for");
+        assert_eq!(request.purpose, EditorPurpose::Urls);
+        assert_eq!(request.initial_content, format!("{url}\n"));
+
+        app.on_editor_result(EditorPurpose::Urls, "sqlite:other.db\n".to_string());
+        assert_eq!(app.state.saved_urls, vec!["sqlite:other.db"]);
     }
 
     #[tokio::test]
@@ -1974,7 +1861,7 @@ mod tests {
             app.messages
                 .history()
                 .iter()
-                .any(|m| m.text.contains("Successfully updated"))
+                .any(|m| m.contains("Successfully updated"))
         })
         .await;
         // the reloaded table has the new value and no pending edits
@@ -2125,52 +2012,25 @@ mod tests {
         press(&mut app, "Escape");
         assert!(app.command_line.is_none());
 
-        // --- the saved url list is an editable page ---
-        app.trigger_command("DatabaseUrls");
-        assert!(app.is_urls_page());
-
-        let table = app.table.as_ref().unwrap();
-        assert_eq!(table.name, "urls");
-        assert_eq!(table.rows().len(), 1, "the url this test connected with");
-        assert_eq!(table.cell_display(0, 0), url);
-        assert!(screen(&mut app).contains("urls · 1 rows"));
-
-        // `e` exists here and nowhere else
-        assert_eq!(
-            app.keybinds
-                .all_keybinds()
-                .iter()
-                .filter(|bind| bind.bind == "e")
-                .count(),
-            1,
-            "e is bound on the url page"
-        );
-
-        // editing a url goes through the same editor and stays pending until w
-        press(&mut app, "e");
+        // --- the saved url list is edited as a newline delimited buffer ---
+        app.trigger_command("DatabaseUrlEdit");
         let request = app.editor_request.take().expect("the editor was asked for");
-        assert_eq!(request.initial_content, url);
+        assert_eq!(request.purpose, EditorPurpose::Urls);
+        assert_eq!(request.initial_content, format!("{url}\n"));
 
-        app.on_editor_result(EditorPurpose::Cell, format!("{url}?application_name=tz"));
-        assert_eq!(app.table.as_ref().unwrap().dirty_cells().len(), 1);
-        assert_eq!(app.state.saved_urls, vec![url.clone()], "not saved yet");
-
-        press(&mut app, "w");
+        app.on_editor_result(EditorPurpose::Urls, format!("{url}?application_name=tz\n"));
         assert_eq!(
             app.state.saved_urls,
             vec![format!("{url}?application_name=tz")],
-            "w rewrites the saved list"
+            "the buffer rewrites the saved list"
         );
         assert!(
             app.state.database_url.as_deref() == Some(url.as_str()),
             "and leaves the live connection alone"
         );
 
-        // an unusable url is refused whole
-        press(&mut app, "e");
-        app.editor_request.take();
-        app.on_editor_result(EditorPurpose::Cell, "not-a-url".to_string());
-        press(&mut app, "w");
+        // an unusable line refuses the whole buffer
+        app.on_editor_result(EditorPurpose::Urls, "not-a-url\n".to_string());
         assert!(app
             .messages
             .current()
@@ -2181,24 +2041,9 @@ mod tests {
             "nothing was written"
         );
 
-        // dd marks for deletion, w applies it
-        app.trigger_command("Undo");
-        press(&mut app, "d");
-        press(&mut app, "d");
-        assert_eq!(app.table.as_ref().unwrap().deleted_rows().len(), 1);
-        press(&mut app, "w");
+        // an emptied buffer clears the list
+        app.on_editor_result(EditorPurpose::Urls, String::new());
         assert!(app.state.saved_urls.is_empty(), "the url was removed");
-
-        // leaving the page takes `e` with it
-        app.trigger_command("GoBackward");
-        pump(&mut app, &mut rx, "the hop back", |app| !app.is_urls_page()).await;
-        assert!(
-            !app.keybinds
-                .all_keybinds()
-                .iter()
-                .any(|bind| bind.bind == "e"),
-            "e is gone once the page is"
-        );
 
         // --- aliases ---
         assert!(!app.should_quit);

@@ -133,23 +133,6 @@ pub fn global() -> Vec<(Command, Option<&'static str>)> {
             None,
         ),
         (
-            Command::new("Messages", |app, _| {
-                app.hop_to(crate::app::MESSAGES_QUERY.to_string());
-                Ok(())
-            })
-            .described("Show all message history"),
-            None,
-        ),
-        (
-            Command::new("MessagesClear", |app, _| {
-                app.messages.clear_history();
-                app.messages.info("Message history cleared");
-                Ok(())
-            })
-            .described("Clear all message history"),
-            None,
-        ),
-        (
             Command::new("GoBackward", |app, _| {
                 app.state.pop_hop();
                 app.state.save();
@@ -160,11 +143,11 @@ pub fn global() -> Vec<(Command, Option<&'static str>)> {
             Some("Control + o"),
         ),
         (
-            Command::new("DatabaseUrls", |app, _| {
-                app.hop_to(crate::app::URLS_QUERY.to_string());
+            Command::new("DatabaseUrlEdit", |app, _| {
+                app.open_urls_editor();
                 Ok(())
             })
-            .described("List the saved database urls as an editable table")
+            .described("Edit the saved database urls in the editor, one per line.")
             .alias("urls"),
             None,
         ),
@@ -559,29 +542,6 @@ pub fn help_search() -> Vec<(Command, Keybind)> {
         .described("Stop searching"),
         Keybind::new("KeybindHelpSearchStop", "Escape").override_input(),
     )]
-}
-
-/// Registered only while the saved url list is on screen, so `e` does not
-/// shadow anything anywhere else.
-pub fn urls_page() -> Vec<(Command, Keybind)> {
-    vec![
-        (
-            Command::new("DatabaseUrlEdit", |app, _| {
-                app.open_cell_editor();
-                Ok(())
-            })
-            .described("Edit the database url under the cursor."),
-            Keybind::new("DatabaseUrlEdit", "e"),
-        ),
-        (
-            Command::new("DatabaseUrlSelect", |app, _| {
-                app.select_url_under_cursor();
-                Ok(())
-            })
-            .described("Connect to the database url under the cursor."),
-            Keybind::new("DatabaseUrlSelect", "Enter"),
-        ),
-    ]
 }
 
 /// Port of `useRegisterKeybindCommandOnConditional`: exactly one of these two is
