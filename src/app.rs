@@ -615,12 +615,10 @@ impl App {
         self.load_current_hop();
     }
 
-    /// Port of the `structure()` memo in `SqlQueryPage`: prefer the catalog,
-    /// narrow it to the selected columns, otherwise infer from the first row.
     fn try_build_table(&mut self) {
-        let (Some(rows), Some(structure)) = (self.rows.data(), self.structure.data()) else {
+        if self.rows.data().is_none() || self.structure.data().is_none() {
             return;
-        };
+        }
         let Some(hop) = self.state.current_hop() else {
             return;
         };
@@ -635,13 +633,18 @@ impl App {
             .and_then(|e| e.schema.clone())
             .unwrap_or_else(|| self.schema());
 
-        let structure: Vec<ColumnInfo> = if structure.is_empty() {
+        let Query::Ready(rows) = std::mem::take(&mut self.rows) else {
+            return;
+        };
+        let catalog = self.structure.data().expect("checked above");
+
+        let structure: Vec<ColumnInfo> = if catalog.is_empty() {
             infer_structure(rows.first())
         } else {
             match extracted.as_ref().and_then(|e| e.columns.as_ref()) {
                 // null/undefined columns means SELECT * - return all columns
-                None => structure.clone(),
-                Some(columns) => structure
+                None => catalog.clone(),
+                Some(columns) => catalog
                     .iter()
                     .filter(|s| columns.iter().any(|c| c.name == s.column_name))
                     .cloned()
@@ -1120,19 +1123,15 @@ impl App {
             || self.help.as_ref().is_some_and(|help| help.searching)
     }
 
-    // --------------------------------------------------------------- editing
-
-    /// Port of `WriteChanges`: one transaction of UPDATEs and DELETEs built from
-    /// the dirty cells and the rows marked for deletion.
-    pub fn write_changes(&mut self) {
-        let Some(table) = self.table.as_ref() else {
-            return;
-        };
-        let schema = self.table_schema.clone();
-        let name = table.name.clone();
-
+    pub fn pending_statements(&self) -> (Vec<String>, Vec<String>) {
         let mut statements: Vec<String> = Vec::new();
         let mut errors: Vec<String> = Vec::new();
+
+        let Some(table) = self.table.as_ref() else {
+            return (statements, errors);
+        };
+        let schema = &self.table_schema;
+        let name = &table.name;
 
         for (row, column) in table.dirty_cells() {
             let (Some(column_ref), Some(cell)) = (table.column(column), table.cell(row, column))
@@ -1165,6 +1164,12 @@ impl App {
                 Err(error) => errors.push(error),
             }
         }
+
+        (statements, errors)
+    }
+
+    pub fn write_changes(&mut self) {
+        let (statements, errors) = self.pending_statements();
 
         for error in errors {
             self.messages.error(error);
@@ -1689,7 +1694,7 @@ mod tests {
         app.table = Some(Table::new(
             "users".into(),
             &[nullable("name", true)],
-            &[row.clone()],
+            vec![row.clone()],
         ));
 
         press(&mut app, "x");
@@ -1704,7 +1709,7 @@ mod tests {
         app.table = Some(Table::new(
             "users".into(),
             &[nullable("name", false)],
-            &[row],
+            vec![row],
         ));
         press(&mut app, "x");
         let table = app.table.as_ref().unwrap();
@@ -1714,6 +1719,70 @@ mod tests {
             .messages
             .current()
             .is_some_and(|(_, text)| text.contains("is not nullable")));
+    }
+
+    #[tokio::test]
+    async fn pending_changes_are_previewed_as_sql() {
+        let home = std::env::temp_dir().join("tablezz-preview-home");
+        let _ = std::fs::remove_dir_all(&home);
+        std::env::set_var("TABLEZZ_HOME", &home);
+
+        let (tx, _rx) = tokio::sync::mpsc::unbounded_channel();
+        let mut app = App::new(tx);
+
+        let column = |name: &str, data_type: &str, is_primary| ColumnInfo {
+            column_name: name.to_string(),
+            data_type: data_type.to_string(),
+            is_primary,
+            is_nullable: true,
+            foreign_key: None,
+        };
+        let row = |id: i64, name: &str| -> JsonRow {
+            [
+                ("id".to_string(), serde_json::json!(id)),
+                ("name".to_string(), serde_json::json!(name)),
+            ]
+            .into_iter()
+            .collect()
+        };
+
+        app.table = Some(Table::new(
+            "users".into(),
+            &[column("id", "integer", true), column("name", "text", false)],
+            vec![row(1, "ada"), row(2, "grace")],
+        ));
+        // The cursor lives on the current hop.
+        app.state.add_hop("SELECT * FROM \"users\"".to_string());
+
+        // Nothing pending yet: no panel.
+        assert!(!screen(&mut app).contains("pending change"));
+
+        press(&mut app, "l"); // onto "name"
+        press(&mut app, "x"); // NULL it
+        press(&mut app, "j"); // onto the second row
+        press(&mut app, "d");
+        press(&mut app, "d"); // mark it for deletion
+
+        assert_eq!(
+            app.pending_statements().0,
+            vec![
+                "UPDATE \"public\".\"users\" SET \"name\" = NULL WHERE \"id\" = 1".to_string(),
+                "DELETE FROM \"public\".\"users\" WHERE \"id\" = 2".to_string(),
+            ]
+        );
+
+        // The panel shows up on its own, bottom right, as the exact query:
+        // `batch_execute` runs the statements in one transaction.
+        let drawn = screen(&mut app);
+        assert!(drawn.contains("2 pending changes"), "{drawn}");
+        assert!(drawn.contains("BEGIN;"));
+        assert!(drawn.contains("UPDATE \"public\".\"users\" SET \"name\" = NULL WHERE \"id\" = 1;"));
+        assert!(drawn.contains("COMMIT;"));
+
+        // Undoing everything makes it disappear again.
+        press(&mut app, "u");
+        press(&mut app, "u");
+        assert!(!screen(&mut app).contains("pending change"));
     }
 
     #[tokio::test]

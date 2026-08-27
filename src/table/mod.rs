@@ -60,7 +60,7 @@ impl CellValue {
 
     fn to_sql_value(&self, column: &Column) -> Result<String, String> {
         match self {
-            CellValue::Null => Ok("null".to_string()),
+            CellValue::Null => Ok("NULL".to_string()),
             CellValue::Value(data) => column.data_type().to_sql_value(data),
         }
     }
@@ -168,7 +168,9 @@ pub struct Table {
 }
 
 impl Table {
-    pub fn new(name: String, structure: &[ColumnInfo], rows: &[JsonRow]) -> Self {
+    /// Takes the result rows by value: the values move into the cells, so a
+    /// large result is not held twice.
+    pub fn new(name: String, structure: &[ColumnInfo], rows: Vec<JsonRow>) -> Self {
         let columns: Vec<Column> = structure
             .iter()
             .enumerate()
@@ -183,15 +185,15 @@ impl Table {
             .collect();
 
         let rows: Vec<Row> = rows
-            .iter()
+            .into_iter()
             .enumerate()
-            .map(|(index, row)| Row {
+            .map(|(index, mut row)| Row {
                 index,
                 deleted: false,
                 cells: columns
                     .iter()
                     .map(|column| {
-                        Cell::new(row.get(&column.name).cloned().unwrap_or(JsonValue::Null))
+                        Cell::new(row.swap_remove(&column.name).unwrap_or(JsonValue::Null))
                     })
                     .collect(),
             })
@@ -328,7 +330,7 @@ mod tests {
         let structure = vec![column("id", "integer"), column("name", "text")];
         // the result row has the keys the other way round
         let rows = vec![row(&[("name", json!("ada")), ("id", json!(1))])];
-        let table = Table::new("users".into(), &structure, &rows);
+        let table = Table::new("users".into(), &structure, rows);
 
         assert_eq!(table.cell_display(0, 0), "1");
         assert_eq!(table.cell_display(0, 1), "ada");
@@ -338,7 +340,7 @@ mod tests {
     fn a_missing_column_in_the_result_becomes_null() {
         let structure = vec![column("id", "integer"), column("missing", "text")];
         let rows = vec![row(&[("id", json!(1))])];
-        let table = Table::new("users".into(), &structure, &rows);
+        let table = Table::new("users".into(), &structure, rows);
 
         assert!(table.cell(0, 1).unwrap().is_null());
     }
@@ -354,13 +356,13 @@ mod tests {
     fn upper_case_null_is_the_database_null() {
         let structure = vec![nullable("name", "text")];
         let rows = vec![row(&[("name", json!("ada"))])];
-        let mut table = Table::new("users".into(), &structure, &rows);
+        let mut table = Table::new("users".into(), &structure, rows);
 
         table.update_cell(0, 0, "NULL").unwrap();
         let (cell, column) = (table.cell(0, 0).unwrap(), table.column(0).unwrap());
         assert!(cell.is_null());
         assert_eq!(cell.to_display(column), "NULL");
-        assert_eq!(cell.to_sql_value(column).unwrap(), "null");
+        assert_eq!(cell.to_sql_value(column).unwrap(), "NULL");
 
         // the lower case null is just text
         table.update_cell(0, 0, "null").unwrap();
@@ -373,7 +375,7 @@ mod tests {
     fn lower_case_null_in_a_json_column_is_the_json_null() {
         let structure = vec![nullable("meta", "jsonb")];
         let rows = vec![row(&[("meta", json!({"a": 1}))])];
-        let mut table = Table::new("things".into(), &structure, &rows);
+        let mut table = Table::new("things".into(), &structure, rows);
 
         table.update_cell(0, 0, "null").unwrap();
         let (cell, column) = (table.cell(0, 0).unwrap(), table.column(0).unwrap());
@@ -384,14 +386,14 @@ mod tests {
         table.update_cell(0, 0, "NULL").unwrap();
         let (cell, column) = (table.cell(0, 0).unwrap(), table.column(0).unwrap());
         assert!(cell.is_null());
-        assert_eq!(cell.to_sql_value(column).unwrap(), "null");
+        assert_eq!(cell.to_sql_value(column).unwrap(), "NULL");
     }
 
     #[test]
     fn upper_case_null_in_a_non_nullable_column_is_a_value() {
         let structure = vec![column("name", "text")];
         let rows = vec![row(&[("name", json!("ada"))])];
-        let mut table = Table::new("users".into(), &structure, &rows);
+        let mut table = Table::new("users".into(), &structure, rows);
 
         table.update_cell(0, 0, "NULL").unwrap();
         let (cell, column) = (table.cell(0, 0).unwrap(), table.column(0).unwrap());
@@ -403,7 +405,7 @@ mod tests {
     fn editing_tracks_dirtiness_and_undoes() {
         let structure = vec![column("name", "text")];
         let rows = vec![row(&[("name", json!("ada"))])];
-        let mut table = Table::new("users".into(), &structure, &rows);
+        let mut table = Table::new("users".into(), &structure, rows);
 
         let column = &table.columns[0];
         let cell = table.rows[0].cells.get_mut(0).unwrap();

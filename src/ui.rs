@@ -22,6 +22,8 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
 
     draw_content(frame, app, content);
     draw_status(frame, app, status);
+    // Under the overlays: anything opened on top wins the corner.
+    draw_preview(frame, app, content);
 
     if app.opened_cell.is_some() {
         draw_opened_cell(frame, app, content);
@@ -497,6 +499,57 @@ fn draw_picker(frame: &mut Frame, app: &mut App) {
             row,
         );
     }
+}
+
+/// The pending changes as the SQL statements `WriteChanges` would execute,
+/// shown bottom right whenever anything is dirty. UPDATEs in the dirty-cell
+/// yellow, DELETEs in the deleted-row red.
+fn draw_preview(frame: &mut Frame, app: &App, area: Rect) {
+    let (statements, _) = app.pending_statements();
+    if statements.is_empty() {
+        return;
+    }
+
+    let width = (area.width * 2 / 3).clamp(20.min(area.width), area.width);
+    let inner_width = width.saturating_sub(2).max(1) as usize;
+
+    // Statements wrap, so measure them to size the panel. +2 for BEGIN/COMMIT.
+    let total_lines: usize = statements
+        .iter()
+        .map(|statement| statement.chars().count().div_ceil(inner_width).max(1))
+        .sum::<usize>()
+        + 2;
+    let height = (total_lines as u16 + 2).min(area.height / 2).max(3);
+
+    let count = statements.len();
+    let title = match count {
+        1 => " 1 pending change ".to_string(),
+        _ => format!(" {count} pending changes "),
+    };
+
+    // `batch_execute` runs the statements in one transaction, so that is what
+    // the preview shows.
+    let transaction = Style::default().fg(Color::DarkGray);
+    let mut lines = vec![Line::styled("BEGIN;", transaction)];
+    lines.extend(statements.into_iter().map(|statement| {
+        let color = match statement.starts_with("DELETE") {
+            true => Color::Red,
+            false => Color::Yellow,
+        };
+        Line::styled(format!("{statement};"), Style::default().fg(color))
+    }));
+    lines.push(Line::styled("COMMIT;", transaction));
+
+    let panel = anchored_bottom_right(area, width, height);
+    frame.render_widget(Clear, panel);
+    frame.render_widget(
+        Paragraph::new(lines).wrap(Wrap { trim: false }).block(
+            bordered()
+                .title(title)
+                .title_style(Style::default().fg(Color::DarkGray)),
+        ),
+        panel,
+    );
 }
 
 fn bordered() -> Block<'static> {

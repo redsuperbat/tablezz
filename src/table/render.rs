@@ -249,7 +249,7 @@ mod tests {
             })
             .collect();
 
-        Table::new("users".into(), &structure, &rows)
+        Table::new("users".into(), &structure, rows)
     }
 
     fn render_to_lines(area: Rect, cursor: (usize, usize), scroll: (usize, usize)) -> Vec<String> {
@@ -309,7 +309,7 @@ mod tests {
             .map(|name| (name.to_string(), json!(format!("{name}-value"))))
             .collect()];
 
-        let table = Table::new("t".into(), &structure, &rows);
+        let table = Table::new("t".into(), &structure, rows);
         let layout = ColumnLayout::compute(&table);
 
         // two whole columns and part of a third

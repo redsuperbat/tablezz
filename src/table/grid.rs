@@ -350,7 +350,7 @@ mod tests {
             })
             .collect();
 
-        Table::new("t".into(), &structure, &rows)
+        Table::new("t".into(), &structure, rows)
     }
 
     fn selection() -> GridSelection {
