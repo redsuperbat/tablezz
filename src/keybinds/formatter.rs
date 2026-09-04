@@ -1,5 +1,3 @@
-//! Port of `src/keybinds/KeybindFormatter.ts`.
-
 use super::parser::{KeyExpression, KeybindNode, Modifier};
 
 pub fn format(key_expression: &KeyExpression) -> String {

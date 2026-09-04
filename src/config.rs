@@ -1,5 +1,3 @@
-//! Port of `src/config/configuration.ts` + `ConfigurationService.ts` +
-//! `ConfigurationProvider.tsx`. Same file, same shape: `~/tablezz/config.json`,
 //! watched and hot reloaded.
 
 use indexmap::IndexMap;

@@ -1,4 +1,3 @@
-//! Port of `src/lib/extractTablesFromSql.ts`, using `sqlparser` in place of
 //! `pgsql-ast-parser`.
 
 use sqlparser::ast::{Expr, SelectItem, SetExpr, Statement, TableFactor};

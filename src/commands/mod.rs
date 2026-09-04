@@ -1,4 +1,3 @@
-//! Port of `src/commands/Command.ts` + `CommandsContext.tsx`. Commands are the
 //! only way UI actions happen: keybinds trigger commands, the command line
 //! triggers commands.
 

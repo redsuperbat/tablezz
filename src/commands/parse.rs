@@ -1,5 +1,3 @@
-//! Port of `src/commands/parseCommand.ts`.
-
 use std::collections::HashMap;
 
 pub type CommandVariables = HashMap<char, String>;

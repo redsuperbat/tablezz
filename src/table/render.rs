@@ -1,4 +1,3 @@
-//! Port of `src/table/canvas/CanvasRenderer.ts`. Same structure — backgrounds,
 //! text, grid, sticky header — drawn into the terminal buffer.
 
 use ratatui::buffer::Buffer;

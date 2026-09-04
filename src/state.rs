@@ -4,7 +4,6 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-/// Port of the `Hop` in `src/HopContext.ts`. Scroll offsets are in rows and
 /// columns rather than pixels.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Hop {
@@ -62,8 +61,6 @@ impl PersistedState {
             let _ = std::fs::write(path, contents);
         }
     }
-
-    // --- hop stack (port of HopContext.ts) ---
 
     pub fn current_hop(&self) -> Option<&Hop> {
         self.hops.last()

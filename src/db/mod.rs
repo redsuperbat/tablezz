@@ -102,7 +102,6 @@ pub async fn connect(database_url: &str) -> Result<Connection, Error> {
 }
 
 /// Split a connection url into the url actually used and the database it points
-/// at — port of `ConnectionCredentialsProvider.tsx`. Also the validation gate
 /// before a url is persisted, so it rejects schemes no adapter handles.
 pub fn credentials(raw: &str) -> Result<(String, String), String> {
     let mut url = url::Url::parse(raw).map_err(|e| e.to_string())?;

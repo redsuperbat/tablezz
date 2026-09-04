@@ -1,4 +1,3 @@
-//! Port of `src/picker/usePicker.tsx`. The promise the original resolved
 //! becomes a `PickerAction`: what to do with the value once it is picked.
 
 use nucleo_matcher::pattern::{CaseMatching, Normalization, Pattern};

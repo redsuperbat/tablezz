@@ -1,5 +1,3 @@
-//! Port of `src/table/DataType.tsx`. Lucide icons become one character glyphs.
-
 use serde_json::Value as JsonValue;
 
 /// Nerd Font glyphs, standing in for the lucide icons the original rendered.

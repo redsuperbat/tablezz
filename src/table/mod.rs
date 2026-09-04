@@ -1,4 +1,3 @@
-//! Port of `src/table/{Table,Row,Column,Cell}.ts`. The cyclic
 //! cell -> row -> table back references become index lookups; everything a cell
 //! needs from its column is passed in.
 

@@ -1,5 +1,3 @@
-//! Port of `src/keybinds/KeybindParser.ts`.
-
 use super::tokenizer::{Range, Token, TokenKind};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

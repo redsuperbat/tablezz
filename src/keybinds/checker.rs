@@ -1,5 +1,3 @@
-//! Port of `src/keybinds/KeybindChecker.ts`.
-
 use super::parser::{KeybindNode, Modifier};
 
 /// Mirrors the browser `KeyboardEvent` shape the original checker consumed, so

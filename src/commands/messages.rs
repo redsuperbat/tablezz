@@ -1,4 +1,3 @@
-//! Port of `src/commands/Messages.tsx`. The toast becomes a transient line in
 //! the status bar.
 
 use std::time::{Duration, Instant};

@@ -1,5 +1,3 @@
-//! Port of `App.tsx` + `Router.tsx`: what is on screen, in what order.
-
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
@@ -228,7 +226,6 @@ fn draw_opened_cell(frame: &mut Frame, app: &App, area: Rect) {
     );
 }
 
-/// Port of `KeybindHelp.tsx`. The full list (`?`) is a searchable grid; the keys
 /// that can follow a partially entered sequence get one line each, with the
 /// description, since there are only a few of them.
 fn draw_help(frame: &mut Frame, app: &App, area: Rect, full: bool) {

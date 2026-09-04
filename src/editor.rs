@@ -1,4 +1,3 @@
-//! Replaces `src/editor/Editor.tsx` + `src-tauri/src/pty.rs`. There is no
 //! terminal to emulate any more: suspend the TUI and hand the real one over.
 
 use std::io::Write;

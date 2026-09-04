@@ -1,5 +1,3 @@
-//! Port of `src/keybinds/KeybindTokenizer.ts`.
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenKind {
     Key,

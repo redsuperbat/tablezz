@@ -1,5 +1,3 @@
-//! Port of the input half of `src/commands/CommandLine.tsx`. The `:` prompt.
-
 use super::Commands;
 use std::collections::HashMap;
 

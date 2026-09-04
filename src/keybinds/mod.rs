@@ -1,5 +1,4 @@
 //! Keybind pipeline: tokenizer -> parser -> checker, plus the stacked registry
-//! that used to live in `KeybindProvider.tsx` / `KeybindStack.ts`.
 
 pub mod checker;
 pub mod formatter;
@@ -63,7 +62,6 @@ pub struct PotentialKeybind {
     pub description: Option<String>,
 }
 
-/// Port of `KeybindStack.ts` — one stack per keybind expression, the top of
 /// each stack wins so an overlay can shadow a binding while it is open.
 #[derive(Default)]
 struct KeybindStack {
@@ -102,7 +100,6 @@ impl KeybindStack {
     }
 }
 
-/// Port of `KeybindProvider.tsx`. Owns the two stacks (config file keybinds take
 /// precedence over the ones components register) and the in-flight sequence
 /// state for multi-key binds like `g > g`.
 pub struct Keybinds {

@@ -1,4 +1,3 @@
-//! Port of `src/table/UndoTree.ts`. The original stored closures; a change is
 //! an enum here, since a closure cannot borrow the table it has to mutate.
 
 use super::selection::CellRef;

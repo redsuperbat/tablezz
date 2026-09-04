@@ -1,4 +1,3 @@
-//! Port of `src/table/VisualSelection.tsx`. Cell references become
 //! `(row, column)` indices; the cursor is passed in rather than held.
 
 use super::Table;

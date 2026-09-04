@@ -1,4 +1,3 @@
-//! Port of `src/table/canvas/CanvasColumnLayout.ts`, measuring terminal cells
 //! instead of pixels.
 
 use unicode_width::UnicodeWidthStr;
