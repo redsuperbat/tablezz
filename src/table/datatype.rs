@@ -225,8 +225,13 @@ impl DataType for DefaultDataType {
         Ok(JsonValue::String(value.to_string()))
     }
 
+    /// Strings are quoted so the database casts them to the column type
+    /// (enums, booleans, unknown types) instead of reading an identifier.
     fn to_sql_value(&self, data: &JsonValue) -> Result<String, String> {
-        Ok(plain(data))
+        Ok(match data {
+            JsonValue::String(s) => quote(s),
+            other => other.to_string(),
+        })
     }
 
     fn icon(&self) -> Option<char> {
@@ -288,6 +293,13 @@ pub fn create_data_type(data_type: &str) -> Box<dyn DataType> {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn unknown_types_quote_strings() {
+        let t = create_data_type("USER-DEFINED");
+        assert_eq!(t.to_sql_value(&json!("DONE")).unwrap(), "'DONE'");
+        assert_eq!(t.to_sql_value(&json!("it's")).unwrap(), "'it''s'");
+    }
 
     #[test]
     fn json_null_stays_a_json_value() {
