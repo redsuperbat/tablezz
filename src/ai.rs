@@ -2,6 +2,7 @@
 //! connected database.
 
 use genai::chat::{ChatMessage, ChatRequest};
+use genai::resolver::AuthData;
 use genai::Client;
 
 use crate::db::Connection;
@@ -48,19 +49,50 @@ pub async fn describe(db: &Connection, dialect: &str, schema: &str) -> Result<St
 
 /// The provider is picked from the model name ("claude-*", "gpt-*", "gemini-*",
 /// "groq::...", anything else goes to Ollama), each reading its usual api key
-/// variable such as `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`.
-pub async fn generate_sql(model: &str, database: &str, question: &str) -> Result<String, String> {
+/// variable such as `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`, unless a key file
+/// is given.
+pub async fn generate_sql(
+    model: &str,
+    key_file: Option<&str>,
+    database: &str,
+    question: &str,
+) -> Result<String, String> {
+    let client = match key_file {
+        Some(path) => {
+            let key = read_key(path)?;
+            Client::builder()
+                .with_auth_resolver_fn(move |_| Ok(Some(AuthData::from_single(key.clone()))))
+                .build()
+        }
+        None => Client::default(),
+    };
+
     let request = ChatRequest::new(vec![
         ChatMessage::system(SYSTEM),
         ChatMessage::user(format!("{database}\nQuestion: {question}")),
     ]);
 
-    let response = Client::default()
+    let response = client
         .exec_chat(model, request, None)
         .await
         .map_err(|e| e.to_string())?;
 
     parse_sql(response.first_text().unwrap_or_default())
+}
+
+fn read_key(path: &str) -> Result<String, String> {
+    let expanded = match path.strip_prefix("~/") {
+        Some(rest) => dirs::home_dir().unwrap_or_default().join(rest),
+        None => path.into(),
+    };
+
+    let key = std::fs::read_to_string(&expanded)
+        .map_err(|e| format!("Could not read aiApiKeyFile \"{path}\": {e}"))?;
+
+    match key.trim() {
+        "" => Err(format!("aiApiKeyFile \"{path}\" is empty")),
+        key => Ok(key.to_string()),
+    }
 }
 
 /// Models like to wrap code in a markdown fence even when told not to.
@@ -92,5 +124,18 @@ mod tests {
         assert_eq!(parse_sql("```sql\nSELECT 1;\n```").unwrap(), "SELECT 1;");
         assert_eq!(parse_sql("```\nSELECT 1;```").unwrap(), "SELECT 1;");
         assert!(parse_sql("  ").is_err());
+    }
+
+    #[test]
+    fn the_key_file_is_trimmed() {
+        let path = std::env::temp_dir().join("tablezz-key-file");
+        std::fs::write(&path, "sk-test\n").unwrap();
+        assert_eq!(read_key(path.to_str().unwrap()).unwrap(), "sk-test");
+
+        std::fs::write(&path, " \n").unwrap();
+        assert!(read_key(path.to_str().unwrap())
+            .unwrap_err()
+            .contains("empty"));
+        assert!(read_key("/nonexistent/key").is_err());
     }
 }

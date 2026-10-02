@@ -52,6 +52,10 @@ pub struct Configuration {
     /// The model ask mode generates SQL with; its name picks the provider, e.g.
     /// "claude-opus-5", "gpt-5.4", "gemini-3-pro", "groq::llama-3.3-70b" or an Ollama model.
     pub ai_model: String,
+    /// A file holding the api key for the ai provider, e.g.
+    /// "~/.secrets/anthropic-api-key". Without it the provider's usual
+    /// environment variable is used.
+    pub ai_api_key_file: Option<String>,
 }
 
 impl Default for Configuration {
@@ -62,6 +66,7 @@ impl Default for Configuration {
             command_aliases: HashMap::new(),
             editor: "nvim".to_string(),
             ai_model: "claude-opus-5".to_string(),
+            ai_api_key_file: None,
         }
     }
 }

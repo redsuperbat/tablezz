@@ -941,12 +941,13 @@ impl App {
             .unwrap_or_default();
         let schema = self.schema();
         let model = self.config.ai_model.clone();
+        let key_file = self.config.ai_api_key_file.clone();
 
         self.messages.info("Asking the AI...");
         self.spawn(async move {
             let result = async {
                 let database = crate::ai::describe(&db, &dialect, &schema).await?;
-                crate::ai::generate_sql(&model, &database, &question).await
+                crate::ai::generate_sql(&model, key_file.as_deref(), &database, &question).await
             };
             Msg::Asked(result.await)
         });

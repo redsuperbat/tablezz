@@ -4,6 +4,14 @@
   "description": "All configuration options to configure Tablezz.",
   "type": "object",
   "properties": {
+    "aiApiKeyFile": {
+      "description": "A file holding the api key for the ai provider, e.g. \"~/.secrets/anthropic-api-key\". Without it the provider's usual environment variable is used, such as ANTHROPIC_API_KEY.",
+      "default": null,
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "aiModel": {
       "description": "The model ask mode generates SQL with; its name picks the provider, e.g. \"claude-opus-5\", \"gpt-5.4\", \"gemini-3-pro\", \"groq::llama-3.3-70b\" or an Ollama model.",
       "default": "claude-opus-5",

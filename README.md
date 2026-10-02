@@ -238,7 +238,8 @@ any other query (`Control + o` goes back), `Escape` throws it away.
 (default `claude-opus-5`): `claude-*` uses `ANTHROPIC_API_KEY`, `gpt-*` uses
 `OPENAI_API_KEY`, `gemini-*` uses `GEMINI_API_KEY`, a prefix like
 `groq::llama-3.3-70b` names the provider outright, and any other name goes to a
-local Ollama. Providers come from [genai](https://github.com/jeremychone/rust-genai).
+local Ollama. To keep the key in a file instead, point `aiApiKeyFile` at it,
+e.g. `"aiApiKeyFile": "~/.secrets/anthropic-api-key"`. Providers come from [genai](https://github.com/jeremychone/rust-genai).
 
 ### Editing in `$EDITOR`
 
