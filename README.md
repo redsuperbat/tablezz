@@ -1,7 +1,6 @@
 # Tablezz
 
-Tablezz is a keyboard-centric PostgreSQL table viewer for the terminal, built
-with [ratatui](https://ratatui.rs).
+Tablezz is a keyboard-centric PostgreSQL table viewer for the terminal, built with [ratatui](https://ratatui.rs).
 
 ## Installing
 
@@ -33,8 +32,7 @@ To try it without installing anything:
 nix run github:redsuperbat/tablezz -- postgres://user:password@localhost/mydb
 ```
 
-The flake covers `x86_64-linux`, `aarch64-linux`, `x86_64-darwin` and
-`aarch64-darwin`. Windows is not a nix platform, so build it with cargo there:
+The flake covers `x86_64-linux`, `aarch64-linux`, `x86_64-darwin` and `aarch64-darwin`. Windows is not a nix platform, so build it with cargo there:
 
 ```sh
 cargo build --release
@@ -46,9 +44,8 @@ cargo build --release
 tablezz postgres://user:password@localhost/mydb
 ```
 
-The connection url is remembered, so subsequent runs need no argument. You can
-also add one from inside the app with `:DatabaseUrlAdd <url>`, and switch
-between saved ones with `:PickerOpen urls`.
+The connection url is remembered, so subsequent runs need no argument.
+You can also add one from inside the app with `:DatabaseUrlAdd <url>`, and switch between saved ones with `:PickerOpen urls`.
 
 `:DatabaseUrls` (or `:urls`) opens the saved urls as an ordinary table.
 
@@ -227,7 +224,20 @@ pending, dirty cells are highlighted and rows marked for deletion are struck
 through. Writing needs a primary key on the table.
 
 `g d` follows the foreign key under the cursor, `g r` finds the tables that
-reference it. `?` lists every keybind, and `/` searches that list.
+reference it. `Space ?` lists every keybind, and `/` searches that list.
+
+### Ask mode
+
+`?` opens a prompt for a question in plain language, such as
+`?users who signed up this week`. The model gets the question with the
+dialect, the current schema and its tables and columns, answers with a
+`SELECT`, and the result opens like any other query (`Control + o` goes back).
+
+`aiModel` in the config picks the model, and its name picks the provider
+(default `claude-opus-5`): `claude-*` uses `ANTHROPIC_API_KEY`, `gpt-*` uses
+`OPENAI_API_KEY`, `gemini-*` uses `GEMINI_API_KEY`, a prefix like
+`groq::llama-3.3-70b` names the provider outright, and any other name goes to a
+local Ollama. Providers come from [genai](https://github.com/jeremychone/rust-genai).
 
 ### Editing in `$EDITOR`
 

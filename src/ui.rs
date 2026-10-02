@@ -135,7 +135,8 @@ fn draw_prompt(frame: &mut Frame, app: &App, area: Rect) {
     };
 
     let value = line.value();
-    let mut spans = vec![Span::styled(":", Style::default().fg(Color::DarkGray))];
+    let prompt = if line.ask { "?" } else { ":" };
+    let mut spans = vec![Span::styled(prompt, Style::default().fg(Color::DarkGray))];
 
     // While walking the history the matching part of the recalled entry is
     // highlighted, the way the original tinted it.
@@ -154,9 +155,11 @@ fn draw_prompt(frame: &mut Frame, app: &App, area: Rect) {
         },
         None => {
             spans.push(Span::raw(value.clone()));
-            let ghost = line
-                .ghost_text(&app.commands, &app.config.command_aliases)
-                .unwrap_or_default();
+            let ghost = match line.ask {
+                true => None,
+                false => line.ghost_text(&app.commands, &app.config.command_aliases),
+            }
+            .unwrap_or_default();
             spans.push(Span::styled(ghost, Style::default().fg(Color::DarkGray)));
         }
     }

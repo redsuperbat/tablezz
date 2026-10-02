@@ -45,6 +45,14 @@ pub fn global() -> Vec<(Command, Option<&'static str>)> {
             Some(":"),
         ),
         (
+            Command::new("AskActivate", |app, _| {
+                app.open_ask_line();
+                Ok(())
+            })
+            .described("Ask the AI a question; it is answered with a SQL query."),
+            Some("?"),
+        ),
+        (
             Command::new("CommandLineClearHistory", |app, _| {
                 app.state.command_history.clear();
                 app.state.save();
@@ -59,7 +67,7 @@ pub fn global() -> Vec<(Command, Option<&'static str>)> {
                 Ok(())
             })
             .described("Show available keyboard shortcuts."),
-            Some("?"),
+            Some("Leader > ?"),
         ),
         (
             Command::new("PickerOpen", |app, args| {

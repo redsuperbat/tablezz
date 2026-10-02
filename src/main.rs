@@ -1,6 +1,7 @@
 //! Terminal adapter: owns the event loop and translates crossterm key events
 //! into the browser shaped events the keybind expressions are written against.
 
+mod ai;
 mod app;
 mod commands;
 mod config;

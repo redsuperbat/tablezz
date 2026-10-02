@@ -3,6 +3,8 @@ use std::collections::HashMap;
 
 #[derive(Default)]
 pub struct CommandLine {
+    /// Ask mode: the input is a question for the AI, not a command.
+    pub ask: bool,
     input: Vec<char>,
     cursor: usize,
     /// What the history is being filtered by, once history navigation starts.

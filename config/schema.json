@@ -4,6 +4,11 @@
   "description": "All configuration options to configure Tablezz.",
   "type": "object",
   "properties": {
+    "aiModel": {
+      "description": "The model ask mode generates SQL with; its name picks the provider, e.g. \"claude-opus-5\", \"gpt-5.4\", \"gemini-3-pro\", \"groq::llama-3.3-70b\" or an Ollama model.",
+      "default": "claude-opus-5",
+      "type": "string"
+    },
     "commandAliases": {
       "description": "Aliases for long named commands, e.g. { \"w\": \"WriteChanges\" }.",
       "default": {},

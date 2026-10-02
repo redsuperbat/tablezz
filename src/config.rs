@@ -49,6 +49,9 @@ pub struct Configuration {
     pub command_aliases: HashMap<String, String>,
     /// The terminal editor invoked when editing cells.
     pub editor: String,
+    /// The model ask mode generates SQL with; its name picks the provider, e.g.
+    /// "claude-opus-5", "gpt-5.4", "gemini-3-pro", "groq::llama-3.3-70b" or an Ollama model.
+    pub ai_model: String,
 }
 
 impl Default for Configuration {
@@ -58,6 +61,7 @@ impl Default for Configuration {
             keybinds: IndexMap::new(),
             command_aliases: HashMap::new(),
             editor: "nvim".to_string(),
+            ai_model: "claude-opus-5".to_string(),
         }
     }
 }

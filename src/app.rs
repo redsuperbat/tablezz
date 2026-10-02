@@ -91,6 +91,7 @@ pub enum Msg {
         message: Option<String>,
         result: Result<(), String>,
     },
+    Asked(Result<String, String>),
     ConfigChanged,
 }
 
@@ -398,6 +399,11 @@ impl App {
                 filter_value,
                 result,
             } => self.on_references(target_column, filter_value, result),
+
+            Msg::Asked(result) => match result {
+                Ok(sql) => self.hop_to(sql),
+                Err(error) => self.messages.error(error),
+            },
 
             Msg::Executed { message, result } => match result {
                 Ok(()) => {
@@ -906,6 +912,39 @@ impl App {
         self.register_all(builtin::command_line());
     }
 
+    pub fn open_ask_line(&mut self) {
+        self.open_command_line();
+        if let Some(line) = self.command_line.as_mut() {
+            line.ask = true;
+        }
+    }
+
+    /// Send the question with a description of the database to the AI, and
+    /// hop to the query it answers with.
+    fn ask(&mut self, question: String) {
+        let Some(db) = self.db.clone() else {
+            return self.messages.error("Not connected to a database");
+        };
+        let dialect = self
+            .state
+            .database_url
+            .as_deref()
+            .and_then(|url| url::Url::parse(url).ok())
+            .map(|url| url.scheme().to_string())
+            .unwrap_or_default();
+        let schema = self.schema();
+        let model = self.config.ai_model.clone();
+
+        self.messages.info("Asking the AI...");
+        self.spawn(async move {
+            let result = async {
+                let database = crate::ai::describe(&db, &dialect, &schema).await?;
+                crate::ai::generate_sql(&model, &database, &question).await
+            };
+            Msg::Asked(result.await)
+        });
+    }
+
     pub fn close_command_line(&mut self) {
         self.close_autocomplete();
 
@@ -934,6 +973,7 @@ impl App {
             return;
         };
         let command = line.value().trim().to_string();
+        let ask = line.ask;
 
         self.close_command_line();
 
@@ -941,18 +981,29 @@ impl App {
             return;
         }
 
-        self.state.command_history.retain(|entry| entry != &command);
-        self.state.command_history.insert(0, command.clone());
+        let history = match ask {
+            true => &mut self.state.ask_history,
+            false => &mut self.state.command_history,
+        };
+        history.retain(|entry| entry != &command);
+        history.insert(0, command.clone());
         self.state.save();
-        self.trigger_command(&command);
+
+        match ask {
+            true => self.ask(command),
+            false => self.trigger_command(&command),
+        }
     }
 
     /// Port of `navigateHistory`: the first press turns what is typed into a
     /// filter over the history, later presses walk the matches.
     pub fn navigate_history(&mut self, backwards: bool) {
-        let history = self.state.command_history.clone();
         let Some(line) = self.command_line.as_mut() else {
             return;
+        };
+        let history = match line.ask {
+            true => self.state.ask_history.clone(),
+            false => self.state.command_history.clone(),
         };
 
         line.navigate_history(&history, backwards);
@@ -963,6 +1014,7 @@ impl App {
     pub fn autocomplete_matches(&self) -> Vec<String> {
         self.command_line
             .as_ref()
+            .filter(|line| !line.ask)
             .map(|line| line.matches(&self.commands, &self.config.command_aliases))
             .unwrap_or_default()
     }

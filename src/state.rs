@@ -38,6 +38,7 @@ pub struct PersistedState {
     pub schema: Option<String>,
     pub hops: Vec<Hop>,
     pub command_history: Vec<String>,
+    pub ask_history: Vec<String>,
 }
 
 pub fn state_path() -> PathBuf {
