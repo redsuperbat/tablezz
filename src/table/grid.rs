@@ -1,10 +1,4 @@
 //! Markdown table encoding for editing a block of cells in `$EDITOR`.
-//!
-//! A real format rather than an invented one: nvim highlights it, and
-//! `tabular.vim` / `vim-table-mode` already know how to realign it. Rows carry
-//! their row number in a leading `#` column and are matched back by it, the way
-//! `vidir` matches renamed files, so reordering or deleting lines in the editor
-//! is safe.
 
 use unicode_width::UnicodeWidthStr;
 
