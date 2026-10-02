@@ -231,7 +231,8 @@ reference it. `Space ?` lists every keybind, and `/` searches that list.
 `?` opens a prompt for a question in plain language, such as
 `?users who signed up this week`. The model gets the question with the
 dialect, the current schema and its tables and columns, answers with a
-`SELECT`, and the result opens like any other query (`Control + o` goes back).
+`SELECT`. The query is shown first: `Enter` runs it and opens the result like
+any other query (`Control + o` goes back), `Escape` throws it away.
 
 `aiModel` in the config picks the model, and its name picks the provider
 (default `claude-opus-5`): `claude-*` uses `ANTHROPIC_API_KEY`, `gpt-*` uses

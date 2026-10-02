@@ -179,6 +179,7 @@ fn commands_markdown() -> String {
         ("picker", builtin::picker()),
         ("command line", builtin::command_line()),
         ("autocomplete", builtin::autocomplete()),
+        ("ask preview", builtin::ask_preview()),
         ("help", builtin::help()),
         ("help search", builtin::help_search()),
     ] {

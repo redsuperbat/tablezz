@@ -10,8 +10,11 @@ use crate::keybinds::PotentialKeybind;
 use crate::table::render::{self, RenderState, HEADER_HEIGHT};
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
-    let [content, status] =
-        Layout::vertical([Constraint::Min(0), Constraint::Length(1)]).areas(frame.area());
+    let [content, status] = Layout::vertical([
+        Constraint::Min(0),
+        Constraint::Length(status_height(app, frame.area())),
+    ])
+    .areas(frame.area());
 
     // The equivalent of measuring the canvas container: scrolling can only be
     // resolved once we know how much room there is.
@@ -22,6 +25,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     draw_status(frame, app, status);
     // Under the overlays: anything opened on top wins the corner.
     draw_preview(frame, app, content);
+    draw_ask_preview(frame, app, content);
 
     if app.opened_cell.is_some() {
         draw_opened_cell(frame, app, content);
@@ -117,7 +121,7 @@ fn draw_status(frame: &mut Frame, app: &mut App, area: Rect) {
             MessageType::Info => Color::Blue,
             MessageType::Error => Color::Red,
         };
-        frame.render_widget(Paragraph::new(text).style(Style::default().fg(color)), left);
+        frame.render_widget(message(text).style(Style::default().fg(color)), left);
         return;
     }
 
@@ -127,6 +131,24 @@ fn draw_status(frame: &mut Frame, app: &mut App, area: Rect) {
             left,
         );
     }
+}
+
+fn message(text: &str) -> Paragraph<'_> {
+    Paragraph::new(text).wrap(Wrap { trim: false })
+}
+
+/// One line for the prompt, as many as a message wraps to otherwise, up to
+/// half the screen.
+fn status_height(app: &App, area: Rect) -> u16 {
+    let text = match (&app.command_line, app.messages.current()) {
+        (None, Some((_, text))) => text,
+        _ => return 1,
+    };
+    let width = area
+        .width
+        .saturating_sub(status_suffix(app).chars().count() as u16);
+
+    (message(text).line_count(width) as u16).clamp(1, (area.height / 2).max(1))
 }
 
 fn draw_prompt(frame: &mut Frame, app: &App, area: Rect) {
@@ -546,6 +568,31 @@ fn draw_preview(frame: &mut Frame, app: &App, area: Rect) {
         Paragraph::new(lines).wrap(Wrap { trim: false }).block(
             bordered()
                 .title(title)
+                .title_style(Style::default().fg(Color::DarkGray)),
+        ),
+        panel,
+    );
+}
+
+fn draw_ask_preview(frame: &mut Frame, app: &App, area: Rect) {
+    let Some(sql) = app.ask_preview.as_deref() else {
+        return;
+    };
+
+    let width = (area.width * 2 / 3).clamp(20.min(area.width), area.width);
+    let paragraph = Paragraph::new(sql)
+        .style(Style::default().fg(Color::Yellow))
+        .wrap(Wrap { trim: false });
+    let height = (paragraph.line_count(width.saturating_sub(2)) as u16 + 2)
+        .min(area.height)
+        .max(3);
+
+    let panel = anchored_bottom_right(area, width, height);
+    frame.render_widget(Clear, panel);
+    frame.render_widget(
+        paragraph.block(
+            bordered()
+                .title(" AI query: Enter to run, Escape to cancel ")
                 .title_style(Style::default().fg(Color::DarkGray)),
         ),
         panel,

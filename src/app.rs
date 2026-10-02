@@ -150,6 +150,8 @@ pub struct App {
     /// Index of the highlighted autocomplete entry while the menu is open.
     pub autocomplete: Option<usize>,
     pub help: Option<Help>,
+    /// The query the AI answered with, waiting to be confirmed or cancelled.
+    pub ask_preview: Option<String>,
     /// Set by a command, picked up and run by the event loop.
     pub editor_request: Option<EditorRequest>,
 
@@ -157,6 +159,9 @@ pub struct App {
     /// measuring the canvas container.
     pub viewport: Rect,
     pub should_quit: bool,
+    /// On Linux the copied text is served by whoever copied it, so the
+    /// clipboard has to outlive the copy.
+    clipboard: Option<arboard::Clipboard>,
 
     tx: UnboundedSender<Msg>,
     inflight: usize,
@@ -191,9 +196,11 @@ impl App {
             command_line: None,
             autocomplete: None,
             help: None,
+            ask_preview: None,
             editor_request: None,
             viewport: Rect::default(),
             should_quit: false,
+            clipboard: None,
             tx,
             inflight: 0,
             pending_commands: VecDeque::new(),
@@ -401,7 +408,7 @@ impl App {
             } => self.on_references(target_column, filter_value, result),
 
             Msg::Asked(result) => match result {
-                Ok(sql) => self.hop_to(sql),
+                Ok(sql) => self.open_ask_preview(sql),
                 Err(error) => self.messages.error(error),
             },
 
@@ -945,6 +952,25 @@ impl App {
         });
     }
 
+    fn open_ask_preview(&mut self, sql: String) {
+        self.messages.clear();
+        if self.ask_preview.replace(sql).is_none() {
+            self.register_all(builtin::ask_preview());
+        }
+    }
+
+    /// Run the previewed query (`true`) or throw it away.
+    pub fn close_ask_preview(&mut self, run: bool) {
+        let Some(sql) = self.ask_preview.take() else {
+            return;
+        };
+        self.unregister_all(builtin::ask_preview());
+
+        if run {
+            self.hop_to(sql);
+        }
+    }
+
     pub fn close_command_line(&mut self) {
         self.close_autocomplete();
 
@@ -1330,7 +1356,17 @@ impl App {
         };
         let text = selection.to_delimited(cursor, table, "\t", "\n");
 
-        match arboard::Clipboard::new().and_then(|mut clipboard| clipboard.set_text(text)) {
+        let clipboard = match self.clipboard.take() {
+            Some(clipboard) => Ok(clipboard),
+            None => arboard::Clipboard::new(),
+        };
+        let result = clipboard.and_then(|mut clipboard| {
+            let result = clipboard.set_text(text);
+            self.clipboard = Some(clipboard);
+            result
+        });
+
+        match result {
             Ok(()) => self.messages.info("Copied to clipboard"),
             Err(error) => self.messages.error(error.to_string()),
         }
@@ -1721,6 +1757,49 @@ mod tests {
             .map(|line| line.iter().map(|c| c.symbol()).collect::<String>())
             .collect::<Vec<_>>()
             .join("\n")
+    }
+
+    #[tokio::test]
+    async fn a_multi_line_message_shows_every_line() {
+        let home = std::env::temp_dir().join("tablezz-multi-line-home");
+        let _ = std::fs::remove_dir_all(&home);
+        std::env::set_var("TABLEZZ_HOME", &home);
+
+        let (tx, _rx) = tokio::sync::mpsc::unbounded_channel();
+        let mut app = App::new(tx);
+
+        app.messages
+            .error("Resolver error\nCause: ApiKeyEnvNotFound");
+        let drawn = screen(&mut app);
+        assert!(drawn.contains("Resolver error"), "{drawn}");
+        assert!(drawn.contains("Cause: ApiKeyEnvNotFound"), "{drawn}");
+    }
+
+    #[tokio::test]
+    async fn the_ai_query_runs_only_once_confirmed() {
+        let home = std::env::temp_dir().join("tablezz-ask-preview-home");
+        let _ = std::fs::remove_dir_all(&home);
+        std::env::set_var("TABLEZZ_HOME", &home);
+
+        let (tx, _rx) = tokio::sync::mpsc::unbounded_channel();
+        let mut app = App::new(tx);
+        let sql = "SELECT * FROM \"users\"".to_string();
+
+        app.on_msg(Msg::Asked(Ok(sql.clone())));
+        assert!(app.state.hops.is_empty(), "nothing runs before confirming");
+        assert!(screen(&mut app).contains("AI query"));
+
+        press(&mut app, "Escape");
+        assert!(app.ask_preview.is_none());
+        assert!(app.state.hops.is_empty(), "cancelled");
+
+        app.on_msg(Msg::Asked(Ok(sql.clone())));
+        press(&mut app, "Enter");
+        assert!(app.ask_preview.is_none());
+        assert_eq!(
+            app.state.current_hop().map(|hop| hop.query.clone()),
+            Some(sql)
+        );
     }
 
     #[tokio::test]

@@ -528,6 +528,27 @@ pub fn autocomplete() -> Vec<(Command, Keybind)> {
     ]
 }
 
+pub fn ask_preview() -> Vec<(Command, Keybind)> {
+    vec![
+        (
+            Command::new("AskPreviewRun", |app, _| {
+                app.close_ask_preview(true);
+                Ok(())
+            })
+            .described("Run the query the AI answered with."),
+            Keybind::new("AskPreviewRun", "Enter"),
+        ),
+        (
+            Command::new("AskPreviewCancel", |app, _| {
+                app.close_ask_preview(false);
+                Ok(())
+            })
+            .described("Throw away the query the AI answered with."),
+            Keybind::new("AskPreviewCancel", "Escape"),
+        ),
+    ]
+}
+
 pub fn help() -> Vec<(Command, Keybind)> {
     vec![
         (
